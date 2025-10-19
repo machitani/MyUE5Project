@@ -5,51 +5,60 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Tile.h"
+#include "Unit.h"
 #include "BoardManager.generated.h"
 
 UCLASS()
 class AUTOCHESSGAME_API ABoardManager : public AActor
 {
-	GENERATED_BODY()
-public:	
-	// Sets default values for this actor's properties
-	ABoardManager();
+    GENERATED_BODY()
 
-	virtual void BeginPlay()override;
+public:
+    ABoardManager();
 
-/// <summary>
-/// グリッドサイズ
-/// </summary>
-UPROPERTY(EditAnywhere)
-int32 Rows = 7;
-UPROPERTY(EditAnywhere)
-int32 Columns = 7;
+protected:
+    virtual void BeginPlay() override;
 
-/// <summary>
-/// タイルの間隔
-/// </summary>
-UPROPERTY(EditAnywhere)
-float TileSpacing = 100.f;
+    /** ===== ボード設定 ===== */
 
-/// <summary>
-/// タイルの参照
-/// </summary>
-UPROPERTY(EditAnywhere)
-TSubclassOf<ATile> TileClass;
+    // 行数（縦）
+    UPROPERTY(EditAnywhere, Category = "Board|Settings")
+    int32 Rows = 4;
 
-/// <summary>
-/// グリッド保存用
-/// </summary>
-TArray<ATile*>Tiles;
+    // 列数（横）
+    UPROPERTY(EditAnywhere, Category = "Board|Settings")
+    int32 Columns = 7;
 
-void GenerateBoard();
+    // タイル間隔
+    UPROPERTY(EditAnywhere, Category = "Board|Settings")
+    float TileSpacing = 100.f;
 
-//protected:
-//	// Called when the game starts or when spawned
-//	virtual void BeginPlay() override;
-//
-//public:	
-//	// Called every frame
-//	virtual void Tick(float DeltaTime) override;
+    // タイルのクラス
+    UPROPERTY(EditAnywhere, Category = "Board|References")
+    TSubclassOf<ATile> TileClass;
 
+    /** ===== ユニット設定 ===== */
+
+    UPROPERTY(EditAnywhere, Category = "Units|References")
+    TSubclassOf<AUnit> PlayerUnitClass;
+
+    UPROPERTY(EditAnywhere, Category = "Units|References")
+    TSubclassOf<AUnit> EnemyUnitClass;
+
+
+    /** ===== 内部管理 ===== */
+
+    // プレイヤー側タイル
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Runtime")
+    TArray<ATile*> PlayerTiles;
+
+    // 敵側タイル
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Runtime")
+    TArray<ATile*> EnemyTiles;
+
+    
+
+public:
+    void GenerateBoard();
+    void SpawnInitialUnits();
 };
