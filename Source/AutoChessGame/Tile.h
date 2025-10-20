@@ -1,37 +1,44 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Tile.generated.h"
 
+class AUnit;
+
 UCLASS()
 class AUTOCHESSGAME_API ATile : public AActor
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
-	ATile();
+    ATile();
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+    virtual void Tick(float DeltaTime) override;
 
-	/** タイルのメッシュ */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tile")
-	UStaticMeshComponent* TileMesh;
+    /** タイルのメッシュ */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tile")
+    UStaticMeshComponent* TileMesh;
 
-	/** このマスがユニットに占有されているかどうか */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
-	bool bIsOccupied;
+    /** このマスにユニットがいるか */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    bool bIsOccupied;
 
-	/** タイルの色を設定 */
-	UFUNCTION(BlueprintCallable, Category = "Tile")
-	void SetTileColor(const FLinearColor& NewColor);
+    /** このタイルにいるユニット */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    AUnit* OccupiedUnit;
+
+    /** 元の色を保存しておく */
+    FLinearColor OriginalColor;
+
+    /** タイルの色を設定 */
+    UFUNCTION(BlueprintCallable, Category = "Tile")
+    void SetTileColor(const FLinearColor& NewColor);
+
+    /** 元の色に戻す */
+    void ResetTileColor();
 };
