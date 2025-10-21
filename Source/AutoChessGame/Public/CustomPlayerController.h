@@ -12,11 +12,13 @@ class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 {
     GENERATED_BODY()
 
+protected:
+    virtual void BeginPlay() override;
 public:
     virtual void SetupInputComponent() override;
 
 private:
-    void OnTileClicked(ATile* ClickedTile);
+    //void OnTileClicked(ATile* ClickedTile);
 
     UPROPERTY()
     ABoardManager* BoardManagerRef;

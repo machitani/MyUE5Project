@@ -14,10 +14,11 @@ class AUTOCHESSGAME_API AUnit : public AActor
 public:
     AUnit();
 
-    UPROPERTY(VisibleAnywhere)
+    /** ユニットのメッシュ */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit")
     UStaticMeshComponent* UnitMesh;
 
     /** 現在いるタイル */
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit")
     ATile* CurrentTile;
 };

@@ -32,7 +32,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
     AUnit* OccupiedUnit;
 
-    /** 元の色を保存しておく */
+    /** 元の色 */
     FLinearColor OriginalColor;
 
     /** タイルの色を設定 */
@@ -40,5 +40,6 @@ public:
     void SetTileColor(const FLinearColor& NewColor);
 
     /** 元の色に戻す */
+    UFUNCTION(BlueprintCallable, Category = "Tile")
     void ResetTileColor();
 };
