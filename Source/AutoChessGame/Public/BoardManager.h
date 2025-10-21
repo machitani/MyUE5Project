@@ -29,9 +29,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Board|Settings")
     float TileSpacing = 100.f;
 
-    /** タイルクラス */
+    /** タイルクラス（BP で差し替えること前提） */
     UPROPERTY(EditAnywhere, Category = "Board|References")
-    TSubclassOf<ATile> TileClass;
+    TSubclassOf<class ATile> TileClass;
 
     /** ユニットクラス */
     UPROPERTY(EditAnywhere, Category = "Units|References")
@@ -60,6 +60,4 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Tile")
     void HandleTileClicked(ATile* ClickedTile);
-
-
 };

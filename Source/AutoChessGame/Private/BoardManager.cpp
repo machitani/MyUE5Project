@@ -30,12 +30,17 @@ void ABoardManager::GenerateBoard()
         {
             FVector SpawnLocation = Origin + FVector(Col * TileSpacing, Row * TileSpacing, 0.f);
             FActorSpawnParameters Params;
+
             ATile* Tile = GetWorld()->SpawnActor<ATile>(TileClass, SpawnLocation, FRotator::ZeroRotator, Params);
             if (Tile)
             {
-                Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
                 Tile->BoardManagerRef = this;
+                Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
                 PlayerTiles.Add(Tile);
+
+                UE_LOG(LogTemp, Warning, TEXT("Spawned Player Tile: %s, BoardManagerRef = %s"),
+                    *Tile->GetName(),
+                    Tile->BoardManagerRef ? *Tile->BoardManagerRef->GetName() : TEXT("None"));
             }
         }
     }
@@ -47,6 +52,7 @@ void ABoardManager::GenerateBoard()
         {
             FVector SpawnLocation = Origin + FVector(Col * TileSpacing, (Row + Rows) * TileSpacing + BoardGap, 0.f);
             FActorSpawnParameters Params;
+
             ATile* Tile = GetWorld()->SpawnActor<ATile>(TileClass, SpawnLocation, FRotator::ZeroRotator, Params);
             if (Tile)
             {
@@ -55,9 +61,6 @@ void ABoardManager::GenerateBoard()
             }
         }
     }
-   
-
-
 }
 
 void ABoardManager::SpawnInitialUnits()
@@ -93,9 +96,6 @@ void ABoardManager::SpawnInitialUnits()
 
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 {
-    if (!ClickedTile) return; // クリックされたタイルが無効なら何もしない
-
-    // タイルの色を黄色に変更
+    if (!ClickedTile) return;
     ClickedTile->SetTileColor(FLinearColor::Yellow);
 }
-

@@ -2,24 +2,31 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Unit.h"
 #include "CustomPlayerController.generated.h"
-
-class ATile;
-class ABoardManager;
 
 UCLASS()
 class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 {
     GENERATED_BODY()
 
-protected:
-    virtual void BeginPlay() override;
 public:
+    ACustomPlayerController();
+
+protected:
     virtual void SetupInputComponent() override;
+    virtual void Tick(float DeltaSeconds) override;
 
 private:
-    //void OnTileClicked(ATile* ClickedTile);
+    /** 現在ドラッグしているユニット */
+    AUnit* DraggingUnit;
 
-    UPROPERTY()
-    ABoardManager* BoardManagerRef;
+    /** 左クリック押下 */
+    void OnLeftMousePressed();
+
+    /** 左クリック解放 */
+    void OnLeftMouseReleased();
+
+    /** マウス位置をワールド座標に変換 */
+    bool GetMouseWorldPosition(FVector& OutWorldLocation);
 };

@@ -7,7 +7,7 @@
 class AUnit;
 class ABoardManager;
 
-UCLASS()
+UCLASS(Blueprintable)
 class AUTOCHESSGAME_API ATile : public AActor
 {
     GENERATED_BODY()
@@ -25,7 +25,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tile")
     UStaticMeshComponent* TileMesh;
 
-    /** このマスにユニットがいるか */
+    /** ユニットがいるか */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
     bool bIsOccupied;
 
@@ -33,8 +33,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
     AUnit* OccupiedUnit;
 
-    /** 元の色 */
+    /** 元の色を保存 */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tile")
     FLinearColor OriginalColor;
+
+    /** BoardManager への参照（C++ -> BP で参照可能） */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    ABoardManager* BoardManagerRef;
 
     /** タイルの色を設定 */
     UFUNCTION(BlueprintCallable, Category = "Tile")
@@ -44,7 +49,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Tile")
     void ResetTileColor();
 
-    UPROPERTY()
-    ABoardManager* BoardManagerRef;
+    /** クリック時に BoardManager に通知 */
+    UFUNCTION()
+    void NotifyBoardManagerClicked();
 
+private:
+    UMaterialInstanceDynamic* DynMat;
 };
