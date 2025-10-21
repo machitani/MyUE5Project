@@ -57,4 +57,9 @@ public:
 
     /** ‰Šúƒ†ƒjƒbƒg¶¬ */
     void SpawnInitialUnits();
+
+    UFUNCTION(BlueprintCallable, Category = "Tile")
+    void HandleTileClicked(ATile* ClickedTile);
+
+
 };

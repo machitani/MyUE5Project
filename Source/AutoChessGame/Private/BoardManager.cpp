@@ -34,6 +34,7 @@ void ABoardManager::GenerateBoard()
             if (Tile)
             {
                 Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+                Tile->BoardManagerRef = this;
                 PlayerTiles.Add(Tile);
             }
         }
@@ -54,6 +55,9 @@ void ABoardManager::GenerateBoard()
             }
         }
     }
+   
+
+
 }
 
 void ABoardManager::SpawnInitialUnits()
@@ -86,3 +90,12 @@ void ABoardManager::SpawnInitialUnits()
         GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
     }
 }
+
+void ABoardManager::HandleTileClicked(ATile* ClickedTile)
+{
+    if (!ClickedTile) return; // クリックされたタイルが無効なら何もしない
+
+    // タイルの色を黄色に変更
+    ClickedTile->SetTileColor(FLinearColor::Yellow);
+}
+

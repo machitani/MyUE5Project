@@ -5,6 +5,7 @@
 #include "Tile.generated.h"
 
 class AUnit;
+class ABoardManager;
 
 UCLASS()
 class AUTOCHESSGAME_API ATile : public AActor
@@ -42,4 +43,8 @@ public:
     /** å≥ÇÃêFÇ…ñﬂÇ∑ */
     UFUNCTION(BlueprintCallable, Category = "Tile")
     void ResetTileColor();
+
+    UPROPERTY()
+    ABoardManager* BoardManagerRef;
+
 };
