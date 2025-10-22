@@ -2,8 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "Unit.h"
 #include "CustomPlayerController.generated.h"
+
+class AUnit;
+class ATile;
 
 UCLASS()
 class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
@@ -18,15 +20,12 @@ protected:
     virtual void Tick(float DeltaSeconds) override;
 
 private:
-    /** 現在ドラッグしているユニット */
-    AUnit* DraggingUnit;
+    bool bIsDragging;
+    AUnit* SelectedUnit;
 
-    /** 左クリック押下 */
-    void OnLeftMousePressed();
+    void OnLeftMouseDown();
+    void OnLeftMouseUp();
 
-    /** 左クリック解放 */
-    void OnLeftMouseReleased();
-
-    /** マウス位置をワールド座標に変換 */
-    bool GetMouseWorldPosition(FVector& OutWorldLocation);
+    /** ヘルパー：スクリーン座標 -> ワールドの線上の位置（カメラ近傍） */
+    bool GetMouseWorldPosition(FVector& OutWorldPos, FVector& OutWorldDir) const;
 };
