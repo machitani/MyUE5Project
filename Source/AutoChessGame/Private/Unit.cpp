@@ -16,6 +16,8 @@ AUnit::AUnit()
     UnitMesh->SetMobility(EComponentMobility::Movable);
     UnitMesh->SetGenerateOverlapEvents(true);
     UnitMesh->bSelectable = true;
+
+    CurrentTile = nullptr;
 }
 
 void AUnit::BeginPlay()

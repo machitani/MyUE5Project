@@ -43,12 +43,42 @@ void ACustomPlayerController::Tick(float DeltaSeconds)
             FVector WorldOrigin, WorldDir;
             DeprojectScreenPositionToWorld(MouseX, MouseY, WorldOrigin, WorldDir);
 
-            // 簡易的にカメラからの距離で位置決め（環境によって 500 を調整）
             FVector MouseWorldPoint = WorldOrigin + WorldDir * 500.f;
             SelectedUnit->UpdateDrag(MouseWorldPoint);
         }
+
+        // === タイルハイライト ===
+        FHitResult Hit;
+        if (GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+        {
+            ATile* HoveredTile = Cast<ATile>(Hit.GetActor());
+
+            // 前回のハイライト解除
+            if (LastHighlightedTile && LastHighlightedTile != HoveredTile)
+            {
+                LastHighlightedTile->SetTileHighlight(false);
+            }
+
+            // 新しいタイルをハイライト
+            if (HoveredTile)
+            {
+                HoveredTile->SetTileHighlight(true);
+                LastHighlightedTile = HoveredTile;
+            }
+        }
+        else if (LastHighlightedTile)
+        {
+            LastHighlightedTile->SetTileHighlight(false);
+            LastHighlightedTile = nullptr;
+        }
+    }
+    else if (LastHighlightedTile)
+    {
+        LastHighlightedTile->SetTileHighlight(false);
+        LastHighlightedTile = nullptr;
     }
 }
+
 
 void ACustomPlayerController::OnLeftMouseDown()
 {
@@ -79,7 +109,6 @@ void ACustomPlayerController::OnLeftMouseUp()
 
     bIsDragging = false;
 
-    // ドロップ先の確認
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
@@ -87,13 +116,33 @@ void ACustomPlayerController::OnLeftMouseUp()
     {
         if (ATile* Tile = Cast<ATile>(Hit.GetActor()))
         {
-            FVector TargetLoc = Tile->GetActorLocation();
-            SelectedUnit->SetActorLocation(TargetLoc + FVector(0, 0, 100.f)); // 少し浮かせる
-            UE_LOG(LogTemp, Log, TEXT("[Controller] Dropped %s to Tile %s"), *SelectedUnit->GetName(), *Tile->GetName());
+            // もしタイルが埋まってたら配置できないようにする
+            if (!Tile->bIsOccupied)
+            {
+                FVector TargetLoc = Tile->GetActorLocation() + FVector(0, 0, 150.f);
+                SelectedUnit->SetActorLocation(TargetLoc);
+
+                // --- タイルとユニットの関連更新 ---
+                if (SelectedUnit->CurrentTile)
+                {
+                    SelectedUnit->CurrentTile->bIsOccupied = false;
+                    SelectedUnit->CurrentTile->OccupiedUnit = nullptr;
+                }
+
+                SelectedUnit->CurrentTile = Tile;
+                Tile->bIsOccupied = true;
+                Tile->OccupiedUnit = SelectedUnit;
+
+                UE_LOG(LogTemp, Log, TEXT("[Controller] Dropped %s to Tile %s"), *SelectedUnit->GetName(), *Tile->GetName());
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[Controller] Tile %s is occupied!"), *Tile->GetName());
+            }
         }
         else
         {
-            // タイルでないところに落としたらそのままその位置に落とす
+            // タイル外に落とした場合
             FVector Impact = Hit.ImpactPoint;
             SelectedUnit->SetActorLocation(FVector(Impact.X, Impact.Y, SelectedUnit->GetActorLocation().Z));
             UE_LOG(LogTemp, Log, TEXT("[Controller] Dropped %s to world location"), *SelectedUnit->GetName());

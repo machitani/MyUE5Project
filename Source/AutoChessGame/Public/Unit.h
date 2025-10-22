@@ -36,4 +36,7 @@ public:
 
     /** ドラッグ更新（マウスワールド位置を渡して呼ぶ） */
     void UpdateDrag(const FVector& MouseWorld);
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Unit")
+    class ATile* CurrentTile;
 };

@@ -53,6 +53,9 @@ public:
     UFUNCTION()
     void NotifyBoardManagerClicked();
 
+    UFUNCTION()
+    void SetTileHighlight(bool bHighlight);
+
 private:
     UMaterialInstanceDynamic* DynMat;
 };

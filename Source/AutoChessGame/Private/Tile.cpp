@@ -69,3 +69,19 @@ void ATile::NotifyBoardManagerClicked()
         UE_LOG(LogTemp, Warning, TEXT("[ATile] BoardManagerRef is null on tile %s"), *GetName());
     }
 }
+
+void ATile::SetTileHighlight(bool bHighlight)
+{
+    if (!DynMat)
+    {
+        DynMat = TileMesh->CreateAndSetMaterialInstanceDynamic(0);
+    }
+
+    if (DynMat)
+    {
+        if (bHighlight)
+            DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::Green); // íuÇØÇÈ
+        else
+            DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White); // í èÌ
+    }
+}
