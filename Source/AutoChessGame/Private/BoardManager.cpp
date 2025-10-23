@@ -82,7 +82,17 @@ void ABoardManager::SpawnInitialUnits()
         FActorSpawnParameters Params;
         Params.Owner = this;
 
-        GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
+       AUnit*SpawnedUnit= GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
+       if (SpawnedUnit)
+       {
+           ATile* TargetTile = PlayerTiles[PlayerIndex];   // スポーンしたタイル
+           SpawnedUnit->CurrentTile = TargetTile;         // CurrentTile を設定
+           TargetTile->OccupiedUnit = SpawnedUnit;        // タイル側も設定
+           TargetTile->bIsOccupied = true;                // タイル占有フラグ
+           SpawnedUnit->OwningBoardManager = this;        // BoardManager参照
+           PlayerUnits.Add(SpawnedUnit);                  // 配列に追加
+       }
+
     }
 
     if (EnemyTiles.IsValidIndex(EnemyIndex))
@@ -93,6 +103,7 @@ void ABoardManager::SpawnInitialUnits()
         Params.Owner = this;
 
         GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
+
     }
 }
 

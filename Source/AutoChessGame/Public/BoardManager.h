@@ -60,4 +60,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Tile")
     void HandleTileClicked(ATile* ClickedTile);
+
+    //TArray<ATile*> PlayerTiles;
+    TArray<AUnit*> PlayerUnits;
 };
