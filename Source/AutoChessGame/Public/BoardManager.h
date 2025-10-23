@@ -63,4 +63,20 @@ public:
 
     //TArray<ATile*> PlayerTiles;
     TArray<AUnit*> PlayerUnits;
+    TArray<AUnit*>EnemyUnits;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Combat")
+    int32 CurrentRound = 0;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Combat")
+    float TurnInterval = 1.0f;
+
+    FTimerHandle RoundTimerHandle;
+
+    UFUNCTION()
+    void StartNextRound();
+
+    UFUNCTION()
+    void ProcessEnemyTurn();
+
 };

@@ -14,6 +14,10 @@ void ABoardManager::BeginPlay()
     Super::BeginPlay();
     GenerateBoard();
     SpawnInitialUnits();
+
+    //ラウンド開始
+    CurrentRound = 1;
+    GetWorld()->GetTimerManager().SetTimer(RoundTimerHandle, this, &ABoardManager::StartNextRound, TurnInterval, false);
 }
 
 void ABoardManager::GenerateBoard()
@@ -75,6 +79,7 @@ void ABoardManager::SpawnInitialUnits()
     int32 PlayerIndex = CenterY * Columns + CenterX;
     int32 EnemyIndex = CenterY * Columns + CenterX;
 
+    // プレイヤーユニット
     if (PlayerTiles.IsValidIndex(PlayerIndex))
     {
         FVector SpawnLocation = PlayerTiles[PlayerIndex]->GetActorLocation() + FVector(0, 0, 150);
@@ -82,19 +87,18 @@ void ABoardManager::SpawnInitialUnits()
         FActorSpawnParameters Params;
         Params.Owner = this;
 
-       AUnit*SpawnedUnit= GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
-       if (SpawnedUnit)
-       {
-           ATile* TargetTile = PlayerTiles[PlayerIndex];   // スポーンしたタイル
-           SpawnedUnit->CurrentTile = TargetTile;         // CurrentTile を設定
-           TargetTile->OccupiedUnit = SpawnedUnit;        // タイル側も設定
-           TargetTile->bIsOccupied = true;                // タイル占有フラグ
-           SpawnedUnit->OwningBoardManager = this;        // BoardManager参照
-           PlayerUnits.Add(SpawnedUnit);                  // 配列に追加
-       }
-
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
+        if (NewUnit)
+        {
+            NewUnit->Team = EUnitTeam::Player;
+            NewUnit->CurrentTile = PlayerTiles[PlayerIndex];
+            PlayerTiles[PlayerIndex]->bIsOccupied = true;
+            PlayerTiles[PlayerIndex]->OccupiedUnit = NewUnit;
+            PlayerUnits.Add(NewUnit);
+        }
     }
 
+    // 敵ユニット
     if (EnemyTiles.IsValidIndex(EnemyIndex))
     {
         FVector SpawnLocation = EnemyTiles[EnemyIndex]->GetActorLocation() + FVector(0, 0, 150);
@@ -102,13 +106,78 @@ void ABoardManager::SpawnInitialUnits()
         FActorSpawnParameters Params;
         Params.Owner = this;
 
-        GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
+        if (NewUnit)
+        {
+            NewUnit->Team = EUnitTeam::Enemy;
+            NewUnit->CurrentTile = EnemyTiles[EnemyIndex];
+            EnemyTiles[EnemyIndex]->bIsOccupied = true;
+            EnemyTiles[EnemyIndex]->OccupiedUnit = NewUnit;
 
+            EnemyUnits.Add(NewUnit);
+        }
     }
+
 }
 
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 {
     if (!ClickedTile) return;
     ClickedTile->SetTileColor(FLinearColor::Yellow);
+}
+
+void ABoardManager::StartNextRound()
+{
+    
+    //プレイヤーターン
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (Unit && Unit->HP > 0.f)
+            Unit->CheckForTarget(TurnInterval);
+    }
+
+    //敵ターン
+    ProcessEnemyTurn();
+
+    //ゲーム終了判定
+    bool bPlayerAlive = false;
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (Unit && Unit->HP > 0.f)
+        {
+            bPlayerAlive = true;
+        }
+    }
+    bool bEnemiesAlive = false;
+    for (AUnit* Unit : EnemyUnits)
+    {
+        if (Unit && Unit->HP > 0.f)
+        {
+            bEnemiesAlive = true;
+        }
+    }
+
+    if (!bPlayerAlive)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Defeat!")); return;
+    }
+    if (!bEnemiesAlive)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Victory!")); return;
+    }
+
+    //次ラウンド
+    CurrentRound++;
+    GetWorld()->GetTimerManager().SetTimer(RoundTimerHandle, this, &ABoardManager::StartNextRound, TurnInterval, false);
+}
+
+void ABoardManager::ProcessEnemyTurn()
+{
+    for (AUnit* Unit : EnemyUnits)
+    {
+        if (Unit && Unit->HP > 0.f)
+        {
+            Unit->CheckForTarget(TurnInterval);
+        }
+    }
 }
