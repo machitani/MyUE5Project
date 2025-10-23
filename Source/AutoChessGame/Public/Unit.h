@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Tile.h"
+#include "BoardManager.h"
 #include "Unit.generated.h"
 
 UCLASS()
@@ -11,12 +13,6 @@ class AUTOCHESSGAME_API AUnit : public AActor
 
 public:
     AUnit();
-
-protected:
-    virtual void BeginPlay() override;
-
-public:
-    virtual void Tick(float DeltaTime) override;
 
     /** Mesh */
     UPROPERTY(VisibleAnywhere, Category = "Unit")
@@ -39,4 +35,10 @@ public:
 
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Unit")
     class ATile* CurrentTile;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit")
+    FVector OriginalLocation;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Unit")
+    ABoardManager* OwningBoardManager;
 };

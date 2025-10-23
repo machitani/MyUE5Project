@@ -56,6 +56,12 @@ public:
     UFUNCTION()
     void SetTileHighlight(bool bHighlight);
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    bool bIsPlayerTile;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    bool bIsHighlighted;
+
 private:
     UMaterialInstanceDynamic* DynMat;
 };

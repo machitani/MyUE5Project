@@ -2,10 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Tile.h"
+#include "Unit.h"
 #include "CustomPlayerController.generated.h"
-
-class AUnit;
-class ATile;
 
 UCLASS()
 class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController

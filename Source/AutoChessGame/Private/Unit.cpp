@@ -20,28 +20,23 @@ AUnit::AUnit()
     CurrentTile = nullptr;
 }
 
-void AUnit::BeginPlay()
-{
-    Super::BeginPlay();
-}
-
-void AUnit::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
-
-    // 実際の追従は PlayerController の Tick から SetActorLocation しても良いが、
-    // ここでも受け取ったマウスワールド位置で更新するパターンにしておく（UpdateDrag を呼んでください）
-}
-
 void AUnit::StartDrag(const FVector& MouseWorld)
 {
     bIsDragging = true;
+
+    // ドラッグ開始時にユニットのコリジョンを無効化
+    UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // マウスとのオフセットを計算
     DragOffset = GetActorLocation() - MouseWorld;
 }
 
 void AUnit::EndDrag()
 {
     bIsDragging = false;
+
+    // ドラッグ終了時にユニットのコリジョンを元に戻す
+    UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void AUnit::UpdateDrag(const FVector& MouseWorld)

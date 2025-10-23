@@ -35,7 +35,8 @@ void ABoardManager::GenerateBoard()
             if (Tile)
             {
                 Tile->BoardManagerRef = this;
-                Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+                Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f)); // 青
+                Tile->bIsPlayerTile = true;  //プレイヤータイル
                 PlayerTiles.Add(Tile);
 
                 UE_LOG(LogTemp, Warning, TEXT("Spawned Player Tile: %s, BoardManagerRef = %s"),
@@ -56,7 +57,8 @@ void ABoardManager::GenerateBoard()
             ATile* Tile = GetWorld()->SpawnActor<ATile>(TileClass, SpawnLocation, FRotator::ZeroRotator, Params);
             if (Tile)
             {
-                Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+                Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f)); // 赤
+                Tile->bIsPlayerTile = false; //敵タイル
                 EnemyTiles.Add(Tile);
             }
         }

@@ -77,11 +77,10 @@ void ATile::SetTileHighlight(bool bHighlight)
         DynMat = TileMesh->CreateAndSetMaterialInstanceDynamic(0);
     }
 
-    if (DynMat)
-    {
-        if (bHighlight)
-            DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::Green); // ’u‚¯‚é
-        else
-            DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White); // ’Êí
-    }
+    if (!DynMat) return;
+
+    if (bHighlight)
+        DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::Green); // ’u‚¯‚é
+    else
+        DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.2f, 0.4f, 1.f, 1.f));// Œ³‚ÌF
 }
