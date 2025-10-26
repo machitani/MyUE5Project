@@ -7,6 +7,15 @@
 class ATile;
 class AUnit;
 
+UENUM(BlueprintType)
+enum class EGamePhase : uint8
+{
+    Preparation UMETA(DisplayName = "Preparation"),
+    Battle UMETA(DisplayName = "Battle"),
+    Result UMETA(DisplayName = "Result")
+};
+
+
 UCLASS()
 class AUTOCHESSGAME_API ABoardManager : public AActor
 {
@@ -78,5 +87,14 @@ public:
 
     UFUNCTION()
     void ProcessEnemyTurn();
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game Phase")
+    EGamePhase CurrentPhase = EGamePhase::Preparation;
+
+    UFUNCTION(BlueprintCallable, Category = "Game Phase")
+    void StartBattlePhase();
+
+    UFUNCTION(BlueprintCallable, Category = "Game Phase")
+    void EndBattlePhase();
 
 };

@@ -73,52 +73,59 @@ void ABoardManager::SpawnInitialUnits()
 {
     if (!PlayerUnitClass || !EnemyUnitClass) return;
 
-    int32 CenterX = Columns / 2;
-    int32 CenterY = Rows / 2;
-
-    int32 PlayerIndex = CenterY * Columns + CenterX;
-    int32 EnemyIndex = CenterY * Columns + CenterX;
-
-    // プレイヤーユニット
-    if (PlayerTiles.IsValidIndex(PlayerIndex))
+    // プレイヤー：前列2行にユニットを配置
+    for (int32 Row = 0; Row < 2; Row++)
     {
-        FVector SpawnLocation = PlayerTiles[PlayerIndex]->GetActorLocation() + FVector(0, 0, 150);
-        FRotator SpawnRotation = FRotator(0, 90, 0);
-        FActorSpawnParameters Params;
-        Params.Owner = this;
-
-        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
-        if (NewUnit)
+        for (int32 Col = 0; Col < Columns; Col += 2) // 1マスおきに配置
         {
-            NewUnit->Team = EUnitTeam::Player;
-            NewUnit->CurrentTile = PlayerTiles[PlayerIndex];
-            PlayerTiles[PlayerIndex]->bIsOccupied = true;
-            PlayerTiles[PlayerIndex]->OccupiedUnit = NewUnit;
-            PlayerUnits.Add(NewUnit);
+            int32 Index = Row * Columns + Col;
+            if (PlayerTiles.IsValidIndex(Index))
+            {
+                FVector SpawnLocation = PlayerTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+                FRotator SpawnRotation = FRotator(0, 90, 0);
+                FActorSpawnParameters Params;
+                Params.Owner = this;
+
+                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, SpawnRotation, Params);
+                if (NewUnit)
+                {
+                    NewUnit->Team = EUnitTeam::Player;
+                    NewUnit->CurrentTile = PlayerTiles[Index];
+                    PlayerTiles[Index]->bIsOccupied = true;
+                    PlayerTiles[Index]->OccupiedUnit = NewUnit;
+                    PlayerUnits.Add(NewUnit);
+                }
+            }
         }
     }
 
-    // 敵ユニット
-    if (EnemyTiles.IsValidIndex(EnemyIndex))
+    // 敵：後列2行にユニットを配置
+    for (int32 Row = Rows - 2; Row < Rows; Row++)
     {
-        FVector SpawnLocation = EnemyTiles[EnemyIndex]->GetActorLocation() + FVector(0, 0, 150);
-        FRotator SpawnRotation = FRotator(0, 270, 0);
-        FActorSpawnParameters Params;
-        Params.Owner = this;
-
-        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
-        if (NewUnit)
+        for (int32 Col = 0; Col < Columns; Col += 2)
         {
-            NewUnit->Team = EUnitTeam::Enemy;
-            NewUnit->CurrentTile = EnemyTiles[EnemyIndex];
-            EnemyTiles[EnemyIndex]->bIsOccupied = true;
-            EnemyTiles[EnemyIndex]->OccupiedUnit = NewUnit;
+            int32 Index = Row * Columns + Col;
+            if (EnemyTiles.IsValidIndex(Index))
+            {
+                FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+                FRotator SpawnRotation = FRotator(0, 270, 0);
+                FActorSpawnParameters Params;
+                Params.Owner = this;
 
-            EnemyUnits.Add(NewUnit);
+                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, SpawnRotation, Params);
+                if (NewUnit)
+                {
+                    NewUnit->Team = EUnitTeam::Enemy;
+                    NewUnit->CurrentTile = EnemyTiles[Index];
+                    EnemyTiles[Index]->bIsOccupied = true;
+                    EnemyTiles[Index]->OccupiedUnit = NewUnit;
+                    EnemyUnits.Add(NewUnit);
+                }
+            }
         }
     }
-
 }
+
 
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 {
@@ -180,4 +187,28 @@ void ABoardManager::ProcessEnemyTurn()
             Unit->CheckForTarget(TurnInterval);
         }
     }
+}
+
+void ABoardManager::StartBattlePhase()
+{
+    if (CurrentPhase != EGamePhase::Preparation)
+        return;
+
+    UE_LOG(LogTemp, Warning, TEXT("Battle Phase Started!"));
+    CurrentPhase = EGamePhase::Battle;
+
+    // 戦闘開始処理（ラウンドを進行）
+    CurrentRound = 1;
+    StartNextRound();
+}
+
+void ABoardManager::EndBattlePhase()
+{
+    if (CurrentPhase != EGamePhase::Battle)
+        return;
+
+    UE_LOG(LogTemp, Warning, TEXT("Battle Phase Ended!"));
+    CurrentPhase = EGamePhase::Result;
+
+    // 結果処理（あとでUIなどに繋げる）
 }
