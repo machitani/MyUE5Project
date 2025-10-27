@@ -19,32 +19,33 @@ AUnit::AUnit()
     UnitMesh->bSelectable = true;
 
     CurrentTile = nullptr;
+    OriginalLocation = FVector::ZeroVector;
+    bCanDrag = true;
+    TimeSinceLastAttack = 0.0f;
 }
 
 void AUnit::StartDrag(const FVector& MouseWorld)
 {
-    bIsDragging = true;
+    if (!bCanDrag) return;
 
-    // ドラッグ開始時にユニットのコリジョンを無効化
+    bIsDragging = true;
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    // マウスとのオフセットを計算
     DragOffset = GetActorLocation() - MouseWorld;
 }
 
 void AUnit::EndDrag()
 {
     bIsDragging = false;
-
-    // ドラッグ終了時にユニットのコリジョンを元に戻す
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void AUnit::UpdateDrag(const FVector& MouseWorld)
 {
+    if (!bIsDragging) return;
+
     FVector Target = MouseWorld + DragOffset;
-    // zは維持
-    Target.Z = GetActorLocation().Z;
+    Target.Z = GetActorLocation().Z; // 高さ維持
     SetActorLocation(Target);
 }
 
@@ -52,22 +53,38 @@ void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (!bIsDragging)
+    // ドラッグ中はマウス追従
+    if (bIsDragging)
+    {
+        // Tick 内でマウス位置取得
+        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+        if (PC)
+        {
+            FVector MouseWorld, MouseDir;
+            if (PC->DeprojectMousePositionToWorld(MouseWorld, MouseDir))
+            {
+                UpdateDrag(MouseWorld);
+            }
+        }
+        return;
+    }
+
+    // 戦闘フェーズ中は敵を探索して行動
+    if (OwningBoardManager && OwningBoardManager->CurrentPhase == EGamePhase::Battle)
     {
         CheckForTarget(DeltaTime);
     }
 }
 
-void AUnit::CheckForTarget(float DeltaTime)
+void AUnit::CheckForTarget(const float DeltaTime)
 {
     if (!OwningBoardManager) return;
+    if (OwningBoardManager->CurrentPhase != EGamePhase::Battle) return;
 
-    // 攻撃クールダウンを更新
+    // 攻撃クールダウン更新
     TimeSinceLastAttack += DeltaTime;
 
-    // クールダウン中なら攻撃しない
-    if (TimeSinceLastAttack < AttackInterval)
-        return;
+    if (TimeSinceLastAttack < AttackInterval) return;
 
     // 最も近い敵を探索
     AUnit* ClosestEnemy = nullptr;
@@ -76,26 +93,38 @@ void AUnit::CheckForTarget(float DeltaTime)
     for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
     {
         AUnit* Other = *It;
-        if (Other == this) continue;          // 自分自身は除外
-        if (Other->Team == Team) continue;    // 同陣営は除外
-        if (Other->HP <= 0.f) continue;      // 死亡ユニットは除外
+        if (Other == this) continue;
+        if (Other->Team == Team) continue;
+        if (Other->HP <= 0.f) continue;
 
         float Distance = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
-        if (Distance <= Range && Distance < ClosestDist)
+        if (Distance < ClosestDist)
         {
             ClosestDist = Distance;
             ClosestEnemy = Other;
         }
     }
 
-    // 最も近い敵が見つかれば攻撃
-    if (ClosestEnemy)
+    if (!ClosestEnemy) return;
+
+    if (ClosestDist <= Range)
     {
+        // 射程内なら攻撃
         AttackTarget(ClosestEnemy);
-        TimeSinceLastAttack = 0.0f; // 攻撃後クールダウンリセット
+        TimeSinceLastAttack = 0.f;
+    }
+    else
+    {
+        // 射程外なら移動
+        FVector NewLocation = FMath::VInterpConstantTo(
+            GetActorLocation(),
+            ClosestEnemy->GetActorLocation(),
+            DeltaTime,
+            MoveSpeed // 1秒あたりの移動距離
+        );
+        SetActorLocation(NewLocation);
     }
 }
-
 
 void AUnit::AttackTarget(AUnit* Target)
 {
@@ -116,7 +145,6 @@ void AUnit::OnDeath()
 {
     UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
 
-    // タイル占有解除
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
@@ -124,7 +152,7 @@ void AUnit::OnDeath()
         CurrentTile = nullptr;
     }
 
-    // OwningBoardManager があれば PlayerUnits から削除（プレイヤー陣営のみ）
+    // プレイヤー陣営の場合は BoardManager の配列から削除
     if (OwningBoardManager && Team == EUnitTeam::Player)
     {
         OwningBoardManager->PlayerUnits.Remove(this);

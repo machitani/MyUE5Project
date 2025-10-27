@@ -59,6 +59,9 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
     float Attack = 20.f;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float MoveSpeed = 300.f;
+
     UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Stats")
     float Range = 300.f;
 
@@ -68,11 +71,14 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Combat")
     float AttackInterval = 1.0f;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Unit")
+    bool bCanDrag = true;
+
     float TimeSinceLastAttack = 0.0f;
 
     virtual void Tick(float DeltaTime)override;
 
-    void CheckForTarget(float DeltaTime);
+    void CheckForTarget(const float DeltaTime);
     void AttackTarget(AUnit* Targer);
     void OnDeath();
 

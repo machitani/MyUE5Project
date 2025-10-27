@@ -97,4 +97,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Game Phase")
     void EndBattlePhase();
 
+    UFUNCTION(BlueprintCallable, Category = "Round")
+    void StartPreparationPhase();
+
+    UFUNCTION(BlueprintCallable,Category="Round")
+    void StartResultPhase();
+
+    void ProcessBattleTick();
+
 };

@@ -81,6 +81,8 @@ void ACustomPlayerController::OnLeftMouseDown()
     {
         if (AUnit* Unit = Cast<AUnit>(Hit.GetActor()))
         {
+            if (!Unit->bCanDrag)return;
+
             SelectedUnit = Unit;
             bIsDragging = true;
             SelectedUnit->OriginalLocation = SelectedUnit->GetActorLocation();
