@@ -138,14 +138,19 @@ void ABoardManager::StartPreparationPhase()
     CurrentPhase = EGamePhase::Preparation;
     UE_LOG(LogTemp, Warning, TEXT("=== Preparation Phase ==="));
 
-    // ユニットをドラッグ可能に
     for (AUnit* Unit : PlayerUnits)
     {
         if (Unit) Unit->bCanDrag = true;
     }
 
-    // 5秒後に自動でバトルフェーズ開始
-    GetWorld()->GetTimerManager().SetTimer(RoundTimerHandle, this, &ABoardManager::StartBattlePhase, 7.0f, false);
+    // 7秒後に自動で BattlePhase 開始
+    GetWorld()->GetTimerManager().SetTimer(
+        PhaseTimerHandle,
+        this,
+        &ABoardManager::StartBattlePhase,
+        7.0f,
+        false
+    );
 }
 
 void ABoardManager::StartBattlePhase()
@@ -153,19 +158,28 @@ void ABoardManager::StartBattlePhase()
     if (CurrentPhase != EGamePhase::Preparation) return;
 
     CurrentPhase = EGamePhase::Battle;
-    UE_LOG(LogTemp, Warning, TEXT("Battle Phase Started!"));
 
-    // プレイヤーユニットはドラッグ不可
+    // ここでラウンド番号をインクリメント
+    //CurrentRound++;
+    UE_LOG(LogTemp, Warning, TEXT("Battle Phase Started! Round %d"), CurrentRound);
+
     for (AUnit* Unit : PlayerUnits)
     {
         if (Unit) Unit->bCanDrag = false;
     }
 
-    // ラウンド開始
-    CurrentRound = 1;
+    // BattlePhase タイマー開始
+    /*GetWorld()->GetTimerManager().SetTimer(
+        RoundTimerHandle,
+        this,
+        &ABoardManager::ProcessBattleTick,
+        TurnInterval,
+        true
+    );*/
+
+    //ラウンド開始
     StartNextRound();
 }
-
 void ABoardManager::EndBattlePhase()
 {
     if (CurrentPhase != EGamePhase::Battle) return;
@@ -177,10 +191,98 @@ void ABoardManager::EndBattlePhase()
 void ABoardManager::StartResultPhase()
 {
     CurrentPhase = EGamePhase::Result;
+    UE_LOG(LogTemp, Warning, TEXT("=== Result Phase ==="));
 
-    // 3秒後に次の準備フェーズ
-    GetWorld()->GetTimerManager().SetTimer(RoundTimerHandle, this, &ABoardManager::StartPreparationPhase, 3.0f, false);
+    // 3秒後に PreparationPhase 再開
+    GetWorld()->GetTimerManager().SetTimer(
+        PhaseTimerHandle,
+        this,
+        &ABoardManager::ResetBoardForNextRound,
+        3.0f,
+        false
+    );
 }
+
+void ABoardManager::ResetBoardForNextRound()
+{
+    UE_LOG(LogTemp, Warning, TEXT("== ResetBoardForNextRound() =="));
+
+    // 現在のタイマーを止める
+    GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
+
+    // 既存ユニットを削除
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (Unit) Unit->Destroy();
+    }
+    PlayerUnits.Empty();
+
+    for (AUnit* Unit : EnemyUnits)
+    {
+        if (Unit) Unit->Destroy();
+    }
+    EnemyUnits.Empty();
+
+    // タイルリセット
+    for (ATile* Tile : PlayerTiles)
+    {
+        if (Tile)
+        {
+            Tile->bIsOccupied = false;
+            Tile->OccupiedUnit = nullptr;
+            Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+        }
+    }
+    for (ATile* Tile : EnemyTiles)
+    {
+        if (Tile)
+        {
+            Tile->bIsOccupied = false;
+            Tile->OccupiedUnit = nullptr;
+            Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+        }
+    }
+
+    // ユニット再生成
+    SpawnInitialUnits();
+
+    // Spawn後すぐにドラッグ不可＆位置を強制セット
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (Unit)
+        {
+            Unit->bCanDrag = false;
+            if (Unit->CurrentTile)
+            {
+                FVector SpawnLoc = Unit->CurrentTile->GetActorLocation() + FVector(0, 0, 150);
+                Unit->SetActorLocation(SpawnLoc);
+                Unit->OriginalLocation = SpawnLoc;
+            }
+        }
+    }
+    for (AUnit* Unit : EnemyUnits)
+    {
+        if (Unit)
+        {
+            Unit->bCanDrag = false;
+            if (Unit->CurrentTile)
+            {
+                FVector SpawnLoc = Unit->CurrentTile->GetActorLocation() + FVector(0, 0, 150);
+                Unit->SetActorLocation(SpawnLoc);
+                Unit->OriginalLocation = SpawnLoc;
+            }
+        }
+    }
+
+    // ラウンド番号更新
+    CurrentRound++;
+    UE_LOG(LogTemp, Warning, TEXT("Next Round: %d"), CurrentRound);
+
+    // 準備フェーズへ移行
+    StartPreparationPhase();
+}
+
+
 
 void ABoardManager::StartNextRound()
 {
@@ -192,43 +294,16 @@ void ABoardManager::StartNextRound()
 
 void ABoardManager::ProcessBattleTick()
 {
-    // プレイヤーユニット行動
-    for (AUnit* Unit : PlayerUnits)
-    {
-        if (Unit && Unit->HP > 0.f)
-        {
-            //Unit->CheckForTarget(TurnInterval);
-        }
-    }
-
-    // 敵ユニット行動
-    for (AUnit* Unit : EnemyUnits)
-    {
-        if (Unit && Unit->HP > 0.f)
-        {
-            //Unit->CheckForTarget(TurnInterval);
-        }
-    }
-
-    // 勝敗判定
     bool bPlayerAlive = false;
     for (AUnit* Unit : PlayerUnits)
     {
-        if (Unit && Unit->HP > 0.f)
-        {
-            bPlayerAlive = true;
-            break;
-        }
+        if (Unit && Unit->HP > 0.f) { bPlayerAlive = true; break; }
     }
 
     bool bEnemiesAlive = false;
     for (AUnit* Unit : EnemyUnits)
     {
-        if (Unit && Unit->HP > 0.f)
-        {
-            bEnemiesAlive = true;
-            break;
-        }
+        if (Unit && Unit->HP > 0.f) { bEnemiesAlive = true; break; }
     }
 
     if (!bPlayerAlive || !bEnemiesAlive)
@@ -240,9 +315,10 @@ void ABoardManager::ProcessBattleTick()
             UE_LOG(LogTemp, Warning, TEXT("Defeat!"));
         }
         else
-        {
             UE_LOG(LogTemp, Warning, TEXT("Victory!"));
-        }
+
+        //ResetBoardForNextRound();
+        StartResultPhase();
     }
 }
 

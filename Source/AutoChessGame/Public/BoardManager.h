@@ -75,7 +75,7 @@ public:
     TArray<AUnit*>EnemyUnits;
 
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Combat")
-    int32 CurrentRound = 0;
+    int32 CurrentRound = 1;
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Combat")
     float TurnInterval = 1.0f;
@@ -103,6 +103,11 @@ public:
     UFUNCTION(BlueprintCallable,Category="Round")
     void StartResultPhase();
 
+    void ResetBoardForNextRound();
+
     void ProcessBattleTick();
+
+    //FTimerHandle RoundTimerHandle;    // BattlePhase —p
+    FTimerHandle PhaseTimerHandle;    // Preparation / Result —p
 
 };
