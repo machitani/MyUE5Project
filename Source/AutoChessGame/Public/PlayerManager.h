@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ShopItem.h"
 #include "PlayerManager.generated.h"
 
 UCLASS()
@@ -29,4 +30,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LevelUp();
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TArray<FShopItem>Inventory;
+
+	UFUNCTION(BlueprintCallable)
+	bool BuyItem(const FShopItem& Item);
 };

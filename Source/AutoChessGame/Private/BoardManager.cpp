@@ -37,6 +37,9 @@ void ABoardManager::BeginPlay()
        
     }
 
+ 
+
+
     // 準備フェーズ開始
     StartPreparationPhase();
 }

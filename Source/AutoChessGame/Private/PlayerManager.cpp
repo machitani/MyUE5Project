@@ -31,6 +31,30 @@ void APlayerManager::LevelUp()
 	Level++;
 }
 
+bool APlayerManager::BuyItem(const FShopItem& Item)
+{
+    if (Gold >= Item.Price)
+    {
+        Gold -= Item.Price;
+        Inventory.Add(Item);
 
+        // デバッグ用
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow,
+                FString::Printf(TEXT("Bought %s! Remaining Gold: %d"), *Item.ItemName.ToString(), Gold));
+        }
+
+        return true;
+    }
+    else
+    {
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Not enough Gold!"));
+        }
+        return false;
+    }
+}
 
 
