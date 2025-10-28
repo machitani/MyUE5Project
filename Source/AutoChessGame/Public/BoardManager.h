@@ -110,4 +110,27 @@ public:
     //FTimerHandle RoundTimerHandle;    // BattlePhase 用
     FTimerHandle PhaseTimerHandle;    // Preparation / Result 用
 
+    // HUD
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<UUserWidget> HUDClass;
+
+    UPROPERTY()
+    UUserWidget* HUDInstance;
+
+    // HUD 更新関数
+    void UpdateHUD();
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Manager")
+    TSubclassOf<class APlayerManager> PlayerManagerClass;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Manager")
+    APlayerManager* PlayerMangerInstance;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="UI")
+    TSubclassOf<UUserWidget> ShopWidgetClass;
+
+    UUserWidget* ShopInstance = nullptr;
+
+    UFUNCTION(BlueprintCallable)
+    void OpenShop();
 };

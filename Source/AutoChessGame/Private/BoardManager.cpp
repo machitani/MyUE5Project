@@ -1,6 +1,8 @@
 #include "BoardManager.h"
 #include "Tile.h"
 #include "Unit.h"
+#include "UGameHUD.h"
+#include "PlayerManager.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 
@@ -17,6 +19,23 @@ void ABoardManager::BeginPlay()
 
     GenerateBoard();
     SpawnInitialUnits();
+
+    // HUD作成
+    if (HUDClass)
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("TEXT"));
+        HUDInstance = CreateWidget<UUserWidget>(GetWorld(), HUDClass);
+        if (HUDInstance)
+        {
+            HUDInstance->AddToViewport();
+        }
+    }
+
+    if (PlayerManagerClass)
+    {
+        PlayerMangerInstance = GetWorld()->SpawnActor<APlayerManager>(PlayerManagerClass);
+       
+    }
 
     // 準備フェーズ開始
     StartPreparationPhase();
@@ -135,6 +154,8 @@ void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 
 void ABoardManager::StartPreparationPhase()
 {
+    //ショップを開く
+    OpenShop();
     CurrentPhase = EGamePhase::Preparation;
     UE_LOG(LogTemp, Warning, TEXT("=== Preparation Phase ==="));
 
@@ -142,6 +163,8 @@ void ABoardManager::StartPreparationPhase()
     {
         if (Unit) Unit->bCanDrag = true;
     }
+
+    UpdateHUD();
 
     // 7秒後に自動で BattlePhase 開始
     GetWorld()->GetTimerManager().SetTimer(
@@ -176,13 +199,14 @@ void ABoardManager::StartBattlePhase()
         TurnInterval,
         true
     );*/
-
+    UpdateHUD();
     //ラウンド開始
     StartNextRound();
 }
 void ABoardManager::EndBattlePhase()
 {
     if (CurrentPhase != EGamePhase::Battle) return;
+
 
     CurrentPhase = EGamePhase::Result;
     UE_LOG(LogTemp, Warning, TEXT("Battle Phase Ended!"));
@@ -192,6 +216,8 @@ void ABoardManager::StartResultPhase()
 {
     CurrentPhase = EGamePhase::Result;
     UE_LOG(LogTemp, Warning, TEXT("=== Result Phase ==="));
+
+    UpdateHUD();
 
     // 3秒後に PreparationPhase 再開
     GetWorld()->GetTimerManager().SetTimer(
@@ -317,6 +343,25 @@ void ABoardManager::ProcessBattleTick()
         else
             UE_LOG(LogTemp, Warning, TEXT("Victory!"));
 
+        if (HUDInstance)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("HUDInstance found"));
+
+            UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText")));
+            if (ResultText)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("ResultText found setting Victory/Defeat"));
+                if (!bPlayerAlive)
+                {
+                    ResultText->SetText(FText::FromString("Result:Defeat!"));
+                }
+                else
+                {
+                    ResultText->SetText(FText::FromString("Result:Victory!"));
+                }
+            }
+        }
+        UpdateHUD();
         //ResetBoardForNextRound();
         StartResultPhase();
     }
@@ -329,6 +374,56 @@ void ABoardManager::ProcessEnemyTurn()
         if (Unit && Unit->HP > 0.f)
         {
             //Unit->CheckForTarget(TurnInterval);
+        }
+    }
+}
+
+void ABoardManager::UpdateHUD()
+{
+
+    if (!HUDInstance) return;
+    //UE_LOG(LogTemp, Warning, TEXT("TEXT"));
+
+    UTextBlock* RoundText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("RoundText")));
+    if (RoundText)
+    {
+        RoundText->SetText(FText::FromString(FString::Printf(TEXT("Round: %d"), CurrentRound)));
+    }
+
+    UTextBlock* PhaseText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("PhaseText")));
+    if (PhaseText)
+    {
+        FString PhaseName;
+        switch (CurrentPhase)
+        {
+        case EGamePhase::Preparation: PhaseName = "Preparation"; break;
+        case EGamePhase::Battle: PhaseName = "Battle"; break;
+        case EGamePhase::Result: PhaseName = "Result"; break;
+        }
+        PhaseText->SetText(FText::FromString(FString::Printf(TEXT("Phase: %s"), *PhaseName)));
+    }
+
+    UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText")));
+    if (CurrentPhase == EGamePhase::Preparation)
+    {
+        if (ResultText)
+        {
+            ResultText->SetText(FText::FromString("Result:")); // 初期化やリセット
+        }
+    }
+}
+
+void ABoardManager::OpenShop()
+{
+    if (ShopWidgetClass)
+    {
+        if (!ShopInstance)
+        {
+            ShopInstance = CreateWidget<UUserWidget>(GetWorld(), ShopWidgetClass);
+            if (ShopInstance)
+            {
+                ShopInstance->AddToViewport();
+            }
         }
     }
 }
