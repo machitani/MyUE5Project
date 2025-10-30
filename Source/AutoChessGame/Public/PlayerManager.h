@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ShopItem.h"
+#include "ItemData.h"
 #include "PlayerManager.generated.h"
 
 UCLASS()
@@ -19,21 +19,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	int32 Gold = 10;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Economy")
-	int32 Level = 1;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	TArray<FItemData> OwnedItems;
 
 	UFUNCTION(BlueprintCallable)
-	void AddGold(int32 Amount);
+	void AddGold(int32 Amount) { Gold += Amount; }
 
 	UFUNCTION(BlueprintCallable)
 	bool SpendGold(int32 Amount);
 
 	UFUNCTION(BlueprintCallable)
-	void LevelUp();
+	void AddItem(const FItemData& NewItem);
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TArray<FShopItem>Inventory;
-
-	UFUNCTION(BlueprintCallable)
-	bool BuyItem(const FShopItem& Item);
+	
 };

@@ -10,51 +10,15 @@ APlayerManager::APlayerManager()
 	PrimaryActorTick.bCanEverTick = false;
 
 }
-
-void APlayerManager::AddGold(int32 Amount)
-{
-	Gold += Amount;
-}
-
 bool APlayerManager::SpendGold(int32 Amount)
 {
-	if (Gold >= Amount)
-	{
-		Gold -= Amount;
-		return true;
-	}
-	return false;
+    if (Gold < Amount) return false;
+    Gold -= Amount;
+    return true;
 }
 
-void APlayerManager::LevelUp()
+void APlayerManager::AddItem(const FItemData& NewItem)
 {
-	Level++;
+    OwnedItems.Add(NewItem);
+    UE_LOG(LogTemp, Log, TEXT("Item added: %s"), *NewItem.ItemName.ToString());
 }
-
-bool APlayerManager::BuyItem(const FShopItem& Item)
-{
-    if (Gold >= Item.Price)
-    {
-        Gold -= Item.Price;
-        Inventory.Add(Item);
-
-        // デバッグ用
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow,
-                FString::Printf(TEXT("Bought %s! Remaining Gold: %d"), *Item.ItemName.ToString(), Gold));
-        }
-
-        return true;
-    }
-    else
-    {
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Not enough Gold!"));
-        }
-        return false;
-    }
-}
-
-
