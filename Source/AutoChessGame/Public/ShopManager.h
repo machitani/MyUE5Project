@@ -9,7 +9,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShopUpdated, const TArray<FItemData>&, NewItems);
 
-UCLASS()
+UCLASS(Blueprintable,BlueprintType)
 class AUTOCHESSGAME_API AShopManager : public AActor
 {
 	GENERATED_BODY()
