@@ -4,12 +4,27 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ItemData.h"
 #include "ShopManager.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShopUpdated, const TArray<FItemData>&, NewItems);
 
-UCLASS(Blueprintable,BlueprintType)
+// 仮のアイテムデータ
+USTRUCT(BlueprintType)
+struct FShopItemData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText ItemName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Cost;
+
+	// アイコンが後で必要なら
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D* Icon;
+};
+
+UCLASS()
 class AUTOCHESSGAME_API AShopManager : public AActor
 {
 	GENERATED_BODY()
@@ -18,27 +33,11 @@ public:
 	// Sets default values for this actor's properties
 	AShopManager();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
-    UDataTable* ItemDataTable;
+	// 今ショップにあるアイテム（4個とか）
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	TArray<FShopItemData> CurrentShopItems;
 
-    UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Shop")
-    TArray<FItemData> CurrentItems;
-
-    UPROPERTY(BlueprintAssignable)
-    FOnShopUpdated OnShopUpdated;
-
-    UFUNCTION(BlueprintCallable)
-    void RerollShop();
-
-    UFUNCTION(BlueprintCallable)
-    bool PurchaseItem(int32 Index, class APlayerManager* Player);
-
-    
-
-protected:
-    virtual void BeginPlay() override;
-
-private:
-    void GenerateNewItems();
-    int32 ShopSize = 4;
+	// UIに更新命令を出す
+	UFUNCTION(BlueprintCallable)
+	void GenerateShopItems();
 };

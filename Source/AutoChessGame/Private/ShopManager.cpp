@@ -1,60 +1,22 @@
-
 #include "ShopManager.h"
-#include "PlayerManager.h"
-#include "Kismet/KismetMathLibrary.h"
 
 AShopManager::AShopManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
+    PrimaryActorTick.bCanEverTick = false;
 }
 
-// Called when the game starts or when spawned
-void AShopManager::BeginPlay()
+void AShopManager::GenerateShopItems()
 {
-	Super::BeginPlay();
-	GenerateNewItems();
-	
+    CurrentShopItems.Empty();
+
+    // 仮アイテム4つ
+    for (int i = 0; i < 4; i++)
+    {
+        FShopItemData NewItem;
+        NewItem.ItemName = FText::FromString(FString::Printf(TEXT("Item %d"), i));
+        NewItem.Cost = (i + 1) * 3; // 3,6,9,12 とか
+        NewItem.Icon = nullptr; // 後でセット
+
+        CurrentShopItems.Add(NewItem);
+    }
 }
-
-void AShopManager::GenerateNewItems()
-{
-	if (!ItemDataTable)return;
-
-	CurrentItems.Empty();
-
-	TArray<FItemData*>ALLItems;
-	ItemDataTable->GetAllRows(TEXT("Shop"), ALLItems);
-
-	//ランダムにShopSize個選ぶ
-	for (int i = 0; i < ShopSize && ALLItems.Num()>0; i++)
-	{
-		int32 RandIndex = UKismetMathLibrary::RandomInteger(ALLItems.Num());
-		CurrentItems.Add(*ALLItems[RandIndex]);
-	}
-	OnShopUpdated.Broadcast(CurrentItems);
-}
-
-void AShopManager::RerollShop()
-{
-	GenerateNewItems();
-}
-
-bool AShopManager::PurchaseItem(int32 Index, APlayerManager* Player)
-{
-	if (!Player || !CurrentItems.IsValidIndex(Index))return false;
-
-	FItemData Item = CurrentItems[Index];
-	if (Player->Gold < Item.Cost)return false;
-
-	Player->Gold -= Item.Cost;
-	Player->AddItem(Item);
-
-	CurrentItems.RemoveAt(Index);
-	OnShopUpdated.Broadcast(CurrentItems);
-	
-	return true;
-}
-
-
-
