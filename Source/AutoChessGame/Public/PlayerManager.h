@@ -31,5 +31,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddItem(const FItemData& NewItem);
 
-	
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	int32 GetGold() const { return Gold; }
+
 };
