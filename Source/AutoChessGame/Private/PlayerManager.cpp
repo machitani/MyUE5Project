@@ -12,9 +12,12 @@ APlayerManager::APlayerManager()
 }
 bool APlayerManager::SpendGold(int32 Amount)
 {
-    if (Gold < Amount) return false;
-    Gold -= Amount;
-    return true;
+    if (Gold >= Amount)
+    {
+        Gold -= Amount;
+        return true;
+    }
+    return false;
 }
 
 void APlayerManager::AddItem(const FItemData& NewItem)
