@@ -23,5 +23,5 @@ bool APlayerManager::SpendGold(int32 Amount)
 void APlayerManager::AddItem(const FItemData& NewItem)
 {
     OwnedItems.Add(NewItem);
-    UE_LOG(LogTemp, Log, TEXT("Item added: %s"), *NewItem.ItemName.ToString());
+    //UE_LOG(LogTemp, Log, TEXT("Item added: %s"), *NewItem.ItemName.ToString());
 }

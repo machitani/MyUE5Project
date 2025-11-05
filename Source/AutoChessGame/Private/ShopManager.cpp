@@ -1,22 +1,41 @@
 #include "ShopManager.h"
+#include "ShopWidget.h"
+#include "Blueprint/UserWidget.h"
 
-AShopManager::AShopManager()
+void AShopManager::BeginPlay()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    Super::BeginPlay();
+
+    if (ShopWidgetClass)
+    {
+        ShopWidget = CreateWidget<UShopWidget>(GetWorld(), ShopWidgetClass);
+        if (ShopWidget)
+        {
+            ShopWidget->ShopManager = this;  
+            ShopWidget->AddToViewport();
+            ShopWidget->UpdateShopUI();      
+        }
+    }
 }
 
-void AShopManager::GenerateShopItems()
+void AShopManager::BuyItem(FText ItemName, int32 Price)
 {
-    CurrentShopItems.Empty();
-
-    // 仮アイテム4つ
-    for (int i = 0; i < 4; i++)
+    // ここでは PlayerGold を ShopManager 内にある前提で処理する
+    if (PlayerGold >= Price)
     {
-        FShopItemData NewItem;
-        NewItem.ItemName = FText::FromString(FString::Printf(TEXT("Item %d"), i));
-        NewItem.Cost = (i + 1) * 3; // 3,6,9,12 とか
-        NewItem.Icon = nullptr; // 後でセット
+        PlayerGold -= Price;
 
-        CurrentShopItems.Add(NewItem);
+        UE_LOG(LogTemp, Warning, TEXT("Bought: %s"), *ItemName.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("Remaining Gold: %d"), PlayerGold);
+
+        // ショップ更新（必要なら）
+        if (ShopWidget)
+        {
+            ShopWidget->UpdateShopUI();
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("NOT ENOUGH GOLD"));
     }
 }
