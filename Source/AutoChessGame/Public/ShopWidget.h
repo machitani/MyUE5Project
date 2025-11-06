@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/HorizontalBox.h"
+#include "Components/TextBlock.h"
 #include "ItemData.h"
 #include "ShopSlotWidget.h"
 #include "ShopWidget.generated.h"
@@ -32,4 +33,14 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void UpdateShopUI();
+
+    UPROPERTY(meta=(BindWidget))
+    class UTextBlock* GoldText;
+
+    UFUNCTION(BlueprintCallable)
+    void UpdateGold(int32 NewGold);
+
+    UFUNCTION(BlueprintCallable)
+    void RefreshSlots();
+
 };

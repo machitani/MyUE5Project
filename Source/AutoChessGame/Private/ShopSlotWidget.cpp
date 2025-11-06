@@ -4,3 +4,4 @@ void UShopSlotWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 }
+

@@ -5,37 +5,39 @@
 void AShopManager::BeginPlay()
 {
     Super::BeginPlay();
+    UE_LOG(LogTemp, Warning, TEXT("SHOP"));
 
     if (ShopWidgetClass)
     {
         ShopWidget = CreateWidget<UShopWidget>(GetWorld(), ShopWidgetClass);
         if (ShopWidget)
         {
+            UE_LOG(LogTemp, Warning, TEXT("SHOP"));
             ShopWidget->ShopManager = this;  
             ShopWidget->AddToViewport();
-            ShopWidget->UpdateShopUI();      
+            ShopWidget->UpdateShopUI();
+            ShopWidget->UpdateGold(PlayerGold);
+            ShopWidget->RefreshSlots();
         }
     }
 }
 
 void AShopManager::BuyItem(FText ItemName, int32 Price)
 {
-    // ここでは PlayerGold を ShopManager 内にある前提で処理する
     if (PlayerGold >= Price)
     {
         PlayerGold -= Price;
 
-        UE_LOG(LogTemp, Warning, TEXT("Bought: %s"), *ItemName.ToString());
-        UE_LOG(LogTemp, Warning, TEXT("Remaining Gold: %d"), PlayerGold);
+        UE_LOG(LogTemp, Warning, TEXT("Buy Success! Now Gold:%d"), PlayerGold);
 
-        // ショップ更新（必要なら）
         if (ShopWidget)
         {
-            ShopWidget->UpdateShopUI();
+            ShopWidget->UpdateGold(PlayerGold);
+            ShopWidget->RefreshSlots();
         }
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("NOT ENOUGH GOLD"));
+        UE_LOG(LogTemp, Warning, TEXT("Not enough Gold!"));
     }
 }
