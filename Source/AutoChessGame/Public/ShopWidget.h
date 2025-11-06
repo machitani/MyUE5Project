@@ -43,4 +43,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void RefreshSlots();
 
+    UFUNCTION(BlueprintCallable)
+    void RefreshItemBench();
+
 };

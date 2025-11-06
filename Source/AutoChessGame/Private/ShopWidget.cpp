@@ -6,52 +6,20 @@
 
 void UShopWidget::UpdateShopUI()
 {
-    UE_LOG(LogTemp, Warning, TEXT("UpdateShopUI Called"));
-
-    if (!ItemBox)
-    {
-        UE_LOG(LogTemp, Error, TEXT("ItemBox is NULL!!"));
-        return;
-    }
-    UE_LOG(LogTemp, Warning, TEXT("ItemBox OK"));
-
-    UE_LOG(LogTemp, Warning, TEXT("SlotWidgetClass = %s"), *GetNameSafe(SlotWidgetClass));
-    UE_LOG(LogTemp, Warning, TEXT("ItemTable = %s"), *GetNameSafe(ItemTable));
-    UE_LOG(LogTemp, Warning, TEXT("ShopManager = %s"), *GetNameSafe(ShopManager));
-
-    if (!SlotWidgetClass || !ItemTable || !ShopManager)
-    {
-        UE_LOG(LogTemp, Error, TEXT("One of the required references is NULL!"));
-        return;
-    }
+    if (!ItemBox || !SlotWidgetClass || !ItemTable || !ShopManager)return;
 
     ItemBox->ClearChildren();
 
-    TArray<FName> RowNames = ItemTable->GetRowNames();
-    UE_LOG(LogTemp, Warning, TEXT("Row Count = %d"), RowNames.Num());
-
-    for (const FName& RowName : RowNames)
+    for (const FItemData& Item : ShopManager->CurrentItems)
     {
-        const FItemData* Item = ItemTable->FindRow<FItemData>(RowName, TEXT("UpdateShopUI"));
-
-        if (!Item)
-        {
-            UE_LOG(LogTemp, Error, TEXT("FindRow failed for %s"), *RowName.ToString());
-            continue;
-        }
-
         UShopSlotWidget* SlotWidget = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
+
         if (SlotWidget)
         {
-            SlotWidget->ItemName = Item->Name;
-            SlotWidget->Price = Item->Price;
+            SlotWidget->ItemName = Item.Name;
+            SlotWidget->Price = Item.Price;
             SlotWidget->ShopManagerRef = ShopManager;
             ItemBox->AddChild(SlotWidget);
-            UE_LOG(LogTemp, Warning, TEXT("Added Slot: %s (%d G)"), *Item->Name.ToString(), Item->Price);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("CreateWidget FAILED!"));
         }
     }
 }
@@ -74,5 +42,18 @@ void UShopWidget::RefreshSlots()
             ItemSlot->UpdateShopState();
         }
     }
+}
+
+void UShopWidget::RefreshItemBench()
+{
+    //if (!ItemBench) return;
+    //ItemBench->ClearChildren();
+
+    //for (const FItemData& Item : ShopManager->HeldItems)
+    //{
+    //    UUserWidget* Slot = CreateWidget<UUserWidget>(GetOwningPlayer(), ItemBenchSlotWidgetClass);
+    //    // ‚±‚±‚Å Slot ‚É Item.Name ‚ð•\Ž¦‚·‚éˆ—
+    //    ItemBench->AddChild(Slot);
+    //}
 }
 
