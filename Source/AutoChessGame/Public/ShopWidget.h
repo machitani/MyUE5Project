@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/HorizontalBox.h"
+#include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
 #include "ItemData.h"
 #include "ShopSlotWidget.h"
@@ -18,6 +19,12 @@ public:
 
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UHorizontalBox* ItemBox;
+
+    UPROPERTY(BlueprintReadWrite,meta=(BindWidget))
+    UVerticalBox* ItemBench;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Shop")
+    TSubclassOf<UUserWidget>ItemBenchClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     TSubclassOf<UShopSlotWidget> SlotWidgetClass;

@@ -25,6 +25,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
 	class AShopManager* ShopManagerRef;
 
+
+
 	UFUNCTION(BlueprintImplementableEvent)
 	void UpdateShopState();
 

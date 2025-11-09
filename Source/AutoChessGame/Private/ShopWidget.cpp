@@ -46,14 +46,16 @@ void UShopWidget::RefreshSlots()
 
 void UShopWidget::RefreshItemBench()
 {
-    //if (!ItemBench) return;
-    //ItemBench->ClearChildren();
+    if (!ItemBench || !ShopManager) return;
 
-    //for (const FItemData& Item : ShopManager->HeldItems)
-    //{
-    //    UUserWidget* Slot = CreateWidget<UUserWidget>(GetOwningPlayer(), ItemBenchSlotWidgetClass);
-    //    // ここで Slot に Item.Name を表示する処理
-    //    ItemBench->AddChild(Slot);
-    //}
+    ItemBench->ClearChildren();
+
+    for (const FItemData& Item : ShopManager->HeldItems)
+    {
+        // 仮：名前だけ表示（あとでスロットに差し替える）
+        UTextBlock* Label = NewObject<UTextBlock>(this);
+        Label->SetText(Item.Name);
+
+        ItemBench->AddChild(Label);
+    }
 }
-
