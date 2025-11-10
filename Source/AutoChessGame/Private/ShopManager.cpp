@@ -1,5 +1,6 @@
 #include "ShopManager.h"
 #include "ShopWidget.h"
+#include "ItemBenchSlot.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -19,7 +20,7 @@ void AShopManager::BeginPlay()
         {
             ShopWidget->ShopManager = this;  
             ShopWidget->AddToViewport();
-            //ShopWidget->UpdateShopUI();
+            ShopWidget->UpdateShopUI();
         }
         RerollShop(4);
         ShopWidget->UpdateGold(PlayerGold);
@@ -29,31 +30,29 @@ void AShopManager::BeginPlay()
 
 void AShopManager::BuyItem(FText ItemName, int32 Price)
 {
-    if (PlayerGold < Price)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Not enough Gold!"));
-        return;
-    }
+    if (PlayerGold < Price)return;
+    
+        PlayerGold -= Price;
 
-    PlayerGold -= Price;
+        UE_LOG(LogTemp, Warning, TEXT("Buy Success! Now Gold:%d"), PlayerGold);
 
-    //FText → FName 変換して検索
-    FName RowName = FName(*ItemName.ToString());
-    const FItemData* FoundItem = ItemTable->FindRow<FItemData>(RowName, TEXT(""));
+        if (ShopWidget)
+        {
+            // 1. アイテムをベンチに追加
+            const FItemData* FoundItem = ShopWidget->ItemTable->FindRow<FItemData>(FName(*ItemName.ToString()), TEXT(""));
+            if (FoundItem)
+            {
+                ShopWidget->BenchItems.Add(*FoundItem);
+            }
 
-    if (FoundItem)
-    {
-        AddItemToBench(*FoundItem);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Item Not Found in DataTable for %s"), *ItemName.ToString());
-    }
-
-    ShopWidget->UpdateGold(PlayerGold);
-    ShopWidget->RefreshSlots();
-    ShopWidget->RefreshItemBench();
+            // 2. UI 更新
+            ShopWidget->UpdateGold(PlayerGold);
+            ShopWidget->RefreshSlots();
+            ShopWidget->RefreshItemBench();
+        }
+    
 }
+
 
 void AShopManager::PaidReroll(int32 ItemCount)
 {

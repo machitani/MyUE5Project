@@ -38,6 +38,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     class AShopManager* ShopManager;
 
+    UPROPERTY(BlueprintReadWrite, Category = "Shop")
+    TArray<FItemData> BenchItems;
+
     UFUNCTION(BlueprintCallable)
     void UpdateShopUI();
 

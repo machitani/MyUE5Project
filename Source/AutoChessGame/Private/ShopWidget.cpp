@@ -8,6 +8,7 @@
 
 void UShopWidget::UpdateShopUI()
 {
+    UE_LOG(LogTemp, Warning, TEXT("TINPO"));
     if (!ItemBox || !ShopManager || !ShopManager->ItemTable) return;
 
     ItemBox->ClearChildren();
@@ -47,15 +48,14 @@ void UShopWidget::RefreshSlots()
 
 void UShopWidget::RefreshItemBench()
 {
-    if (!ItemBench || !ItemBenchClass || !ShopManager) return;
+    if (!ItemBench || !ItemBenchClass) return;
 
     ItemBench->ClearChildren();
 
     for (const FItemData& Item : ShopManager->BenchItems)
     {
         UItemBenchSlot* BenchSlot = CreateWidget<UItemBenchSlot>(GetOwningPlayer(), ItemBenchClass);
-        ItemBench->AddChild(BenchSlot);
         BenchSlot->ItemData = Item;
-
+        ItemBench->AddChildToVerticalBox(BenchSlot);
     }
 }

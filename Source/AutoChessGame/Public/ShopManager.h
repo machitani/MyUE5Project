@@ -43,8 +43,8 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Shop")
     UDataTable* ItemTable;
 
-    UPROPERTY(BlueprintReadOnly)
-    TArray<FItemData>BenchItems;
+    UPROPERTY(BlueprintReadWrite, Category = "Shop")
+    TArray<FItemData> BenchItems;
 
     
 
