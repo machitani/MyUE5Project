@@ -1,26 +1,27 @@
 #include "ShopWidget.h"
 #include "Components/HorizontalBox.h"
+#include "Components/VerticalBox.h"
+#include "Components/TextBlock.h"
+#include "ItemBenchSlot.h"
 #include "ShopSlotWidget.h"
-#include "ItemData.h"
 #include "ShopManager.h"
 
 void UShopWidget::UpdateShopUI()
 {
-    if (!ItemBox || !SlotWidgetClass || !ItemTable || !ShopManager)return;
+    if (!ItemBox || !ShopManager || !ShopManager->ItemTable) return;
 
     ItemBox->ClearChildren();
+    TArray<FName> RowNames = ShopManager->ItemTable->GetRowNames();
 
-    for (const FItemData& Item : ShopManager->CurrentItems)
+    for (int32 i = 0; i < ShopManager->CurrentItems.Num(); i++)
     {
-        UShopSlotWidget* SlotWidget = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
+        UShopSlotWidget* ShopSlot = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
+        ItemBox->AddChild(ShopSlot);
+        ShopSlot->ItemName = ShopManager->CurrentItems[i].Name;
+        ShopSlot->Price = ShopManager->CurrentItems[i].Price;
+        ShopSlot->ShopManagerRef = ShopManager;
 
-        if (SlotWidget)
-        {
-            SlotWidget->ItemName = Item.Name;
-            SlotWidget->Price = Item.Price;
-            SlotWidget->ShopManagerRef = ShopManager;
-            ItemBox->AddChild(SlotWidget);
-        }
+        ItemBox->AddChild(ShopSlot);
     }
 }
 
@@ -46,16 +47,15 @@ void UShopWidget::RefreshSlots()
 
 void UShopWidget::RefreshItemBench()
 {
-    if (!ItemBench || !ShopManager) return;
+    if (!ItemBench || !ItemBenchClass || !ShopManager) return;
 
     ItemBench->ClearChildren();
 
-    for (const FItemData& Item : ShopManager->HeldItems)
+    for (const FItemData& Item : ShopManager->BenchItems)
     {
-        // 仮：名前だけ表示（あとでスロットに差し替える）
-        UTextBlock* Label = NewObject<UTextBlock>(this);
-        Label->SetText(Item.Name);
+        UItemBenchSlot* BenchSlot = CreateWidget<UItemBenchSlot>(GetOwningPlayer(), ItemBenchClass);
+        ItemBench->AddChild(BenchSlot);
+        BenchSlot->ItemData = Item;
 
-        ItemBench->AddChild(Label);
     }
 }

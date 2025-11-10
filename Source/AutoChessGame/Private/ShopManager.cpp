@@ -29,22 +29,30 @@ void AShopManager::BeginPlay()
 
 void AShopManager::BuyItem(FText ItemName, int32 Price)
 {
-    if (PlayerGold >= Price)
+    if (PlayerGold < Price)
     {
-        PlayerGold -= Price;
+        UE_LOG(LogTemp, Warning, TEXT("Not enough Gold!"));
+        return;
+    }
 
-        UE_LOG(LogTemp, Warning, TEXT("Buy Success! Now Gold:%d"), PlayerGold);
+    PlayerGold -= Price;
 
-        if (ShopWidget)
-        {
-            ShopWidget->UpdateGold(PlayerGold);
-            ShopWidget->RefreshSlots();
-        }
+    //FText ¨ FName •ÏŠ·‚µ‚ÄŒŸõ
+    FName RowName = FName(*ItemName.ToString());
+    const FItemData* FoundItem = ItemTable->FindRow<FItemData>(RowName, TEXT(""));
+
+    if (FoundItem)
+    {
+        AddItemToBench(*FoundItem);
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Not enough Gold!"));
+        UE_LOG(LogTemp, Warning, TEXT("Item Not Found in DataTable for %s"), *ItemName.ToString());
     }
+
+    ShopWidget->UpdateGold(PlayerGold);
+    ShopWidget->RefreshSlots();
+    ShopWidget->RefreshItemBench();
 }
 
 void AShopManager::PaidReroll(int32 ItemCount)
@@ -62,6 +70,16 @@ void AShopManager::PaidReroll(int32 ItemCount)
     ShopWidget->UpdateGold(PlayerGold);
 
     RerollShop(ItemCount);                         // –³—¿”Å‚ðŒÄ‚Ô
+}
+
+void AShopManager::AddItemToBench(const FItemData& Item)
+{
+    BenchItems.Add(Item);
+    
+        if (ShopWidget)
+        {
+            ShopWidget->RefreshItemBench();
+        }
 }
 
 void AShopManager::RerollShop(int32 ItemCount)

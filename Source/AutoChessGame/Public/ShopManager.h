@@ -25,6 +25,9 @@ public:
     UFUNCTION(BlueprintCallable)
     void PaidReroll(int32 ItemCount = 4);
 
+    UFUNCTION(BlueprintCallable)
+    void AddItemToBench(const FItemData& Item);
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     int32 PlayerGold = 20;
 
@@ -36,5 +39,13 @@ public:
 
     UPROPERTY(BlueprintReadWrite,EditAnywhere,Category="Shop")
     TArray<FItemData>HeldItems;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Shop")
+    UDataTable* ItemTable;
+
+    UPROPERTY(BlueprintReadOnly)
+    TArray<FItemData>BenchItems;
+
+    
 
 };
