@@ -28,29 +28,21 @@ void AShopManager::BeginPlay()
     }
 }
 
-void AShopManager::BuyItem(FText ItemName, int32 Price)
+void AShopManager::BuyItem(FName RowName, int32 Price)
 {
-    if (PlayerGold < Price)return;
-    
-        PlayerGold -= Price;
+    if (PlayerGold < Price) return;
+    PlayerGold -= Price;
 
-        UE_LOG(LogTemp, Warning, TEXT("Buy Success! Now Gold:%d"), PlayerGold);
+    const FItemData* FoundItem = ItemTable->FindRow<FItemData>(RowName, TEXT(""));
+    if (FoundItem)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("RINGO"));
+        BenchItems.Add(*FoundItem);
+    }
 
-        if (ShopWidget)
-        {
-            // 1. アイテムをベンチに追加
-            const FItemData* FoundItem = ShopWidget->ItemTable->FindRow<FItemData>(FName(*ItemName.ToString()), TEXT(""));
-            if (FoundItem)
-            {
-                ShopWidget->BenchItems.Add(*FoundItem);
-            }
-
-            // 2. UI 更新
-            ShopWidget->UpdateGold(PlayerGold);
-            ShopWidget->RefreshSlots();
-            ShopWidget->RefreshItemBench();
-        }
-    
+    ShopWidget->UpdateGold(PlayerGold);
+    ShopWidget->RefreshSlots();
+    ShopWidget->RefreshItemBench();
 }
 
 
@@ -83,23 +75,25 @@ void AShopManager::AddItemToBench(const FItemData& Item)
 
 void AShopManager::RerollShop(int32 ItemCount)
 {
-    if (!ShopWidget || !ShopWidget->ItemTable) return;
+    if (!ShopWidget || !ItemTable) return;
 
-    TArray<FName> RowNames = ShopWidget->ItemTable->GetRowNames();
-    if (RowNames.Num() == 0 || ItemCount <= 0)     // ← 追加: 0件安全
-    {
-        ShopWidget->ItemBox->ClearChildren();
-        ShopWidget->RefreshSlots();
-        return;
-    }
+    TArray<FName> RowNames = ItemTable->GetRowNames();
+    if (RowNames.Num() == 0) return;
 
     CurrentItems.Empty();
+
     for (int32 i = 0; i < ItemCount; i++)
     {
-        const int32 Index = FMath::RandRange(0, RowNames.Num() - 1);
-        if (const FItemData* Item = ShopWidget->ItemTable->FindRow<FItemData>(RowNames[Index], TEXT("Reroll")))
+        int32 Index = FMath::RandRange(0, RowNames.Num() - 1);
+        FName SelectedRow = RowNames[Index];
+
+        const FItemData* FoundItem = ItemTable->FindRow<FItemData>(SelectedRow, TEXT("Reroll"));
+
+        if (FoundItem)
         {
-            CurrentItems.Add(*Item);
+            FItemData Copy = *FoundItem;
+            Copy.RowName = SelectedRow;   // ← ★これが最重要 ★
+            CurrentItems.Add(Copy);
         }
     }
 

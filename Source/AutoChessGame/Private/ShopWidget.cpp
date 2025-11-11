@@ -8,21 +8,23 @@
 
 void UShopWidget::UpdateShopUI()
 {
-    UE_LOG(LogTemp, Warning, TEXT("TINPO"));
-    if (!ItemBox || !ShopManager || !ShopManager->ItemTable) return;
+    if (!ItemBox || !ShopManager || !SlotWidgetClass|| !ItemTable) return;
 
     ItemBox->ClearChildren();
-    TArray<FName> RowNames = ShopManager->ItemTable->GetRowNames();
+    //TArray<FName> RowNames = ShopManager->ItemTable->GetRowNames();
 
-    for (int32 i = 0; i < ShopManager->CurrentItems.Num(); i++)
+    for (const FItemData& ItemData:ShopManager->CurrentItems)
     {
         UShopSlotWidget* ShopSlot = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
-        ItemBox->AddChild(ShopSlot);
-        ShopSlot->ItemName = ShopManager->CurrentItems[i].Name;
-        ShopSlot->Price = ShopManager->CurrentItems[i].Price;
-        ShopSlot->ShopManagerRef = ShopManager;
-
-        ItemBox->AddChild(ShopSlot);
+     
+        if (ShopSlot)
+        {
+            ShopSlot->ItemName = ItemData.Name;
+            ShopSlot->Price = ItemData.Price;
+            ShopSlot->RowName = ItemData.RowName;       // © ‚±‚±d—v
+            ShopSlot->ShopManagerRef = ShopManager;
+            ItemBox->AddChild(ShopSlot);
+        }
     }
 }
 
@@ -48,14 +50,17 @@ void UShopWidget::RefreshSlots()
 
 void UShopWidget::RefreshItemBench()
 {
-    if (!ItemBench || !ItemBenchClass) return;
+    if (!ItemBench || !ItemBenchClass || !ShopManager) return;
 
     ItemBench->ClearChildren();
 
     for (const FItemData& Item : ShopManager->BenchItems)
     {
         UItemBenchSlot* BenchSlot = CreateWidget<UItemBenchSlot>(GetOwningPlayer(), ItemBenchClass);
-        BenchSlot->ItemData = Item;
-        ItemBench->AddChildToVerticalBox(BenchSlot);
+        if (BenchSlot)
+        {
+            BenchSlot->ItemData = Item;
+            ItemBench->AddChildToVerticalBox(BenchSlot);
+        }
     }
 }

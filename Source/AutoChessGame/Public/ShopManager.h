@@ -17,7 +17,7 @@ public:
     TSubclassOf<UShopWidget> ShopWidgetClass;
 
     UFUNCTION(BlueprintCallable)
-    void BuyItem(FText ItemName, int32 Price);
+    void BuyItem(FName RonwName, int32 Price);
 
     UFUNCTION(BlueprintCallable)
     void RerollShop(int32 ItemCount = 4);

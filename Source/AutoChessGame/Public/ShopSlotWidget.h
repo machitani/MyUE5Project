@@ -23,6 +23,10 @@ public:
 	int32 Price;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
+	FName RowName;
+
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
 	class AShopManager* ShopManagerRef;
 
 
