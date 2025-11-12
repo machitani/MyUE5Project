@@ -23,6 +23,9 @@ void UShopWidget::UpdateShopUI()
             ShopSlot->Price = ItemData.Price;
             ShopSlot->RowName = ItemData.RowName;       // © ‚±‚±d—v
             ShopSlot->ShopManagerRef = ShopManager;
+
+            ShopSlot->RefreshItemView(ItemData);
+
             ItemBox->AddChild(ShopSlot);
         }
     }

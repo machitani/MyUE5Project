@@ -6,8 +6,11 @@
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
 #include "ItemData.h"
-#include "ShopSlotWidget.h"
 #include "ShopWidget.generated.h"
+
+// 先行宣言（循環参照を避けつつ型名を使えるようにする）
+class UShopSlotWidget;
+class AShopManager;
 
 UCLASS()
 class AUTOCHESSGAME_API UShopWidget : public UUserWidget
@@ -15,17 +18,16 @@ class AUTOCHESSGAME_API UShopWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    //virtual void NativeConstruct() override;
-
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UHorizontalBox* ItemBox;
 
-    UPROPERTY(BlueprintReadWrite,meta=(BindWidget))
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UVerticalBox* ItemBench;
 
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Shop")
-    TSubclassOf<UUserWidget>ItemBenchClass;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
+    TSubclassOf<UUserWidget> ItemBenchClass;
 
+    // スロットのBP/C++クラス
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     TSubclassOf<UShopSlotWidget> SlotWidgetClass;
 
@@ -36,24 +38,19 @@ public:
     UDataTable* ItemTable;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
-    class AShopManager* ShopManager;
+    AShopManager* ShopManager;
 
     UPROPERTY(BlueprintReadWrite, Category = "Shop")
     TArray<FItemData> BenchItems;
 
-    UFUNCTION(BlueprintCallable)
-    void UpdateShopUI();
+    // ★ここを修正：UWBP_ShopSlot* → UShopSlotWidget*
+    // 動的に作る配列なので BindWidgetOptional は外す
+    UPROPERTY(BlueprintReadWrite, Category = "Shop")
+    TArray<UShopSlotWidget*> ShopSlots;
 
-    UPROPERTY(meta=(BindWidget))
-    class UTextBlock* GoldText;
-
-    UFUNCTION(BlueprintCallable)
-    void UpdateGold(int32 NewGold);
-
-    UFUNCTION(BlueprintCallable)
-    void RefreshSlots();
-
-    UFUNCTION(BlueprintCallable)
-    void RefreshItemBench();
-
+    UFUNCTION(BlueprintCallable) void UpdateShopUI();
+    UPROPERTY(meta = (BindWidget)) UTextBlock* GoldText;
+    UFUNCTION(BlueprintCallable) void UpdateGold(int32 NewGold);
+    UFUNCTION(BlueprintCallable) void RefreshSlots();
+    UFUNCTION(BlueprintCallable) void RefreshItemBench();
 };

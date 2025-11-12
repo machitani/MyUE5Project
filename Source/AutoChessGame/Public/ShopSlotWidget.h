@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "ItemData.h"
 #include "ShopSlotWidget.generated.h"
 
 /**
  * 
  */
+class UImage;
+
 UCLASS()
 class AUTOCHESSGAME_API UShopSlotWidget : public UUserWidget
 {
@@ -25,13 +28,19 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
 	FName RowName;
 
+	UPROPERTY(meta=(BindWidget))
+	UImage* ItemIcon;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
 	class AShopManager* ShopManagerRef;
 
 
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable)
 	void UpdateShopState();
+
+
+	UFUNCTION(BlueprintCallable)
+	void RefreshItemView(const FItemData& ItemData);
 
 };

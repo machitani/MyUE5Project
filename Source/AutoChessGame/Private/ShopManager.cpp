@@ -1,6 +1,7 @@
 #include "ShopManager.h"
 #include "ShopWidget.h"
 #include "ItemBenchSlot.h"
+#include "ShopSlotWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -21,6 +22,7 @@ void AShopManager::BeginPlay()
             ShopWidget->ShopManager = this;  
             ShopWidget->AddToViewport();
             ShopWidget->UpdateShopUI();
+            
         }
         RerollShop(4);
         ShopWidget->UpdateGold(PlayerGold);
@@ -98,5 +100,15 @@ void AShopManager::RerollShop(int32 ItemCount)
     }
 
     ShopWidget->UpdateShopUI();
+
+    for (int32 i = 0; i < CurrentItems.Num(); i++)
+    {
+        if (ShopWidget->ShopSlots.IsValidIndex(i) && ShopWidget->ShopSlots[i])
+        {
+            ShopWidget->ShopSlots[i]->RefreshItemView(CurrentItems[i]);
+        }
+
+    }
+
     ShopWidget->RefreshSlots();
 }
