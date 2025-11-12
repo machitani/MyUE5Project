@@ -1,6 +1,7 @@
 #include "CustomPlayerController.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ACustomPlayerController::ACustomPlayerController()
 {
@@ -69,6 +70,29 @@ void ACustomPlayerController::Tick(float DeltaSeconds)
             LastHighlightedTile->SetTileHighlight(false);
             LastHighlightedTile = nullptr;
         }
+    }
+}
+
+void ACustomPlayerController::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (EquipSlotClass)
+    {
+        // ウィジェット生成
+        UUnitEquipSlot* EquipSlotWidget = CreateWidget<UUnitEquipSlot>(this, EquipSlotClass);
+
+        if (EquipSlotWidget)
+        {
+            EquipSlotWidget->SlotType = E_EquiqSlotType::Weapon;  // 仮に武器スロットとして設定
+            EquipSlotWidget->AddToViewport();                     // ← 画面に追加！
+
+            //UKismetSystemLibrary::PrintString(this, TEXT("装備スロットを表示しました！"), true, true, FLinearColor::Green, 2.0f);
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CANT"));
     }
 }
 

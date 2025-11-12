@@ -3,7 +3,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Tile.h"
+#include "ItemData.h"
+#include "EquiqSlotType.h"
 #include "BoardManager.h"
+#include "UnitEquiqSlot.h"
 #include "Unit.generated.h"
 
 UENUM(BlueprintType)
@@ -78,12 +81,22 @@ public:
 
     virtual void Tick(float DeltaTime)override;
 
+    virtual void BeginPlay()override;
+
     void CheckForTarget(const float DeltaTime);
     void AttackTarget(AUnit* Targer);
     void OnDeath();
 
+    UPROPERTY()
+    UUnitEquipSlot* EquipSlotRef;
     
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
     EUnitTeam Team = EUnitTeam::Player;  // デフォルトはプレイヤー
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Equip")
+    TMap<E_EquiqSlotType, FItemData>EquippedItems;
+
+    UFUNCTION(BlueprintCallable,Category="Equip")
+    void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
 };

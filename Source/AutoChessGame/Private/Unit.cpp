@@ -4,6 +4,10 @@
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
+#include "CustomPlayerController.h"
+#include "UnitEquiqSlot.h"
+#include "Kismet/GameplayStatics.h"
+
 AUnit::AUnit()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -53,6 +57,16 @@ void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    if (EquipSlotRef)
+    {
+        FVector WorldPos = GetActorLocation() + FVector(0, 0, 200);
+        FVector2D ScreenPos;
+        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+        UGameplayStatics::ProjectWorldToScreen(PC, WorldPos, ScreenPos);
+        EquipSlotRef->SetPositionInViewport(ScreenPos);
+    }
+
+
     // ドラッグ中はマウス追従
     if (bIsDragging)
     {
@@ -73,6 +87,33 @@ void AUnit::Tick(float DeltaTime)
     if (OwningBoardManager && OwningBoardManager->CurrentPhase == EGamePhase::Battle)
     {
         CheckForTarget(DeltaTime);
+    }
+}
+
+void AUnit::BeginPlay()
+{
+    Super::BeginPlay();
+
+    //プレイヤーコントローラー取得
+    ACustomPlayerController* PC = Cast<ACustomPlayerController>(GetWorld()->GetFirstPlayerController());
+    if (!PC || !PC->EquipSlotClass) return;
+
+    //スロット生成
+    UUnitEquipSlot* EquipSlot = CreateWidget<UUnitEquipSlot>(PC, PC->EquipSlotClass);
+    if (EquipSlot)
+    {
+        EquipSlot->OwnerUnit = this;
+        EquipSlot->SlotType = E_EquiqSlotType::Weapon;
+        EquipSlot->AddToViewport();
+
+        // --- 初期位置（ユニットの頭上） ---
+        FVector WorldPos = GetActorLocation() + FVector(0, 0, 10);
+        FVector2D ScreenPos;
+        UGameplayStatics::ProjectWorldToScreen(PC, WorldPos, ScreenPos);
+        EquipSlot->SetPositionInViewport(ScreenPos);
+
+        // --- 参照保持（後で位置追従などに使用） ---
+        EquipSlotRef = EquipSlot;
     }
 }
 
@@ -159,4 +200,9 @@ void AUnit::OnDeath()
     }
 
     Destroy();
+}
+
+void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
+{
+    UE_LOG(LogTemp,Warning,TEXT("GET ITEM"))
 }

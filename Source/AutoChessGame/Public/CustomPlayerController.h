@@ -4,6 +4,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Tile.h"
 #include "Unit.h"
+#include "EquiqSlotType.h"
+#include "UnitEquiqSlot.h"
 #include "CustomPlayerController.generated.h"
 
 UCLASS()
@@ -14,9 +16,13 @@ class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 public:
     ACustomPlayerController();
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UUnitEquipSlot> EquipSlotClass;
+
 protected:
     virtual void SetupInputComponent() override;
     virtual void Tick(float DeltaSeconds) override;
+    virtual void BeginPlay()override;
 
 private:
     bool bIsDragging;
@@ -29,4 +35,6 @@ private:
     bool GetMouseWorldPosition(FVector& OutWorldPos, FVector& OutWorldDir) const;
 
     ATile* LastHighlightedTile;
+
+    
 };
