@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PlayerHUD.h"
 #include "BoardManager.generated.h"
 
 class ATile;
@@ -133,4 +134,9 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void OpenShop();
+
+    UPROPERTY(EditAnywhere,Category="UI")
+    TSubclassOf<UUserWidget>PlayerHUDClass;
+
+    UPlayerHUD* PlayerHUDInstance;
 };

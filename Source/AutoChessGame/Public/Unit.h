@@ -99,4 +99,7 @@ public:
 
     UFUNCTION(BlueprintCallable,Category="Equip")
     void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
+
+
+    void ApplyItemEffect(const FItemData& Item);
 };

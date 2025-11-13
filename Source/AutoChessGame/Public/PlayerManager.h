@@ -34,4 +34,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player")
 	int32 GetGold() const { return Gold; }
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	int32 PlayerLevel = 1;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	int32 CurrentExp = 0;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	int32 ExpToNextLevel = 4;
+
+	UFUNCTION(BlueprintCallable)
+	void AddExp(int32 Amout);
+
 };

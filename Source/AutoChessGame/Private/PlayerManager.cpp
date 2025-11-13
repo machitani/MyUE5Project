@@ -25,3 +25,20 @@ void APlayerManager::AddItem(const FItemData& NewItem)
     OwnedItems.Add(NewItem);
     //UE_LOG(LogTemp, Log, TEXT("Item added: %s"), *NewItem.ItemName.ToString());
 }
+
+void APlayerManager::AddExp(int32 Amout)
+{
+    CurrentExp += Amout;
+
+    while (CurrentExp-=ExpToNextLevel)
+    {
+        CurrentExp -= ExpToNextLevel;
+        PlayerLevel++;
+
+        //Ÿ‚ÌƒŒƒxƒ‹‚É•K—v‚ÈEXP‚ğ‘‰Á
+        ExpToNextLevel += 4;
+
+        UE_LOG(LogTemp, Warning, TEXT("LEVEL UP"));
+
+    }
+}

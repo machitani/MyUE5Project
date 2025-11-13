@@ -18,18 +18,16 @@ bool UUnitEquipSlot::NativeOnDrop(
 
     if (UItemBenchSlot* BenchSlot = Cast<UItemBenchSlot>(InOperation->Payload))
     {
-        ItemData = BenchSlot->ItemData; // ドロップされたアイテムデータ受け取り
+        ItemData = BenchSlot->ItemData;
 
         if (OwnerUnit)
         {
-            OwnerUnit->EquipItem(SlotType, ItemData); //装備処理呼び出し
+            OwnerUnit->EquipItem(SlotType, ItemData);
         }
 
-        // 見た目を更新（アイコン反映など）
         RefreshEquipSlotView();
-
-        return true;
+        return true;  // ドロップを処理した！
     }
 
-    return false;
+    return false; // 他のWidgetに処理を渡す
 }

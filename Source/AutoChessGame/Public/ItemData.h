@@ -23,4 +23,11 @@ public:
     // ó·: ÉAÉCÉRÉìÇí«â¡ÇµÇΩèÍçá
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UTexture2D* ItemIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FString EffectType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float EffectValue;
+
 };

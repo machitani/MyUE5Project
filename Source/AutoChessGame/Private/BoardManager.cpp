@@ -31,6 +31,15 @@ void ABoardManager::BeginPlay()
         }
     }
 
+    if (PlayerHUDClass)
+    {
+        PlayerHUDInstance = CreateWidget<UPlayerHUD>(GetWorld(), PlayerHUDClass);
+        if (PlayerHUDInstance)
+        {
+            PlayerHUDInstance->AddToViewport();
+        }
+    }
+
     if (PlayerManagerClass)
     {
         PlayerMangerInstance = GetWorld()->SpawnActor<APlayerManager>(PlayerManagerClass);

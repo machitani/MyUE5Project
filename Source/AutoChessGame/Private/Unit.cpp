@@ -3,7 +3,11 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "ItemData.h"
 
+#include "CoreMinimal.h"
+#include "Engine/DataTable.h"
+#include "Engine/Texture2D.h"
 #include "CustomPlayerController.h"
 #include "UnitEquiqSlot.h"
 #include "Kismet/GameplayStatics.h"
@@ -204,5 +208,21 @@ void AUnit::OnDeath()
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
-    UE_LOG(LogTemp,Warning,TEXT("GET ITEM"))
+    UE_LOG(LogTemp, Warning, TEXT("GET ITEM"))
+
+        ApplyItemEffect(Item);
+}
+
+void AUnit::ApplyItemEffect(const FItemData& Item)
+{
+    if (Item.EffectType == "Attack")
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ATTACK"))
+        Attack += Item.EffectValue;
+        
+    }
+    if (Item.EffectType == "HP")
+    {
+        HP += Item.EffectValue;
+    }
 }
