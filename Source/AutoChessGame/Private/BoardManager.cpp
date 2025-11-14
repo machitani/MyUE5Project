@@ -5,6 +5,7 @@
 #include "PlayerManager.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
 
 ABoardManager::ABoardManager()
 {
@@ -20,10 +21,9 @@ void ABoardManager::BeginPlay()
     GenerateBoard();
     SpawnInitialUnits();
 
-    // HUD作成
-    if (HUDClass)
+    // --- HUD作成（1回だけ） ---
+    if (HUDClass && !HUDInstance)
     {
-        //UE_LOG(LogTemp, Warning, TEXT("TEXT"));
         HUDInstance = CreateWidget<UUserWidget>(GetWorld(), HUDClass);
         if (HUDInstance)
         {
@@ -31,7 +31,7 @@ void ABoardManager::BeginPlay()
         }
     }
 
-    if (PlayerHUDClass)
+    if (PlayerHUDClass && !PlayerHUDInstance)
     {
         PlayerHUDInstance = CreateWidget<UPlayerHUD>(GetWorld(), PlayerHUDClass);
         if (PlayerHUDInstance)
@@ -40,14 +40,22 @@ void ABoardManager::BeginPlay()
         }
     }
 
-    if (PlayerManagerClass)
+    // --- レベルに "手置き" してある PlayerManager を探す ---
     {
-        PlayerMangerInstance = GetWorld()->SpawnActor<APlayerManager>(PlayerManagerClass);
-       
+        TArray<AActor*> Found;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
+
+        if (Found.Num() > 0)
+        {
+            PlayerMangerInstance = Cast<APlayerManager>(Found[0]);
+            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerMangerInstance));
+        }
+        else
+        {
+            PlayerMangerInstance = nullptr;
+            UE_LOG(LogTemp, Error, TEXT("No PlayerManager found in level!"));
+        }
     }
-
- 
-
 
     // 準備フェーズ開始
     StartPreparationPhase();
@@ -353,8 +361,22 @@ void ABoardManager::ProcessBattleTick()
             UE_LOG(LogTemp, Warning, TEXT("Defeat!"));
         }
         else
+        {
             UE_LOG(LogTemp, Warning, TEXT("Victory!"));
 
+            // ★ 勝利時に +2 EXP ★
+            if (PlayerMangerInstance)
+            {
+                PlayerMangerInstance->AddExp(2);
+                UE_LOG(LogTemp, Warning, TEXT("Round Clear: +2 EXP"));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("PlayerMangerInstance is NULL on Victory!"));
+            }
+        }
+
+        // 結果表示まわり（既存のコード）
         if (HUDInstance)
         {
             UE_LOG(LogTemp, Warning, TEXT("HUDInstance found"));
@@ -374,7 +396,6 @@ void ABoardManager::ProcessBattleTick()
             }
         }
         UpdateHUD();
-        //ResetBoardForNextRound();
         StartResultPhase();
     }
 }

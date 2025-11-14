@@ -9,15 +9,27 @@
 
 void UPlayerHUD::NativeConstruct()
 {
-	Super::NativeConstruct();
+    Super::NativeConstruct();
 
-	//プレイヤーを取得してキャスト
-	APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-	PlayerManagerRef = Cast<APlayerManager>(Pawn);
+    // ---- PlayerManager の取得（Actor 版） ----
+    TArray<AActor*> Found;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
+
+    if (Found.Num() > 0)
+    {
+        PlayerManagerRef = Cast<APlayerManager>(Found[0]);
+        UE_LOG(LogTemp, Warning, TEXT("PlayerManagerRef Found: %s"), *GetNameSafe(PlayerManagerRef));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("PlayerManagerRef NOT FOUND!!!"));
+    }
 }
+
 
 void UPlayerHUD::NativeTick(const FGeometry& MyGeometyr, float DeltaTime)
 {
+
 	Super::NativeTick(MyGeometyr, DeltaTime);
 
 	if(!PlayerManagerRef)return;

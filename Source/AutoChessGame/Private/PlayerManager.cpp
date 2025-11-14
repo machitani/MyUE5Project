@@ -38,7 +38,25 @@ void APlayerManager::AddExp(int32 Amout)
         //Ÿ‚ÌƒŒƒxƒ‹‚É•K—v‚ÈEXP‚ğ‘‰Á
         ExpToNextLevel += 4;
 
+        MaxUnitCount++;
+
         UE_LOG(LogTemp, Warning, TEXT("LEVEL UP"));
 
     }
+}
+
+bool APlayerManager::BuyExp()
+{
+    const int32 Cost = 4;
+    const int32 ExpGain = 4;
+
+    if (Gold < Cost)
+    {
+        return false;
+    }
+
+    Gold -= Cost;
+    AddExp(ExpGain);
+
+    return true;
 }

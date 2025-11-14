@@ -43,7 +43,13 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 ExpToNextLevel = 4;
 
-	UFUNCTION(BlueprintCallable)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Level")
+	int32 MaxUnitCount = 3;
+
+	UFUNCTION(BlueprintCallable,Category="Level")
 	void AddExp(int32 Amout);
+
+	UFUNCTION(BlueprintCallable,Category="Level")
+	bool BuyExp();
 
 };
