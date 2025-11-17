@@ -153,11 +153,11 @@ void ABoardManager::SpawnInitialUnits()
             int32 Index = Row * Columns + Col;
             if (EnemyTiles.IsValidIndex(Index))
             {
-                FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+                FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0,100);
                 FActorSpawnParameters Params;
                 Params.Owner = this;
 
-                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, FRotator(0, 270, 0), Params);
+                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, FRotator(0, 180, 0), Params);
                 if (NewUnit)
                 {
                     NewUnit->Team = EUnitTeam::Enemy;

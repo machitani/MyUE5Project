@@ -113,4 +113,7 @@ public:
 
     UPROPERTY()
     FVector LastLocation;
+
+    UFUNCTION()
+    void UpdateAnimationState();
 };

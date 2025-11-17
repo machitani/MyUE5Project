@@ -70,11 +70,8 @@ void AUnit::Tick(float DeltaTime)
         EquipSlotRef->SetPositionInViewport(ScreenPos);
     }
 
-
-    // ドラッグ中はマウス追従
     if (bIsDragging)
     {
-        // Tick 内でマウス位置取得
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
         if (PC)
         {
@@ -87,17 +84,12 @@ void AUnit::Tick(float DeltaTime)
         return;
     }
 
-    // 戦闘フェーズ中は敵を探索して行動
     if (OwningBoardManager && OwningBoardManager->CurrentPhase == EGamePhase::Battle)
     {
         CheckForTarget(DeltaTime);
     }
 
-    FVector Now = GetActorLocation();
-
-    bIsMoving = !Now.Equals(LastLocation, 1.0f);
-
-    LastLocation = Now;
+    UpdateAnimationState();
 }
 
 void AUnit::BeginPlay()
@@ -195,14 +187,14 @@ void AUnit::AttackTarget(AUnit* Target)
         Target->OnDeath();
     }
 
-    bIsAttacking = false;
+    //bIsAttacking = false;
 }
 
 void AUnit::OnDeath()
 {
     UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
 
-    bIsDead = true;
+    //bIsDead = true;
 
     if (CurrentTile)
     {
@@ -217,8 +209,8 @@ void AUnit::OnDeath()
         OwningBoardManager->PlayerUnits.Remove(this);
     }
 
-
-    Destroy();
+    bIsAttacking = false;
+    //Destroy();
 }
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
@@ -239,5 +231,23 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
     if (Item.EffectType == "HP")
     {
         HP += Item.EffectValue;
+    }
+}
+
+void AUnit::UpdateAnimationState()
+{
+    // 移動判定
+    FVector Now = GetActorLocation();
+    float Distance = FVector::Dist(Now, LastLocation);
+    bIsMoving = (Distance > 0.1f);
+    LastLocation = Now;
+
+    // 攻撃中の判定は Tick で触らない
+    // bIsAttacking は AttackTarget 内で管理される
+
+    // 死亡状態の設定
+    if (HP <= 0.f)
+    {
+        bIsDead = true;
     }
 }
