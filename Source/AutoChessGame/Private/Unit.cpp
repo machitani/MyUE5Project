@@ -92,11 +92,19 @@ void AUnit::Tick(float DeltaTime)
     {
         CheckForTarget(DeltaTime);
     }
+
+    FVector Now = GetActorLocation();
+
+    bIsMoving = !Now.Equals(LastLocation, 1.0f);
+
+    LastLocation = Now;
 }
 
 void AUnit::BeginPlay()
 {
     Super::BeginPlay();
+
+    LastLocation = GetActorLocation();
 
     //プレイヤーコントローラー取得
     ACustomPlayerController* PC = Cast<ACustomPlayerController>(GetWorld()->GetFirstPlayerController());
@@ -175,6 +183,8 @@ void AUnit::AttackTarget(AUnit* Target)
 {
     if (!Target) return;
 
+    bIsAttacking = true;
+
     Target->HP -= Attack;
 
     UE_LOG(LogTemp, Warning, TEXT("%s attacked %s (HP: %.1f)"),
@@ -184,11 +194,15 @@ void AUnit::AttackTarget(AUnit* Target)
     {
         Target->OnDeath();
     }
+
+    bIsAttacking = false;
 }
 
 void AUnit::OnDeath()
 {
     UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
+
+    bIsDead = true;
 
     if (CurrentTile)
     {
@@ -202,6 +216,7 @@ void AUnit::OnDeath()
     {
         OwningBoardManager->PlayerUnits.Remove(this);
     }
+
 
     Destroy();
 }

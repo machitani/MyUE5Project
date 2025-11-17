@@ -127,11 +127,11 @@ void ABoardManager::SpawnInitialUnits()
             int32 Index = Row * Columns + Col;
             if (PlayerTiles.IsValidIndex(Index))
             {
-                FVector SpawnLocation = PlayerTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+                FVector SpawnLocation = PlayerTiles[Index]->GetActorLocation() + FVector(0, 0, 100);
                 FActorSpawnParameters Params;
                 Params.Owner = this;
 
-                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, FRotator(0, 90, 0), Params);
+                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, FRotator(0, 0, 0), Params);
                 if (NewUnit)
                 {
                     NewUnit->Team = EUnitTeam::Player;

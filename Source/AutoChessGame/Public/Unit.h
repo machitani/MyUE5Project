@@ -111,4 +111,6 @@ public:
     UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animation")
     bool bIsAttacking = false;
 
+    UPROPERTY()
+    FVector LastLocation;
 };
