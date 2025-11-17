@@ -25,10 +25,6 @@ class AUTOCHESSGAME_API ABoardManager : public AActor
 public:
     ABoardManager();
 
-protected:
-    virtual void BeginPlay() override;
-
-public:
     /** É{Å[Éhê›íË */
     UPROPERTY(EditAnywhere, Category = "Board|Settings")
     int32 Rows = 4;
@@ -139,4 +135,11 @@ public:
     TSubclassOf<UUserWidget>PlayerHUDClass;
 
     UPlayerHUD* PlayerHUDInstance;
+
+    UPROPERTY()
+    bool bRoundEnded = false;
+
+    protected:
+        virtual void BeginPlay() override;
+
 };

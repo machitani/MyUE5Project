@@ -67,3 +67,11 @@ void UShopWidget::RefreshItemBench()
         }
     }
 }
+
+void UShopWidget::OnBuyExpButtonPressed()
+{
+    if (ShopManager)
+    {
+        ShopManager->BuyExp();
+    }
+}

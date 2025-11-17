@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ShopWidget.h"
+#include "PlayerManager.h"
 #include "ShopManager.generated.h"
 
 UCLASS()
@@ -25,6 +26,8 @@ public:
     UFUNCTION(BlueprintCallable)
     void PaidReroll(int32 ItemCount = 4);
 
+    void BuyExp();
+
     UFUNCTION(BlueprintCallable)
     void AddItemToBench(const FItemData& Item);
 
@@ -46,6 +49,7 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "Shop")
     TArray<FItemData> BenchItems;
 
-    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    APlayerManager* PlayerManagerRef;
 
 };

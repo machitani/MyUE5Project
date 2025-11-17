@@ -5,6 +5,8 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
 
 void AShopManager::BeginPlay()
 {
@@ -27,6 +29,15 @@ void AShopManager::BeginPlay()
         RerollShop(4);
         ShopWidget->UpdateGold(PlayerGold);
         ShopWidget->RefreshSlots();
+    }
+    if (!PlayerManagerRef)
+    {
+        TArray<AActor*>Found;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
+        if (Found.Num() > 0)
+        {
+            PlayerManagerRef = Cast<APlayerManager>(Found[0]);
+        }
     }
 }
 
@@ -63,6 +74,24 @@ void AShopManager::PaidReroll(int32 ItemCount)
     ShopWidget->UpdateGold(PlayerGold);
 
     RerollShop(ItemCount);                         // –³—¿”Å‚ðŒÄ‚Ô
+}
+
+void AShopManager::BuyExp()
+{
+    const int32 Cost = 4;
+    const int32 ExpGain = 4;
+
+    if (PlayerGold < Cost)
+    {
+        return;
+    }
+    PlayerGold -= Cost;
+    ShopWidget->UpdateGold(PlayerGold);
+
+    if (PlayerManagerRef)
+    {
+        PlayerManagerRef->AddExp(ExpGain);
+    }
 }
 
 void AShopManager::AddItemToBench(const FItemData& Item)

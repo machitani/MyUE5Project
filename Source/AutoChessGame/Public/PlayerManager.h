@@ -16,23 +16,11 @@ public:
 	// Sets default values for this actor's properties
 	APlayerManager();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
-	int32 Gold = 10;
-
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	TArray<FItemData> OwnedItems;
 
 	UFUNCTION(BlueprintCallable)
-	void AddGold(int32 Amount) { Gold += Amount; }
-
-	UFUNCTION(BlueprintCallable)
-	bool SpendGold(int32 Amount);
-
-	UFUNCTION(BlueprintCallable)
 	void AddItem(const FItemData& NewItem);
-
-	UFUNCTION(BlueprintCallable, Category = "Player")
-	int32 GetGold() const { return Gold; }
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 PlayerLevel = 1;
@@ -49,7 +37,8 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Level")
 	void AddExp(int32 Amout);
 
-	UFUNCTION(BlueprintCallable,Category="Level")
-	bool BuyExp();
+	
+
+
 
 };

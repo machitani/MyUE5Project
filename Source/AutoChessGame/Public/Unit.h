@@ -24,9 +24,8 @@ class AUTOCHESSGAME_API AUnit : public AActor
 public:
     AUnit();
 
-    /** Mesh */
-    UPROPERTY(VisibleAnywhere, Category = "Unit")
-    UStaticMeshComponent* UnitMesh;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    USkeletalMeshComponent* UnitMesh;
 
     /** ドラッグ中フラグ */
     bool bIsDragging;
@@ -102,4 +101,14 @@ public:
 
 
     void ApplyItemEffect(const FItemData& Item);
+
+    UPROPERTY(BlueprintReadWrite,EditAnywhere,Category="Animation")
+    bool bIsMoving = false;
+
+    UPROPERTY(BlueprintReadWrite,EditAnywhere,Category="Animation")
+    bool bIsDead = false;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animation")
+    bool bIsAttacking = false;
+
 };

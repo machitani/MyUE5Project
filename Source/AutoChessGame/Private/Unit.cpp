@@ -16,7 +16,7 @@ AUnit::AUnit()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    UnitMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("UnitMesh"));
+    UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
     RootComponent = UnitMesh;
 
     bIsDragging = false;

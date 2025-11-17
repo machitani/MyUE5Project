@@ -10,15 +10,6 @@ APlayerManager::APlayerManager()
 	PrimaryActorTick.bCanEverTick = false;
 
 }
-bool APlayerManager::SpendGold(int32 Amount)
-{
-    if (Gold >= Amount)
-    {
-        Gold -= Amount;
-        return true;
-    }
-    return false;
-}
 
 void APlayerManager::AddItem(const FItemData& NewItem)
 {
@@ -26,37 +17,19 @@ void APlayerManager::AddItem(const FItemData& NewItem)
     //UE_LOG(LogTemp, Log, TEXT("Item added: %s"), *NewItem.ItemName.ToString());
 }
 
-void APlayerManager::AddExp(int32 Amout)
+void APlayerManager::AddExp(int32 Amount)
 {
-    CurrentExp += Amout;
+    CurrentExp += Amount;
 
-    while (CurrentExp-=ExpToNextLevel)
+    while (CurrentExp >= ExpToNextLevel)
     {
         CurrentExp -= ExpToNextLevel;
         PlayerLevel++;
 
-        //Ÿ‚ÌƒŒƒxƒ‹‚É•K—v‚ÈEXP‚ğ‘‰Á
         ExpToNextLevel += 4;
-
         MaxUnitCount++;
 
-        UE_LOG(LogTemp, Warning, TEXT("LEVEL UP"));
-
+        UE_LOG(LogTemp, Warning, TEXT("LEVEL UP! Level: %d"), PlayerLevel);
     }
 }
 
-bool APlayerManager::BuyExp()
-{
-    const int32 Cost = 4;
-    const int32 ExpGain = 4;
-
-    if (Gold < Cost)
-    {
-        return false;
-    }
-
-    Gold -= Cost;
-    AddExp(ExpGain);
-
-    return true;
-}

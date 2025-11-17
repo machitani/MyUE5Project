@@ -53,4 +53,7 @@ public:
     UFUNCTION(BlueprintCallable) void UpdateGold(int32 NewGold);
     UFUNCTION(BlueprintCallable) void RefreshSlots();
     UFUNCTION(BlueprintCallable) void RefreshItemBench();
+
+    UFUNCTION(BlueprintCallable)
+    void OnBuyExpButtonPressed();
 };
