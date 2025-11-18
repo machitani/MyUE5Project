@@ -49,6 +49,21 @@ void AUnit::EndDrag()
 {
     bIsDragging = false;
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    if (!OwningBoardManager) return;
+
+    FVector UnitLoc = GetActorLocation();
+    ATile* Tile = OwningBoardManager->GetTileUnderLocation(UnitLoc);
+    if (Tile)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[EndDrag] Drop on tile: %s"), *Tile->GetName());
+        OwningBoardManager->MoveUnitToTile(this, Tile);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[EndDrag] No tile found, restore pos"));
+        SetActorLocation(OriginalLocation);
+    }
 }
 
 void AUnit::UpdateDrag(const FVector& MouseWorld)

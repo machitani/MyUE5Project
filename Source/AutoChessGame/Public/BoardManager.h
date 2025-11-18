@@ -139,11 +139,16 @@ public:
     UPROPERTY()
     bool bRoundEnded = false;
 
+    void MoveUnitToTile(class AUnit* Unit, class ATile* NewTile);
+    ATile* GetTileUnderLocation(const FVector& Location);
+
     void SpawnPlayerUnitsFromSaveData();
 
     void SpawnEnemyUnits();
 
     protected:
         virtual void BeginPlay() override;
+
+
 
 };

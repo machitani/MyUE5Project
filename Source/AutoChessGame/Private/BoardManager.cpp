@@ -426,6 +426,45 @@ void ABoardManager::ProcessEnemyTurn()
         }
 }
 
+void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
+{
+    if (!Unit || !NewTile) return;
+
+    ATile* OldTile = Unit->CurrentTile;
+    if (OldTile)
+    {
+        OldTile->bIsOccupied = false;
+        OldTile->OccupiedUnit = nullptr;
+    }
+
+    NewTile->bIsOccupied = true;
+    NewTile->OccupiedUnit = Unit;
+    Unit->CurrentTile = NewTile;
+
+    FVector NewLocation = NewTile->GetActorLocation() + FVector(0, 0, 150);
+    Unit->SetActorLocation(NewLocation);
+
+    Unit->OriginalLocation = NewLocation;
+
+    UE_LOG(LogTemp, Warning, TEXT("[MoveUnitToTile] Unit moved to %s"), *NewTile->GetName());
+}
+
+ATile* ABoardManager::GetTileUnderLocation(const FVector& Location)
+{
+    for (ATile* Tile : PlayerTiles)
+    {
+        FVector TileLoc = Tile->GetActorLocation();
+
+        // š ‚±‚±‚ğL‚­‚·‚éi2D‚Å‹——£”»’èj
+        if (FVector::Dist2D(Location, TileLoc) < 250.f)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Tile FOUND: %s"), *Tile->GetName());
+            return Tile;
+        }
+    }
+    return nullptr;
+}
+
 void ABoardManager::SpawnPlayerUnitsFromSaveData()
 {
     if (!PlayerMangerInstance) return;
