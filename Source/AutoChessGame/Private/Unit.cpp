@@ -96,6 +96,9 @@ void AUnit::BeginPlay()
 {
     Super::BeginPlay();
 
+    BaseHP = HP;
+    BaseAttack = Attack;
+
     LastLocation = GetActorLocation();
 
     //プレイヤーコントローラー取得
@@ -194,7 +197,13 @@ void AUnit::OnDeath()
 {
     UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
 
-    //bIsDead = true;
+    bIsAttacking = false;
+    bIsMoving = false;
+
+    bIsDead = true;
+
+    SetActorHiddenInGame(true);
+    SetActorEnableCollision(false);
 
     if (CurrentTile)
     {
@@ -209,13 +218,14 @@ void AUnit::OnDeath()
         OwningBoardManager->PlayerUnits.Remove(this);
     }
 
-    bIsAttacking = false;
     //Destroy();
 }
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
     UE_LOG(LogTemp, Warning, TEXT("GET ITEM"))
+
+        EquipedItems.Add(Item);
 
         ApplyItemEffect(Item);
 }
@@ -248,6 +258,18 @@ void AUnit::UpdateAnimationState()
     // 死亡状態の設定
     if (HP <= 0.f)
     {
-        bIsDead = true;
+        //bIsDead = true;
+    }
+}
+
+void AUnit::ReapplayAllItemEffects()
+{
+
+    HP = BaseHP;
+    Attack = BaseAttack;
+
+    for (const FItemData& Item : EquipedItems)
+    {
+        ApplyItemEffect(Item);
     }
 }

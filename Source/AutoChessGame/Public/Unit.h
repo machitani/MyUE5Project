@@ -116,4 +116,21 @@ public:
 
     UFUNCTION()
     void UpdateAnimationState();
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Status")
+    float BaseHP;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Status")
+    float BaseAttack;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+    TArray<FItemData>  EquipedItems;
+
+    UFUNCTION(BlueprintCallable,Category="Item")
+    void ReapplayAllItemEffects();
+
+    UPROPERTY()
+    ATile* InitialTile;
+
+
 };

@@ -56,4 +56,7 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void OnBuyExpButtonPressed();
+
+    UFUNCTION(BlueprintCallable)
+    void OnReadyButtonClicked();
 };

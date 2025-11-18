@@ -2,6 +2,8 @@
 #include "Components/HorizontalBox.h"
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
+#include "Kismet/GameplayStatics.h"
+#include "BoardManager.h"
 #include "ItemBenchSlot.h"
 #include "ShopSlotWidget.h"
 #include "ShopManager.h"
@@ -73,5 +75,15 @@ void UShopWidget::OnBuyExpButtonPressed()
     if (ShopManager)
     {
         ShopManager->BuyExp();
+    }
+}
+
+void UShopWidget::OnReadyButtonClicked()
+{
+    ABoardManager* BoardManager = Cast<ABoardManager>(UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
+
+    if (BoardManager)
+    {
+        BoardManager->StartBattlePhase();
     }
 }

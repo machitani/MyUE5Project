@@ -3,6 +3,7 @@
 #include "Unit.h"
 #include "UGameHUD.h"
 #include "PlayerManager.h"
+#include "ShopManager.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -198,19 +199,20 @@ void ABoardManager::StartPreparationPhase()
 
     for (AUnit* Unit : PlayerUnits)
     {
-        if (Unit) Unit->bCanDrag = true;
+        if (!Unit)continue;
+
+        if (Unit->InitialTile)   // ← 保存しておく必要あり
+        {
+            Unit->SetActorLocation(Unit->InitialTile->GetActorLocation());
+            Unit->CurrentTile = Unit->InitialTile;
+        }
+        Unit->HP = Unit->BaseHP;
+        Unit->ReapplayAllItemEffects();
+
+        Unit->bCanDrag = true;
     }
 
     UpdateHUD();
-
-    // 7秒後にバトル開始
-    GetWorld()->GetTimerManager().SetTimer(
-        PhaseTimerHandle,
-        this,
-        &ABoardManager::StartBattlePhase,
-        7.0f,
-        false
-    );
 }
 
 //========================================================
@@ -227,11 +229,15 @@ void ABoardManager::StartBattlePhase()
 
     for (AUnit* Unit : PlayerUnits)
     {
-        if (Unit) Unit->bCanDrag = false;
-    }
+        if (Unit)
+        {
+            Unit->bCanDrag = false;
+            Unit->ReapplayAllItemEffects();
+        }
 
-    UpdateHUD();
-    StartNextRound();
+        UpdateHUD();
+        StartNextRound();
+    }
 }
 
 //========================================================
