@@ -4,9 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "Tile.h"
 #include "ItemData.h"
+#include "UnitSaveData.h"
 #include "EquiqSlotType.h"
 #include "BoardManager.h"
 #include "UnitEquiqSlot.h"
+#include "UnitHoverInfoWidget.h"
 #include "Unit.generated.h"
 
 UENUM(BlueprintType)
@@ -123,6 +125,9 @@ public:
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Status")
     float BaseAttack;
 
+    UPROPERTY(BlueprintReadWrite)
+    FName UnitID;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
     TArray<FItemData>  EquipedItems;
 
@@ -131,6 +136,25 @@ public:
 
     UPROPERTY()
     ATile* InitialTile;
+
+    FUnitSaveData MakeSaveData();
+
+    void ApplySaveData(const FUnitSaveData& Data);
+
+    UFUNCTION()
+    void OnMouseEnterUnit(UPrimitiveComponent* TouchedComponent);
+
+    UFUNCTION()
+    void OnMouseLeaveUnit(UPrimitiveComponent* TochedComponent);
+
+    UFUNCTION()
+    void UpdateHoverWidget();
+
+    UPROPERTY()
+    UUnitHoverInfoWidget* HoverWidget;
+
+    UPROPERTY(EditAnywhere, Category = "UI")
+    TSubclassOf<UUnitHoverInfoWidget> HoverWidgetClass;
 
 
 };

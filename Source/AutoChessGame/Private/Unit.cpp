@@ -4,13 +4,16 @@
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 #include "ItemData.h"
-
+#include "UnitSaveData.h"
+#include "Tile.h"
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Engine/Texture2D.h"
 #include "CustomPlayerController.h"
 #include "UnitEquiqSlot.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/VerticalBox.h"
+
 
 AUnit::AUnit()
 {
@@ -100,6 +103,9 @@ void AUnit::BeginPlay()
     BaseAttack = Attack;
 
     LastLocation = GetActorLocation();
+
+    UnitMesh->OnBeginCursorOver.AddDynamic(this, &AUnit::OnMouseEnterUnit);
+    UnitMesh->OnEndCursorOver.AddDynamic(this, &AUnit::OnMouseLeaveUnit);
 
     //プレイヤーコントローラー取得
     ACustomPlayerController* PC = Cast<ACustomPlayerController>(GetWorld()->GetFirstPlayerController());
@@ -199,27 +205,34 @@ void AUnit::OnDeath()
 
     bIsAttacking = false;
     bIsMoving = false;
-
     bIsDead = true;
 
-    SetActorHiddenInGame(true);
-    SetActorEnableCollision(false);
+    // UI（EquipSlot）も消す
+    if (EquipSlotRef)
+    {
+        EquipSlotRef->RemoveFromParent();
+        EquipSlotRef = nullptr;
+    }
 
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
         CurrentTile->OccupiedUnit = nullptr;
-        CurrentTile = nullptr;
+        //CurrentTile = nullptr;
     }
 
-    // プレイヤー陣営の場合は BoardManager の配列から削除
-    if (OwningBoardManager && Team == EUnitTeam::Player)
+    // BoardManager の配列から削除
+    /*if (OwningBoardManager)
     {
-        OwningBoardManager->PlayerUnits.Remove(this);
-    }
+        if (Team == EUnitTeam::Player)
+            OwningBoardManager->PlayerUnits.Remove(this);
+        else
+            OwningBoardManager->EnemyUnits.Remove(this);
+    }*/
 
-    //Destroy();
+    Destroy();   // ← これが重要！
 }
+
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
@@ -272,4 +285,71 @@ void AUnit::ReapplayAllItemEffects()
     {
         ApplyItemEffect(Item);
     }
+}
+
+FUnitSaveData AUnit::MakeSaveData()
+{
+    FUnitSaveData Data;
+    Data.UnitID = UnitID;
+    Data.BaseHP = BaseHP;
+    Data.BaseAttack = BaseAttack;
+    Data.EquippedItems = EquipedItems;
+    if (CurrentTile && OwningBoardManager)
+    {
+        Data.SavedTileIndex = OwningBoardManager
+             ->PlayerTiles.IndexOfByKey(CurrentTile);
+    }
+     else
+     {
+        Data.SavedTileIndex = -1;
+     }
+
+    return Data;
+}
+
+void AUnit::ApplySaveData(const FUnitSaveData& Data)
+{
+    BaseHP = Data.BaseHP;
+    BaseAttack = Data.BaseAttack;
+    EquipedItems = Data.EquippedItems;
+
+    HP = BaseHP;
+    Attack = BaseAttack;
+    for (auto& Item : EquipedItems)
+    {
+        ApplyItemEffect(Item);
+    }
+}
+
+void AUnit::OnMouseEnterUnit(UPrimitiveComponent* TouchedComponent)
+{
+    if (bIsDead) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("UNIT ID"));
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC || !HoverWidgetClass) return;
+
+    if (!HoverWidget)
+    {
+        HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
+        HoverWidget->AddToViewport();
+    }
+
+    // データ反映
+    HoverWidget->SetUnitInfo(UnitID, HP, Attack, EquipedItems);
+}
+
+void AUnit::OnMouseLeaveUnit(UPrimitiveComponent* TouchedComponent)
+{
+    if (HoverWidget)
+    {
+        HoverWidget->RemoveFromParent();
+        HoverWidget = nullptr;
+    }
+}
+
+void AUnit::UpdateHoverWidget()
+{
+   
 }

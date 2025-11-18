@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ItemData.h"
+#include "UnitSaveData.h"
 #include "PlayerManager.generated.h"
 
 UCLASS()
@@ -37,7 +38,8 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Level")
 	void AddExp(int32 Amout);
 
-	
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FUnitSaveData>SavedUnits;
 
 
 

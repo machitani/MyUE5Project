@@ -9,9 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 
-//========================================================
-// Constructor
-//========================================================
+
 ABoardManager::ABoardManager()
 {
     PrimaryActorTick.bCanEverTick = false;
@@ -20,9 +18,6 @@ ABoardManager::ABoardManager()
     bRoundEnded = false;
 }
 
-//========================================================
-// BeginPlay
-//========================================================
 void ABoardManager::BeginPlay()
 {
     Super::BeginPlay();
@@ -69,9 +64,6 @@ void ABoardManager::BeginPlay()
     StartPreparationPhase();
 }
 
-//========================================================
-// Board Generation
-//========================================================
 void ABoardManager::GenerateBoard()
 {
     if (!TileClass) return;
@@ -113,9 +105,6 @@ void ABoardManager::GenerateBoard()
     }
 }
 
-//========================================================
-// SpawnInitialUnits
-//========================================================
 void ABoardManager::SpawnInitialUnits()
 {
     if (!PlayerUnitClass || !EnemyUnitClass) return;
@@ -173,21 +162,13 @@ void ABoardManager::SpawnInitialUnits()
     }
 }
 
-//========================================================
-// HandleTileClicked
-//========================================================
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 {
     if (!ClickedTile) return;
     ClickedTile->SetTileColor(FLinearColor::Yellow);
 }
-
-//========================================================
-// StartPreparationPhase
-//========================================================
 void ABoardManager::StartPreparationPhase()
 {
-    // ★ 必須：PhaseTimer の多重起動を完全に防ぐ
     GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
 
     CurrentPhase = EGamePhase::Preparation;
@@ -215,9 +196,6 @@ void ABoardManager::StartPreparationPhase()
     UpdateHUD();
 }
 
-//========================================================
-// StartBattlePhase
-//========================================================
 void ABoardManager::StartBattlePhase()
 {
     if (CurrentPhase != EGamePhase::Preparation) return;
@@ -240,9 +218,6 @@ void ABoardManager::StartBattlePhase()
     }
 }
 
-//========================================================
-// StartNextRound
-//========================================================
 void ABoardManager::StartNextRound()
 {
     if (CurrentPhase != EGamePhase::Battle) return;
@@ -259,9 +234,6 @@ void ABoardManager::StartNextRound()
     );
 }
 
-//========================================================
-// ProcessBattleTick
-//========================================================
 void ABoardManager::ProcessBattleTick()
 {
     // ★ ラウンドは1回しか終了させない
@@ -315,7 +287,6 @@ void ABoardManager::ProcessBattleTick()
     }
 }
 
-
 void ABoardManager::EndBattlePhase()
 {
     // 今の仕様では Result Phase に移行するだけ
@@ -328,9 +299,6 @@ void ABoardManager::EndBattlePhase()
 }
 
 
-//========================================================
-// StartResultPhase
-//========================================================
 void ABoardManager::StartResultPhase()
 {
     GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
@@ -349,71 +317,55 @@ void ABoardManager::StartResultPhase()
     );
 }
 
-//========================================================
-// ResetBoardForNextRound
-//========================================================
 void ABoardManager::ResetBoardForNextRound()
 {
     UE_LOG(LogTemp, Warning, TEXT("== ResetBoardForNextRound() =="));
 
-    // ★ 全タイマーを確実に停止
     GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
     GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
 
     bRoundEnded = false;
 
-    // ユニット削除
-    for (AUnit* Unit : PlayerUnits)
-        if (Unit) Unit->Destroy();
+    // ★ プレイヤーユニット保存して Destroy
+    if (PlayerMangerInstance)
+    {
+        PlayerMangerInstance->SavedUnits.Empty();
+
+        for (AUnit* Unit : PlayerUnits)
+        {
+            if (!Unit) continue;
+
+            FUnitSaveData Data = Unit->MakeSaveData();
+            PlayerMangerInstance->SavedUnits.Add(Data);
+
+            Unit->Destroy();
+        }
+    }
     PlayerUnits.Empty();
 
+    // ★ 敵ユニットは単純に Destroy
     for (AUnit* Unit : EnemyUnits)
+    {
         if (Unit) Unit->Destroy();
+    }
     EnemyUnits.Empty();
 
-    // タイルリセット
+    // ★ タイルリセット
     for (ATile* Tile : PlayerTiles)
     {
-        if (Tile)
-        {
-            Tile->bIsOccupied = false;
-            Tile->OccupiedUnit = nullptr;
-            Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
-        }
+        Tile->bIsOccupied = false;
+        Tile->OccupiedUnit = nullptr;
+        Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
     }
     for (ATile* Tile : EnemyTiles)
     {
-        if (Tile)
-        {
-            Tile->bIsOccupied = false;
-            Tile->OccupiedUnit = nullptr;
-            Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
-        }
+        Tile->bIsOccupied = false;
+        Tile->OccupiedUnit = nullptr;
+        Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
     }
 
-    SpawnInitialUnits();
-
-    // 初期配置
-    for (AUnit* Unit : PlayerUnits)
-    {
-        if (Unit && Unit->CurrentTile)
-        {
-            FVector SpawnLoc = Unit->CurrentTile->GetActorLocation() + FVector(0, 0, 150);
-            Unit->SetActorLocation(SpawnLoc);
-            Unit->OriginalLocation = SpawnLoc;
-            Unit->bCanDrag = false;
-        }
-    }
-    for (AUnit* Unit : EnemyUnits)
-    {
-        if (Unit && Unit->CurrentTile)
-        {
-            FVector SpawnLoc = Unit->CurrentTile->GetActorLocation() + FVector(0, 0, 150);
-            Unit->SetActorLocation(SpawnLoc);
-            Unit->OriginalLocation = SpawnLoc;
-            Unit->bCanDrag = false;
-        }
-    }
+    SpawnPlayerUnitsFromSaveData();
+    SpawnEnemyUnits();
 
     CurrentRound++;
     UE_LOG(LogTemp, Warning, TEXT("Next Round: %d"), CurrentRound);
@@ -421,9 +373,6 @@ void ABoardManager::ResetBoardForNextRound()
     StartPreparationPhase();
 }
 
-//========================================================
-// UpdateHUD
-//========================================================
 void ABoardManager::UpdateHUD()
 {
     if (!HUDInstance) return;
@@ -453,9 +402,6 @@ void ABoardManager::UpdateHUD()
     }
 }
 
-//========================================================
-// OpenShop
-//========================================================
 void ABoardManager::OpenShop()
 {
     if (ShopWidgetClass)
@@ -471,9 +417,6 @@ void ABoardManager::OpenShop()
     }
 }
 
-//========================================================
-// ProcessEnemyTurn (今は未使用)
-//========================================================
 void ABoardManager::ProcessEnemyTurn()
 {
     for (AUnit* Unit : EnemyUnits)
@@ -481,4 +424,77 @@ void ABoardManager::ProcessEnemyTurn()
         {
             // ここに敵AIを書く
         }
+}
+
+void ABoardManager::SpawnPlayerUnitsFromSaveData()
+{
+    if (!PlayerMangerInstance) return;
+
+    PlayerUnits.Empty();
+
+    for (const FUnitSaveData& Data : PlayerMangerInstance->SavedUnits)
+    {
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass);
+        if (!NewUnit) continue;
+
+        // セーブデータ適用
+        NewUnit->ApplySaveData(Data);
+
+        int32 TileIndex = Data.SavedTileIndex;
+        if (!PlayerTiles.IsValidIndex(TileIndex))
+            {
+            continue; // 異常値ならスキップ
+            }
+
+         ATile * Tile = PlayerTiles[TileIndex];
+        FVector SpawnLoc = Tile->GetActorLocation() + FVector(0, 0, 150);
+
+        NewUnit->SetActorLocation(SpawnLoc);
+        NewUnit->OriginalLocation = SpawnLoc;
+        NewUnit->CurrentTile = Tile;
+
+        Tile->OccupiedUnit = NewUnit;
+        Tile->bIsOccupied = true;
+
+        NewUnit->OwningBoardManager = this;
+
+        PlayerUnits.Add(NewUnit);
+
+        //TileIndex++;
+    }
+}
+
+void ABoardManager::SpawnEnemyUnits()
+{
+    if (!EnemyUnitClass) return;
+
+    EnemyUnits.Empty();
+
+    for (int32 Row = Rows - 2; Row < Rows; Row++)
+    {
+        for (int32 Col = 0; Col < Columns; Col += 2)
+        {
+            int32 Index = Row * Columns + Col;
+            if (!EnemyTiles.IsValidIndex(Index)) continue;
+
+            FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+
+            AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
+                EnemyUnitClass,
+                SpawnLocation,
+                FRotator(0, 180, 0)
+            );
+
+            if (!NewUnit) continue;
+
+            NewUnit->Team = EUnitTeam::Enemy;
+            NewUnit->CurrentTile = EnemyTiles[Index];
+            NewUnit->OwningBoardManager = this;
+
+            EnemyTiles[Index]->bIsOccupied = true;
+            EnemyTiles[Index]->OccupiedUnit = NewUnit;
+
+            EnemyUnits.Add(NewUnit);
+        }
+    }
 }

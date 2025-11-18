@@ -139,6 +139,10 @@ public:
     UPROPERTY()
     bool bRoundEnded = false;
 
+    void SpawnPlayerUnitsFromSaveData();
+
+    void SpawnEnemyUnits();
+
     protected:
         virtual void BeginPlay() override;
 
