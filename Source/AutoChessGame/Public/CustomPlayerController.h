@@ -30,6 +30,9 @@ private:
 
     void OnLeftMouseDown();
     void OnLeftMouseUp();
+    void OnRightClick();
+
+    void CloseAllUnitInfoWidgets();
 
     /** ヘルパー：スクリーン座標 -> ワールドの線上の位置（カメラ近傍） */
     bool GetMouseWorldPosition(FVector& OutWorldPos, FVector& OutWorldDir) const;

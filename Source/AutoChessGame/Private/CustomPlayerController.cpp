@@ -1,6 +1,7 @@
 #include "CustomPlayerController.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "EngineUtils.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 ACustomPlayerController::ACustomPlayerController()
@@ -24,6 +25,7 @@ void ACustomPlayerController::SetupInputComponent()
     {
         InputComponent->BindAction("LeftClick", IE_Pressed, this, &ACustomPlayerController::OnLeftMouseDown);
         InputComponent->BindAction("LeftClick", IE_Released, this, &ACustomPlayerController::OnLeftMouseUp);
+        InputComponent->BindAction("RightClick", IE_Pressed, this, &ACustomPlayerController::OnRightClick);
     }
 }
 
@@ -155,3 +157,32 @@ void ACustomPlayerController::OnLeftMouseUp()
     SelectedUnit->EndDrag();
     SelectedUnit = nullptr;
 }
+
+void ACustomPlayerController::OnRightClick()
+{
+    FHitResult Hit;
+    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+
+    if (!Hit.bBlockingHit)return;
+
+    //ユニットを右クリック
+    if (Hit.bBlockingHit)
+    {
+        if (AUnit* Unit = Cast<AUnit>(Hit.GetActor()))
+        {
+            Unit->ShowUnitInfo();  // ← 表示
+            return;
+        }
+    }
+    CloseAllUnitInfoWidgets();
+}
+
+void ACustomPlayerController::CloseAllUnitInfoWidgets()
+{
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    {
+        AUnit* Unit = *It;
+        Unit->HideUnitInfo();
+    }
+}
+

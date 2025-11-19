@@ -20,13 +20,14 @@ bool UUnitEquipSlot::NativeOnDrop(
     {
         ItemData = BenchSlot->ItemData;
 
-        if (OwnerUnit)
+        if (OwnerUnit&&OwnerUnit->Team==EUnitTeam::Player)
         {
             OwnerUnit->EquipItem(SlotType, ItemData);
+            RefreshEquipSlotView();
+            return true;  // ドロップを処理した！
         }
 
-        RefreshEquipSlotView();
-        return true;  // ドロップを処理した！
+        
     }
 
     return false; // 他のWidgetに処理を渡す

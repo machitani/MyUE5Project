@@ -44,6 +44,12 @@ public:
     /** ドラッグ更新（マウスワールド位置を渡して呼ぶ） */
     void UpdateDrag(const FVector& MouseWorld);
 
+    UFUNCTION()
+    void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
+
+    void ShowUnitInfo();
+
+
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Unit")
     class ATile* CurrentTile;
 
@@ -142,13 +148,9 @@ public:
     void ApplySaveData(const FUnitSaveData& Data);
 
     UFUNCTION()
-    void OnMouseEnterUnit(UPrimitiveComponent* TouchedComponent);
-
-    UFUNCTION()
-    void OnMouseLeaveUnit(UPrimitiveComponent* TochedComponent);
-
-    UFUNCTION()
     void UpdateHoverWidget();
+
+    void HideUnitInfo();
 
     UPROPERTY()
     UUnitHoverInfoWidget* HoverWidget;

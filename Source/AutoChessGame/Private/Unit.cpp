@@ -31,6 +31,8 @@ AUnit::AUnit()
     UnitMesh->SetGenerateOverlapEvents(true);
     UnitMesh->bSelectable = true;
 
+    UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
+
     CurrentTile = nullptr;
     OriginalLocation = FVector::ZeroVector;
     bCanDrag = true;
@@ -115,6 +117,16 @@ void AUnit::UpdateDrag(const FVector& MouseWorld)
     SetActorLocation(Target);
 }
 
+void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+    UE_LOG(LogTemp, Warning, TEXT("CLICK!! %s"), *GetName());
+
+    if (ButtonPressed == EKeys::RightMouseButton)
+    {
+        ShowUnitInfo();
+    }
+}
+
 void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -159,10 +171,7 @@ void AUnit::BeginPlay()
 
     LastLocation = GetActorLocation();
 
-    UnitMesh->OnBeginCursorOver.AddDynamic(this, &AUnit::OnMouseEnterUnit);
-    UnitMesh->OnEndCursorOver.AddDynamic(this, &AUnit::OnMouseLeaveUnit);
-
-    //プレイヤーコントローラー取得
+        //プレイヤーコントローラー取得
     ACustomPlayerController* PC = Cast<ACustomPlayerController>(GetWorld()->GetFirstPlayerController());
     if (!PC || !PC->EquipSlotClass) return;
 
@@ -376,26 +385,12 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     }
 }
 
-void AUnit::OnMouseEnterUnit(UPrimitiveComponent* TouchedComponent)
+void AUnit::UpdateHoverWidget()
 {
-    if (bIsDead) return;
-
-    UE_LOG(LogTemp, Warning, TEXT("UNIT ID"));
-
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (!PC || !HoverWidgetClass) return;
-
-    if (!HoverWidget)
-    {
-        HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
-        HoverWidget->AddToViewport();
-    }
-
-    // データ反映
-    HoverWidget->SetUnitInfo(UnitID, HP, Attack, EquipedItems);
+   
 }
 
-void AUnit::OnMouseLeaveUnit(UPrimitiveComponent* TouchedComponent)
+void AUnit::HideUnitInfo()
 {
     if (HoverWidget)
     {
@@ -404,7 +399,25 @@ void AUnit::OnMouseLeaveUnit(UPrimitiveComponent* TouchedComponent)
     }
 }
 
-void AUnit::UpdateHoverWidget()
+void AUnit::ShowUnitInfo()
 {
-   
+
+    if (bIsDead) return;
+
+
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC || !HoverWidgetClass) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("RIGHT CLICK"));
+
+
+    if (!HoverWidget)
+    {
+        HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
+        HoverWidget->SetUnitInfo(UnitID, HP, Attack, EquipedItems);
+        HoverWidget->AddToViewport();
+    }
+
+    
 }
