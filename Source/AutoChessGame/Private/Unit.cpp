@@ -6,6 +6,8 @@
 #include "ItemData.h"
 #include "UnitSaveData.h"
 #include "Tile.h"
+#include "BoardManager.h"
+#include "PlayerManager.h"
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Engine/Texture2D.h"
@@ -50,13 +52,50 @@ void AUnit::EndDrag()
     bIsDragging = false;
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-    if (!OwningBoardManager) return;
+    if (!OwningBoardManager)
+    {
+        SetActorLocation(OriginalLocation);
+        return;
+    }
 
     FVector UnitLoc = GetActorLocation();
     ATile* Tile = OwningBoardManager->GetTileUnderLocation(UnitLoc);
+
     if (Tile)
     {
         UE_LOG(LogTemp, Warning, TEXT("[EndDrag] Drop on tile: %s"), *Tile->GetName());
+
+        // プレイヤー側タイルに置く場合だけチェックする
+        if (Tile->bIsPlayerTile && OwningBoardManager->PlayerMangerInstance)
+        {
+            const int32 MaxCount = OwningBoardManager->PlayerMangerInstance->MaxUnitCount;
+
+            // 今ボードに出ているプレイヤーユニット数
+            const int32 CurrentCount = OwningBoardManager->GetDeployedPlayerUnitCount();
+
+            // このユニットが「もともとプレイヤーボードにいたか？」を判定
+            const bool bWasOnPlayerBoard =
+                (CurrentTile && CurrentTile->bIsPlayerTile);
+
+            // 新しい状態でのユニット数（新しく出す場合だけ +1）
+            int32 NewCount = CurrentCount;
+            if (!bWasOnPlayerBoard)
+            {
+                NewCount += 1;
+            }
+
+            if (!bWasOnPlayerBoard && NewCount > MaxCount)
+            {
+                // 上限オーバーなので元の位置に戻す
+                UE_LOG(LogTemp, Warning,
+                    TEXT("[EndDrag] Cannot place unit: over max unit count (New:%d / Max:%d)"),
+                    NewCount, MaxCount);
+
+                SetActorLocation(OriginalLocation);
+                return;
+            }
+        }
+
         OwningBoardManager->MoveUnitToTile(this, Tile);
     }
     else
@@ -65,6 +104,7 @@ void AUnit::EndDrag()
         SetActorLocation(OriginalLocation);
     }
 }
+
 
 void AUnit::UpdateDrag(const FVector& MouseWorld)
 {

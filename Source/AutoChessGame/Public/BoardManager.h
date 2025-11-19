@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PlayerHUD.h"
+#include "ShopManager.h"
 #include "BoardManager.generated.h"
 
 class ATile;
@@ -41,7 +42,13 @@ public:
 
     /** ユニットクラス */
     UPROPERTY(EditAnywhere, Category = "Units|References")
-    TSubclassOf<AUnit> PlayerUnitClass;
+    TSubclassOf<AUnit> PlayerKnightClass;
+
+    UPROPERTY(EditAnywhere,Category="Units|References")
+    TSubclassOf<AUnit>PlayerWizardClass;
+
+    UPROPERTY(EditAnywhere,Category="Units|References")
+    TSubclassOf<AUnit> PlayerArcherClass;
 
     UPROPERTY(EditAnywhere, Category = "Units|References")
     TSubclassOf<AUnit> EnemyUnitClass;
@@ -56,6 +63,10 @@ public:
     /** 選択中のユニット */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Runtime")
     AUnit* SelectedUnit;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    AShopManager* ShopManagerRef;
+
 
 public:
     /** ボード生成 */
@@ -145,6 +156,12 @@ public:
     void SpawnPlayerUnitsFromSaveData();
 
     void SpawnEnemyUnits();
+
+    UFUNCTION(BlueprintCallable,Category="Board|Unit")
+    int32 GetDeployedPlayerUnitCount() const;
+    
+    UFUNCTION()
+    TSubclassOf<AUnit> GetPlayerUnitClassByID(FName UnitID) const;
 
     protected:
         virtual void BeginPlay() override;

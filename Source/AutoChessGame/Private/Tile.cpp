@@ -84,3 +84,24 @@ void ATile::SetTileHighlight(bool bHighlight)
     else
         DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.2f, 0.4f, 1.f, 1.f));// 元の色
 }
+
+FVector ATile::GetTileCenterWorld() const
+{
+    if (TileMesh)
+    {
+        // メッシュの実際の中心（ワールド座標）
+        return TileMesh->Bounds.Origin;
+    }
+    return GetActorLocation();
+}
+
+float ATile::GetTileSnapRadius() const
+{
+    if (TileMesh)
+    {
+        const FBoxSphereBounds& B = TileMesh->Bounds;
+        // XY の半径（大きい方）をスナップ許容半径にする
+        return FMath::Max(B.BoxExtent.X, B.BoxExtent.Y);
+    }
+    return 100.f; // 保険
+}

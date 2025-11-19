@@ -28,6 +28,8 @@ public:
 
     void BuyExp();
 
+    void RoundClearGold();
+
     UFUNCTION(BlueprintCallable)
     void AddItemToBench(const FItemData& Item);
 

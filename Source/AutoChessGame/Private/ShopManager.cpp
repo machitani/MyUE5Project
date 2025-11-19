@@ -94,6 +94,12 @@ void AShopManager::BuyExp()
     }
 }
 
+void AShopManager::RoundClearGold()
+{
+    PlayerGold += 5;
+    ShopWidget->UpdateGold(PlayerGold);
+}
+
 void AShopManager::AddItemToBench(const FItemData& Item)
 {
     BenchItems.Add(Item);

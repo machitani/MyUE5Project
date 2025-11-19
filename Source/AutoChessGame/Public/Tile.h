@@ -62,6 +62,9 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     bool bIsHighlighted;
 
+    FVector GetTileCenterWorld() const;
+    float   GetTileSnapRadius() const;
+
 private:
     UMaterialInstanceDynamic* DynMat;
 };

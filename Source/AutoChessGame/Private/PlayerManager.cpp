@@ -21,15 +21,27 @@ void APlayerManager::AddExp(int32 Amount)
 {
     CurrentExp += Amount;
 
-    while (CurrentExp >= ExpToNextLevel)
+    const int32 MaxPlayerLevel = 7;
+    const int32 MaxUnitsHardCap = 8;
+
+    while (CurrentExp >= ExpToNextLevel&&PlayerLevel<MaxPlayerLevel)
     {
         CurrentExp -= ExpToNextLevel;
         PlayerLevel++;
 
         ExpToNextLevel += 4;
-        MaxUnitCount++;
+
+        if (MaxUnitCount < MaxUnitsHardCap)
+        {
+            MaxUnitCount++;
+        }
 
         UE_LOG(LogTemp, Warning, TEXT("LEVEL UP! Level: %d"), PlayerLevel);
+    }
+
+    if (PlayerLevel >= MaxPlayerLevel)
+    {
+        CurrentExp = 0;
     }
 }
 

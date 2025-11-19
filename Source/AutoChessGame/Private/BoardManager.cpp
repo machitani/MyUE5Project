@@ -107,60 +107,106 @@ void ABoardManager::GenerateBoard()
 
 void ABoardManager::SpawnInitialUnits()
 {
-    if (!PlayerUnitClass || !EnemyUnitClass) return;
+    if (!PlayerKnightClass || !PlayerWizardClass || !PlayerArcherClass)
+        return;
 
-    // プレイヤー側
-    for (int32 Row = 0; Row < 2; Row++)
+    PlayerUnits.Empty();
+
+    // ★ Knight
+    if (PlayerTiles.IsValidIndex(0))
     {
-        for (int32 Col = 0; Col < Columns; Col += 2)
-        {
-            int32 Index = Row * Columns + Col;
-            if (PlayerTiles.IsValidIndex(Index))
-            {
-                FVector SpawnLocation = PlayerTiles[Index]->GetActorLocation() + FVector(0, 0, 100);
-                FActorSpawnParameters Params;
-                Params.Owner = this;
+        FVector SpawnLocation = PlayerTiles[0]->GetActorLocation() + FVector(0, 0, 100);
 
-                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass, SpawnLocation, FRotator(0, 0, 0), Params);
-                if (NewUnit)
-                {
-                    NewUnit->Team = EUnitTeam::Player;
-                    NewUnit->CurrentTile = PlayerTiles[Index];
-                    NewUnit->OwningBoardManager = this;
-                    PlayerTiles[Index]->bIsOccupied = true;
-                    PlayerTiles[Index]->OccupiedUnit = NewUnit;
-                    PlayerUnits.Add(NewUnit);
-                }
-            }
+        AUnit* NewKnight = GetWorld()->SpawnActor<AUnit>(PlayerKnightClass, SpawnLocation, FRotator::ZeroRotator);
+        if (NewKnight)
+        {
+            NewKnight->Team = EUnitTeam::Player;
+            NewKnight->CurrentTile = PlayerTiles[0];
+            NewKnight->OwningBoardManager = this;
+
+            PlayerTiles[0]->bIsOccupied = true;
+            PlayerTiles[0]->OccupiedUnit = NewKnight;
+
+            PlayerUnits.Add(NewKnight);
         }
     }
 
-    // 敵側
-    for (int32 Row = Rows - 2; Row < Rows; Row++)
+    // ★ Wizard
+    if (PlayerTiles.IsValidIndex(2))
     {
-        for (int32 Col = 0; Col < Columns; Col += 2)
-        {
-            int32 Index = Row * Columns + Col;
-            if (EnemyTiles.IsValidIndex(Index))
-            {
-                FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0,100);
-                FActorSpawnParameters Params;
-                Params.Owner = this;
+        FVector SpawnLocation = PlayerTiles[2]->GetActorLocation() + FVector(0, 0, 100);
 
-                AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(EnemyUnitClass, SpawnLocation, FRotator(0, 180, 0), Params);
-                if (NewUnit)
-                {
-                    NewUnit->Team = EUnitTeam::Enemy;
-                    NewUnit->CurrentTile = EnemyTiles[Index];
-                    NewUnit->OwningBoardManager = this;
-                    EnemyTiles[Index]->bIsOccupied = true;
-                    EnemyTiles[Index]->OccupiedUnit = NewUnit;
-                    EnemyUnits.Add(NewUnit);
-                }
+        AUnit* NewWizard = GetWorld()->SpawnActor<AUnit>(PlayerWizardClass, SpawnLocation, FRotator::ZeroRotator);
+        if (NewWizard)
+        {
+            NewWizard->Team = EUnitTeam::Player;
+            NewWizard->CurrentTile = PlayerTiles[2];
+            NewWizard->OwningBoardManager = this;
+
+            PlayerTiles[2]->bIsOccupied = true;
+            PlayerTiles[2]->OccupiedUnit = NewWizard;
+
+            PlayerUnits.Add(NewWizard);
+        }
+    }
+
+    // ★ Archer
+    if (PlayerTiles.IsValidIndex(4))
+    {
+        FVector SpawnLocation = PlayerTiles[4]->GetActorLocation() + FVector(0, 0, 100);
+
+        AUnit* NewArcher = GetWorld()->SpawnActor<AUnit>(PlayerArcherClass, SpawnLocation, FRotator::ZeroRotator);
+        if (NewArcher)
+        {
+            NewArcher->Team = EUnitTeam::Player;
+            NewArcher->CurrentTile = PlayerTiles[4];
+            NewArcher->OwningBoardManager = this;
+
+            PlayerTiles[4]->bIsOccupied = true;
+            PlayerTiles[4]->OccupiedUnit = NewArcher;
+
+            PlayerUnits.Add(NewArcher);
+        }
+    }
+
+    // ★ 敵側は今まで通り2体
+    EnemyUnits.Empty();
+    int32 EnemySpawnCount = 2;
+    int32 EnemySpawned = 0;
+
+    int32 StartRow = Rows - 1;
+
+    for (int32 Col = 0; Col < Columns && EnemySpawned < EnemySpawnCount; Col += 2)
+    {
+        int32 TileIndex = StartRow * Columns + Col;
+
+        if (EnemyTiles.IsValidIndex(TileIndex))
+        {
+            FVector SpawnLocation = EnemyTiles[TileIndex]->GetActorLocation() + FVector(0, 0, 100);
+
+            AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
+                EnemyUnitClass,
+                SpawnLocation,
+                FRotator(0, 180, 0)
+            );
+
+            if (NewUnit)
+            {
+                NewUnit->Team = EUnitTeam::Enemy;
+                NewUnit->CurrentTile = EnemyTiles[TileIndex];
+                NewUnit->OwningBoardManager = this;
+
+                EnemyTiles[TileIndex]->bIsOccupied = true;
+                EnemyTiles[TileIndex]->OccupiedUnit = NewUnit;
+
+                EnemyUnits.Add(NewUnit);
+                EnemySpawned++;
             }
         }
     }
 }
+
+
 
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
 {
@@ -269,6 +315,10 @@ void ABoardManager::ProcessBattleTick()
             {
                 PlayerMangerInstance->AddExp(2);
                 UE_LOG(LogTemp, Warning, TEXT("Round Clear: +2 EXP"));
+            }
+            if (ShopManagerRef)
+            {
+                ShopManagerRef->RoundClearGold();
             }
         }
 
@@ -430,39 +480,57 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
 {
     if (!Unit || !NewTile) return;
 
-    ATile* OldTile = Unit->CurrentTile;
-    if (OldTile)
+    // 元のタイルを空にする
+    if (Unit->CurrentTile && Unit->CurrentTile != NewTile)
     {
-        OldTile->bIsOccupied = false;
-        OldTile->OccupiedUnit = nullptr;
+        Unit->CurrentTile->bIsOccupied = false;
+        Unit->CurrentTile->OccupiedUnit = nullptr;
     }
 
+    // 新しいタイルを占有
     NewTile->bIsOccupied = true;
     NewTile->OccupiedUnit = Unit;
     Unit->CurrentTile = NewTile;
 
-    FVector NewLocation = NewTile->GetActorLocation() + FVector(0, 0, 150);
-    Unit->SetActorLocation(NewLocation);
+    FVector Center = NewTile->GetTileCenterWorld();
 
-    Unit->OriginalLocation = NewLocation;
+    // ユニットの高さ分だけ浮かせる（ここは好みで調整）
+    const float UnitHeightOffset = 50.0f;
+    Center.Z += UnitHeightOffset;
 
-    UE_LOG(LogTemp, Warning, TEXT("[MoveUnitToTile] Unit moved to %s"), *NewTile->GetName());
+    Unit->SetActorLocation(Center);
+    Unit->OriginalLocation = Center;
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("[MoveUnitToTile] %s -> %s pos=%s"),
+        *Unit->GetName(), *NewTile->GetName(), *Center.ToString());
 }
+
+
 
 ATile* ABoardManager::GetTileUnderLocation(const FVector& Location)
 {
+    ATile* BestTile = nullptr;
+    float  BestDist = TNumericLimits<float>::Max();
+
     for (ATile* Tile : PlayerTiles)
     {
-        FVector TileLoc = Tile->GetActorLocation();
+        if (!Tile) continue;
 
-        // ★ ここを広くする（2Dで距離判定）
-        if (FVector::Dist2D(Location, TileLoc) < 250.f)
+        FVector Center = Tile->GetTileCenterWorld();
+        float   Radius = Tile->GetTileSnapRadius();
+
+        float Dist = FVector::Dist2D(Location, Center);
+
+        // タイルの円の中かつ一番近いものを採用
+        if (Dist < Radius && Dist < BestDist)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Tile FOUND: %s"), *Tile->GetName());
-            return Tile;
+            BestDist = Dist;
+            BestTile = Tile;
         }
     }
-    return nullptr;
+
+    return BestTile; // 見つからなければ nullptr
 }
 
 void ABoardManager::SpawnPlayerUnitsFromSaveData()
@@ -473,7 +541,11 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
 
     for (const FUnitSaveData& Data : PlayerMangerInstance->SavedUnits)
     {
-        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(PlayerUnitClass);
+        // UnitID からクラスを決定
+        TSubclassOf<AUnit> UnitClass = GetPlayerUnitClassByID(Data.UnitID);
+        if (!UnitClass) continue;
+
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(UnitClass);
         if (!NewUnit) continue;
 
         // セーブデータ適用
@@ -481,12 +553,12 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
 
         int32 TileIndex = Data.SavedTileIndex;
         if (!PlayerTiles.IsValidIndex(TileIndex))
-            {
+        {
             continue; // 異常値ならスキップ
-            }
+        }
 
-         ATile * Tile = PlayerTiles[TileIndex];
-        FVector SpawnLoc = Tile->GetActorLocation() + FVector(0, 0, 150);
+        ATile* Tile = PlayerTiles[TileIndex];
+        FVector SpawnLoc = Tile->GetActorLocation() + FVector(0, 0, 100);
 
         NewUnit->SetActorLocation(SpawnLoc);
         NewUnit->OriginalLocation = SpawnLoc;
@@ -498,10 +570,9 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
         NewUnit->OwningBoardManager = this;
 
         PlayerUnits.Add(NewUnit);
-
-        //TileIndex++;
     }
 }
+
 
 void ABoardManager::SpawnEnemyUnits()
 {
@@ -516,7 +587,7 @@ void ABoardManager::SpawnEnemyUnits()
             int32 Index = Row * Columns + Col;
             if (!EnemyTiles.IsValidIndex(Index)) continue;
 
-            FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 150);
+            FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 100);
 
             AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
                 EnemyUnitClass,
@@ -536,4 +607,42 @@ void ABoardManager::SpawnEnemyUnits()
             EnemyUnits.Add(NewUnit);
         }
     }
+}
+
+int32 ABoardManager::GetDeployedPlayerUnitCount() const
+{
+    int32 Count = 0;
+
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (!Unit)continue;
+
+        if (Unit->HP > 0.f &&
+            Unit->CurrentTile &&
+            Unit->CurrentTile->bIsPlayerTile)
+        {
+            Count++;
+        }
+    }
+
+    return Count;
+}
+
+TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
+{
+    if (UnitID == FName("Knight"))
+    {
+        return PlayerKnightClass;
+    }
+    else if (UnitID == FName("Wizard"))
+    {
+        return PlayerWizardClass;
+    }
+    else if (UnitID == FName("Archer"))
+    {
+        return PlayerArcherClass;
+    }
+
+    // どれにも当てはまらない場合の保険（適当にKnight返すなど）
+    return PlayerKnightClass;
 }
