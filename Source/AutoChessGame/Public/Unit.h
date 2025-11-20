@@ -7,7 +7,6 @@
 #include "UnitSaveData.h"
 #include "EquiqSlotType.h"
 #include "BoardManager.h"
-#include "UnitEquiqSlot.h"
 #include "UnitHoverInfoWidget.h"
 #include "Unit.generated.h"
 
@@ -28,6 +27,8 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USkeletalMeshComponent* UnitMesh;
+
+    //static UUnitHoverInfoWidget* CurrentHoverWidget;
 
     /** ドラッグ中フラグ */
     bool bIsDragging;
@@ -94,8 +95,7 @@ public:
     void AttackTarget(AUnit* Targer);
     void OnDeath();
 
-    UPROPERTY()
-    UUnitEquipSlot* EquipSlotRef;
+    
     
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")

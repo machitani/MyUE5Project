@@ -1,24 +1,39 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// ItemBenchSlot.h
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ItemData.h"
 #include "Blueprint/UserWidget.h"
+#include "ItemData.h"
 #include "ItemBenchSlot.generated.h"
 
-/**
- * 
- */
+class UImage;
+class UTextBlock;
+
 UCLASS()
 class AUTOCHESSGAME_API UItemBenchSlot : public UUserWidget
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    FItemData ItemData;
 
-	//このスロットに入ってるアイテム
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = "true"))
-	FItemData ItemData;
-	
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    bool bHasItem = false;
+
+    UFUNCTION(BlueprintCallable)
+    void ClearBenchItem();
+
+    UFUNCTION(BlueprintCallable)
+    void SetBenchItem(const FItemData& NewItem);
+
+protected:
+    virtual void NativePreConstruct() override;
+    void RefreshBenchView();
+
+    UPROPERTY(meta = (BindWidget))
+    UImage* ItemIcon;
+
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* ItemTextIcon;
 };

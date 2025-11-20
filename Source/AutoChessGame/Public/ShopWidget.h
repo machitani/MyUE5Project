@@ -6,11 +6,14 @@
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
 #include "ItemData.h"
+#include "ItemBenchSlot.h"
 #include "ShopWidget.generated.h"
 
 // 先行宣言（循環参照を避けつつ型名を使えるようにする）
 class UShopSlotWidget;
 class AShopManager;
+class AUnit;
+class UItemBechSlot;
 
 UCLASS()
 class AUTOCHESSGAME_API UShopWidget : public UUserWidget
@@ -54,9 +57,25 @@ public:
     UFUNCTION(BlueprintCallable) void RefreshSlots();
     UFUNCTION(BlueprintCallable) void RefreshItemBench();
 
+    UPROPERTY(meta = (BindWidget))
+    UVerticalBox* ItemBenchBox;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bench")
+    TSubclassOf<UItemBenchSlot> ItemBenchSlotClass;
+
+    UPROPERTY()
+    TArray<UItemBenchSlot*> ItemBenchSlots;
+
     UFUNCTION(BlueprintCallable)
     void OnBuyExpButtonPressed();
 
     UFUNCTION(BlueprintCallable)
     void OnReadyButtonClicked();
+
+    //ドロップを受け取る
+    virtual bool NativeOnDrop(
+        const FGeometry& InGeometry,
+        const FDragDropEvent& InDragDropEvent,
+        UDragDropOperation* InOperation
+    ) override;
 };

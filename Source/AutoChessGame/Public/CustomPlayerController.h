@@ -16,9 +16,7 @@ class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 public:
     ACustomPlayerController();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
-    TSubclassOf<UUnitEquipSlot> EquipSlotClass;
-
+   
 protected:
     virtual void SetupInputComponent() override;
     virtual void Tick(float DeltaSeconds) override;

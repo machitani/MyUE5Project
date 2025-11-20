@@ -50,12 +50,16 @@ void AShopManager::BuyItem(FName RowName, int32 Price)
     if (FoundItem)
     {
         UE_LOG(LogTemp, Warning, TEXT("RINGO"));
-        BenchItems.Add(*FoundItem);
+
+        // š RowName ‚àƒRƒs[‚µ‚½‚¤‚¦‚Å Bench ‚É’Ç‰Á
+        FItemData Copy = *FoundItem;
+        Copy.RowName = RowName;
+
+        AddItemToBench(Copy);
     }
 
     ShopWidget->UpdateGold(PlayerGold);
     ShopWidget->RefreshSlots();
-    ShopWidget->RefreshItemBench();
 }
 
 

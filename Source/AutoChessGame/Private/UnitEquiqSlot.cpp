@@ -14,21 +14,34 @@ bool UUnitEquipSlot::NativeOnDrop(
     const FDragDropEvent& InDragDropEvent,
     UDragDropOperation* InOperation)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[EquipSlot] NativeOnDrop called"));
+
     Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 
     if (UItemBenchSlot* BenchSlot = Cast<UItemBenchSlot>(InOperation->Payload))
     {
+        UE_LOG(LogTemp, Warning, TEXT("[EquipSlot] Cast UItemBenchSlot OK"));
+
         ItemData = BenchSlot->ItemData;
 
-        if (OwnerUnit&&OwnerUnit->Team==EUnitTeam::Player)
+        if (OwnerUnit)
         {
-            OwnerUnit->EquipItem(SlotType, ItemData);
-            RefreshEquipSlotView();
-            return true;  // ドロップを処理した！
+            UE_LOG(LogTemp, Warning, TEXT("[EquipSlot] OwnerUnit=%s Team=%d"),
+                *OwnerUnit->GetName(), (int32)OwnerUnit->Team);
         }
 
-        
+        if (OwnerUnit && OwnerUnit->Team == EUnitTeam::Player)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[EquipSlot] Call EquipItem"));
+            OwnerUnit->EquipItem(SlotType, ItemData);
+            RefreshEquipSlotView();
+            return true;
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[EquipSlot] Cast UItemBenchSlot FAILED"));
     }
 
-    return false; // 他のWidgetに処理を渡す
+    return false;
 }

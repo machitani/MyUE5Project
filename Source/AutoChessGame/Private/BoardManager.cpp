@@ -123,6 +123,7 @@ void ABoardManager::SpawnInitialUnits()
             NewKnight->Team = EUnitTeam::Player;
             NewKnight->CurrentTile = PlayerTiles[0];
             NewKnight->OwningBoardManager = this;
+            NewKnight->UnitID = FName("Knight");
 
             PlayerTiles[0]->bIsOccupied = true;
             PlayerTiles[0]->OccupiedUnit = NewKnight;
@@ -142,6 +143,7 @@ void ABoardManager::SpawnInitialUnits()
             NewWizard->Team = EUnitTeam::Player;
             NewWizard->CurrentTile = PlayerTiles[2];
             NewWizard->OwningBoardManager = this;
+            NewWizard->UnitID = FName("Wizard");
 
             PlayerTiles[2]->bIsOccupied = true;
             PlayerTiles[2]->OccupiedUnit = NewWizard;
@@ -161,7 +163,7 @@ void ABoardManager::SpawnInitialUnits()
             NewArcher->Team = EUnitTeam::Player;
             NewArcher->CurrentTile = PlayerTiles[4];
             NewArcher->OwningBoardManager = this;
-
+            NewArcher->UnitID = FName("Archer");
             PlayerTiles[4]->bIsOccupied = true;
             PlayerTiles[4]->OccupiedUnit = NewArcher;
 
@@ -319,6 +321,7 @@ void ABoardManager::ProcessBattleTick()
             if (ShopManagerRef)
             {
                 ShopManagerRef->RoundClearGold();
+                UE_LOG(LogTemp,Warning,TEXT("CLEAR GOLD"))
             }
         }
 

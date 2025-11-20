@@ -18,5 +18,3 @@ void UShopSlotWidget::RefreshItemView(const FItemData& ItemData)
         ItemIcon->SetBrushFromTexture(ItemData.ItemIcon);
     }
 }
-
-

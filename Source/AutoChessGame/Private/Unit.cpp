@@ -16,6 +16,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/VerticalBox.h"
 
+//UUnitHoverInfoWidget* AUnit::CurrentHoverWidget = nullptr;
 
 AUnit::AUnit()
 {
@@ -31,6 +32,11 @@ AUnit::AUnit()
     UnitMesh->SetGenerateOverlapEvents(true);
     UnitMesh->bSelectable = true;
 
+    // ★ ここ追加
+    UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    UnitMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+    UnitMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
     UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
 
     CurrentTile = nullptr;
@@ -38,6 +44,7 @@ AUnit::AUnit()
     bCanDrag = true;
     TimeSinceLastAttack = 0.0f;
 }
+
 
 void AUnit::StartDrag(const FVector& MouseWorld)
 {
@@ -131,15 +138,7 @@ void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (EquipSlotRef)
-    {
-        FVector WorldPos = GetActorLocation() + FVector(0, 0, 200);
-        FVector2D ScreenPos;
-        APlayerController* PC = GetWorld()->GetFirstPlayerController();
-        UGameplayStatics::ProjectWorldToScreen(PC, WorldPos, ScreenPos);
-        EquipSlotRef->SetPositionInViewport(ScreenPos);
-    }
-
+    
     if (bIsDragging)
     {
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -171,27 +170,6 @@ void AUnit::BeginPlay()
 
     LastLocation = GetActorLocation();
 
-        //プレイヤーコントローラー取得
-    ACustomPlayerController* PC = Cast<ACustomPlayerController>(GetWorld()->GetFirstPlayerController());
-    if (!PC || !PC->EquipSlotClass) return;
-
-    //スロット生成
-    UUnitEquipSlot* EquipSlot = CreateWidget<UUnitEquipSlot>(PC, PC->EquipSlotClass);
-    if (EquipSlot)
-    {
-        EquipSlot->OwnerUnit = this;
-        EquipSlot->SlotType = E_EquiqSlotType::Weapon;
-        EquipSlot->AddToViewport();
-
-        // --- 初期位置（ユニットの頭上） ---
-        FVector WorldPos = GetActorLocation() + FVector(0, 0, 10);
-        FVector2D ScreenPos;
-        UGameplayStatics::ProjectWorldToScreen(PC, WorldPos, ScreenPos);
-        EquipSlot->SetPositionInViewport(ScreenPos);
-
-        // --- 参照保持（後で位置追従などに使用） ---
-        EquipSlotRef = EquipSlot;
-    }
 }
 
 void AUnit::CheckForTarget(const float DeltaTime)
@@ -271,13 +249,7 @@ void AUnit::OnDeath()
     bIsMoving = false;
     bIsDead = true;
 
-    // UI（EquipSlot）も消す
-    if (EquipSlotRef)
-    {
-        EquipSlotRef->RemoveFromParent();
-        EquipSlotRef = nullptr;
-    }
-
+   
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
@@ -401,23 +373,38 @@ void AUnit::HideUnitInfo()
 
 void AUnit::ShowUnitInfo()
 {
-
     if (bIsDead) return;
-
-
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC || !HoverWidgetClass) return;
 
     UE_LOG(LogTemp, Warning, TEXT("RIGHT CLICK"));
 
-
-    if (!HoverWidget)
+    //1. 他のユニットが持っている HoverWidget を全部消す
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
     {
-        HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
+        AUnit* Other = *It;
+        if (Other && Other != this && Other->HoverWidget)
+        {
+            Other->HoverWidget->RemoveFromParent();
+            Other->HoverWidget = nullptr;
+        }
+    }
+
+    //2. 自分の HoverWidget を作り直す or 再利用する
+
+    // すでに自分のがあれば一旦消す（重複防止）
+    if (HoverWidget)
+    {
+        HoverWidget->RemoveFromParent();
+        HoverWidget = nullptr;
+    }
+
+    // 新しく作る
+    HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
+    if (HoverWidget)
+    {
         HoverWidget->SetUnitInfo(UnitID, HP, Attack, EquipedItems);
         HoverWidget->AddToViewport();
     }
-
-    
 }

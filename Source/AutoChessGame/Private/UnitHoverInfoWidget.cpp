@@ -12,7 +12,11 @@ void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, c
         HPText->SetText(FText::FromString(FString::Printf(TEXT("HP: %.0f"), HP)));
 
     if (AttackText)
+    {
         AttackText->SetText(FText::FromString(FString::Printf(TEXT("ATK: %.0f"), ATK)));
+        UE_LOG(LogTemp, Warning, TEXT(" ATTACK TEXT"));
+    }
+    
 
     if (ItemList)
     {
