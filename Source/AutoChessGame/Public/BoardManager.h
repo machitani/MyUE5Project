@@ -2,12 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PlayerHUD.h"
-#include "ShopManager.h"
 #include "BoardManager.generated.h"
 
 class ATile;
 class AUnit;
+class APlayerManager;
+class AShopManager;
+class UUserWidget;
+class UPlayerHUD;
 
 UENUM(BlueprintType)
 enum class EGamePhase : uint8
@@ -49,6 +51,15 @@ public:
 
     UPROPERTY(EditAnywhere,Category="Units|References")
     TSubclassOf<AUnit> PlayerArcherClass;
+
+    UPROPERTY(EditAnywhere,Category="Unit|References")
+    TSubclassOf<AUnit> PlayerBearClass;
+
+    UPROPERTY(EditAnywhere,Category="Unit|References")
+    TSubclassOf<AUnit> PlayerNurseClass;
+
+    UPROPERTY(EditAnywhere,Category="Unit|References")
+    TSubclassOf<AUnit>PlayerAdventurerClass;
 
     UPROPERTY(EditAnywhere, Category = "Units|References")
     TSubclassOf<AUnit> EnemyUnitClass;
@@ -132,7 +143,7 @@ public:
     TSubclassOf<class APlayerManager> PlayerManagerClass;
 
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Manager")
-    APlayerManager* PlayerMangerInstance;
+    APlayerManager* PlayerManagerInstance;
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="UI")
     TSubclassOf<UUserWidget> ShopWidgetClass;
@@ -163,9 +174,9 @@ public:
     UFUNCTION()
     TSubclassOf<AUnit> GetPlayerUnitClassByID(FName UnitID) const;
 
+    UFUNCTION()
+    AUnit* SpawnRewardUnit(FName UnitID);
+
     protected:
         virtual void BeginPlay() override;
-
-
-
 };

@@ -3,6 +3,8 @@
 #include "ItemBenchSlot.h"
 #include "ShopSlotWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "PlayerManager.h"
+#include "ItemData.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -112,6 +114,69 @@ void AShopManager::AddItemToBench(const FItemData& Item)
         {
             ShopWidget->RefreshItemBench();
         }
+}
+
+EItemRarity AShopManager::GetRandomRarityForLevel(int32 PlayerLevel) const
+{
+    int32 CommonRate = 80;
+    int32 RareRate = 20;
+    int32 EpicRate = 0;
+
+    if (PlayerLevel >= 3 && PlayerLevel <= 4)
+    {
+        CommonRate = 60;
+        RareRate = 30;
+        EpicRate = 10;
+    }
+    else if (PlayerLevel >= 5 && PlayerLevel <= 6)
+    {
+        CommonRate = 40;
+        RareRate = 40;
+        EpicRate = 20;
+    }
+    else if (PlayerLevel >= 7)
+    {
+        CommonRate = 20;
+        RareRate = 50;
+        EpicRate = 30;
+    }
+
+    int Roll = FMath::RandRange(1, 100);
+    if (Roll <= CommonRate)
+    {
+        return  EItemRarity::Common;
+    }
+    else if (Roll <= CommonRate + RareRate)
+    {
+        return EItemRarity::Rare;
+    }
+    else
+    {
+        return EItemRarity::Epic;
+    }
+}
+
+bool AShopManager::GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem) const
+{
+    if (!ItemTable)return false;
+
+    TArray<FItemData*>Candidates;
+
+    static const FString Context(TEXT("ItemRandomPick"));
+    TArray<FName>RowNames = ItemTable->GetRowNames();
+
+    for (const FName& RowName : RowNames)
+    {
+        if (FItemData* Row = ItemTable->FindRow<FItemData>(RowName, Context))
+        {
+            if (Row->Rarity == Rarity)
+            {
+                Candidates.Add(Row);
+            }
+        }
+    }
+
+    return false;
 }
 
 void AShopManager::RerollShop(int32 ItemCount)

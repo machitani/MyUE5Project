@@ -2,19 +2,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Tile.h"
 #include "ItemData.h"
-#include "UnitSaveData.h"
 #include "EquiqSlotType.h"
-#include "BoardManager.h"
-#include "UnitHoverInfoWidget.h"
+#include "UnitSaveData.h"
 #include "Unit.generated.h"
+
+class ATile;
+class ABoardManager;
+class UUnitHoverInfoWidget;
 
 UENUM(BlueprintType)
 enum class EUnitTeam : uint8
 {
-    Player UMETA(DisplayName = "Player"),
-    Enemy  UMETA(DisplayName = "Enemy")
+    Player,
+    Enemy
 };
 
 UCLASS()
@@ -25,138 +26,151 @@ class AUTOCHESSGAME_API AUnit : public AActor
 public:
     AUnit();
 
+    virtual void Tick(float DeltaTime) override;
+    virtual void BeginPlay() override;
+
+    // ====== ステータス ======
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float HP = 100.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float MaxHP = 100.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float Attack = 10.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float BaseHP;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float BaseAttack;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseDefense;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseMagicPower;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseMagicDefense;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float Range = 200.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float MoveSpeed = 150.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    EUnitTeam Team = EUnitTeam::Player;
+
+    // ====== 防御系 / 魔法系ステータス ======
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Defense")
+    float Defense = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Magic")
+    float MagicPower = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Magic")
+    float MagicDefense = 0.f;
+
+    // ====== 攻撃間隔 ======
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float AttackInterval = 1.0f;
+
+    float TimeSinceLastAttack = 0.f;
+
+    // ====== メッシュ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USkeletalMeshComponent* UnitMesh;
 
-    //static UUnitHoverInfoWidget* CurrentHoverWidget;
+    // ====== タイル関連 ======
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    ATile* CurrentTile;
 
-    /** ドラッグ中フラグ */
-    bool bIsDragging;
-
-    /** ドラッグ開始時のマウスワールドとユニットのオフセット */
-    FVector DragOffset;
-
-    /** ドラッグ開始 */
-    void StartDrag(const FVector& MouseWorld);
-
-    /** ドラッグ終了 */
-    void EndDrag();
-
-    /** ドラッグ更新（マウスワールド位置を渡して呼ぶ） */
-    void UpdateDrag(const FVector& MouseWorld);
-
-    UFUNCTION()
-    void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
-
-    void ShowUnitInfo();
-
-
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Unit")
-    class ATile* CurrentTile;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit")
-    FVector OriginalLocation;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Unit")
-    ABoardManager* OwningBoardManager;
-
-    //ユニットのステータス
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
-    float MaxHP = 100.f;
-
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,CateGory="Stats")
-    float HP = 100.f;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
-    float Attack = 20.f;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
-    float MoveSpeed = 300.f;
-
-    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Stats")
-    float Range = 300.f;
-
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Stats")
-    int32 Level = 1;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Combat")
-    float AttackInterval = 1.0f;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Unit")
-    bool bCanDrag = true;
-
-    float TimeSinceLastAttack = 0.0f;
-
-    virtual void Tick(float DeltaTime)override;
-
-    virtual void BeginPlay()override;
-
-    void CheckForTarget(const float DeltaTime);
-    void AttackTarget(AUnit* Targer);
-    void OnDeath();
-
-    
-    
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-    EUnitTeam Team = EUnitTeam::Player;  // デフォルトはプレイヤー
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Equip")
-    TMap<E_EquiqSlotType, FItemData>EquippedItems;
-
-    UFUNCTION(BlueprintCallable,Category="Equip")
-    void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
-
-
-    void ApplyItemEffect(const FItemData& Item);
-
-    UPROPERTY(BlueprintReadWrite,EditAnywhere,Category="Animation")
-    bool bIsMoving = false;
-
-    UPROPERTY(BlueprintReadWrite,EditAnywhere,Category="Animation")
-    bool bIsDead = false;
-
-    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animation")
-    bool bIsAttacking = false;
-
-    UPROPERTY()
-    FVector LastLocation;
-
-    UFUNCTION()
-    void UpdateAnimationState();
-
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Status")
-    float BaseHP;
-
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Status")
-    float BaseAttack;
-
-    UPROPERTY(BlueprintReadWrite)
-    FName UnitID;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
-    TArray<FItemData>  EquipedItems;
-
-    UFUNCTION(BlueprintCallable,Category="Item")
-    void ReapplayAllItemEffects();
-
-    UPROPERTY()
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     ATile* InitialTile;
 
-    FUnitSaveData MakeSaveData();
+    FVector OriginalLocation;
 
-    void ApplySaveData(const FUnitSaveData& Data);
+    // ====== ボードManager ======
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    ABoardManager* OwningBoardManager;
 
-    UFUNCTION()
-    void UpdateHoverWidget();
+    // ====== アイテム ======
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    TArray<FItemData> EquipedItems;
 
-    void HideUnitInfo();
+    void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
+    void ApplyItemEffect(const FItemData& Item);
+    void ReapplayAllItemEffects();
+
+    // ====== Hover ======
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<UUnitHoverInfoWidget> HoverWidgetClass;
 
     UPROPERTY()
     UUnitHoverInfoWidget* HoverWidget;
 
-    UPROPERTY(EditAnywhere, Category = "UI")
-    TSubclassOf<UUnitHoverInfoWidget> HoverWidgetClass;
+    void ShowUnitInfo();
+    void HideUnitInfo();
+    void UpdateHoverWidget();
 
+    // ====== 状態 ======
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 
+    bool bIsMoving = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+    bool bIsAttacking = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+    bool bIsDead = false;
+
+    // ====== Drag ======
+    bool bIsDragging;
+    bool bCanDrag;
+    FVector DragOffset;
+
+    void StartDrag(const FVector& MouseWorld);
+    void UpdateDrag(const FVector& MouseWorld);
+    void EndDrag();
+
+    // ====== 移動・攻撃 ======
+    void CheckForTarget(float DeltaTime);
+    virtual void AttackTarget(AUnit* Target);
+
+    // ====== ダメージ処理 ======
+    virtual void TakePhysicalDamage(float DamageAmount);
+    virtual void TakeMagicDamage(float DamageAmount);
+
+    // ====== スキルシステム ======
+    virtual bool CanUseSkill() const { return false; }
+    virtual void UseSkill(AUnit* Target) {}
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Skill")
+    bool bHasSkill = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+    float SkillCooldown = 5.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+    float SkillTimer = 0.0f;
+
+    // ====== 死亡 ======
+    virtual void OnDeath();
+
+    // ====== アニメ ======
+    void UpdateAnimationState();
+    FVector LastLocation;
+
+    // ====== セーブ ======
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
+    FName UnitID;
+
+    FUnitSaveData MakeSaveData();
+    void ApplySaveData(const FUnitSaveData& Data);
+
+    // ====== マウス ======
+    UFUNCTION()
+    void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 };

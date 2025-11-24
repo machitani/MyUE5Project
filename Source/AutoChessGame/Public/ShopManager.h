@@ -2,9 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ShopWidget.h"
-#include "PlayerManager.h"
+#include "ItemData.h"
 #include "ShopManager.generated.h"
+
+// š ‘O•ûéŒ¾‚¾‚¯
+class ABoardManager;
+class APlayerManager;
+class UShopWidget;
+
+class APlayerManager;
 
 UCLASS()
 class AUTOCHESSGAME_API AShopManager : public AActor
@@ -53,5 +59,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     APlayerManager* PlayerManagerRef;
+
+    EItemRarity GetRandomRarityForLevel(int32 PlayerLevel)const;
+
+    bool GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem)const;
 
 };

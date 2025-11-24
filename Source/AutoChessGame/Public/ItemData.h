@@ -4,6 +4,14 @@
 #include "Engine/DataTable.h"
 #include "ItemData.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+    Common UMETA(DisplayName="Common"),
+    Rare   UMETA(DisplayName="Rare"),
+    Epic   UMETA(DisplayName="Epic")
+};
+
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
@@ -30,4 +38,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float EffectValue;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    EItemRarity Rarity = EItemRarity::Common;
 };

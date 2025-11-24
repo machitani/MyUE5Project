@@ -6,7 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "ItemData.h"
 #include "UnitSaveData.h"
+//#include "BoardManager.h"
 #include "PlayerManager.generated.h"
+
+class ABoardManager;
 
 UCLASS()
 class AUTOCHESSGAME_API APlayerManager : public AActor
@@ -38,9 +41,22 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Level")
 	void AddExp(int32 Amout);
 
+	UFUNCTION(BlueprintCallable,Category="Level")
+	void OnLevelUp();
+
+	UFUNCTION()
+	void OnRewardSelected(FName SelectedUnitID);
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Level")
+	TSubclassOf<class ULevelUpRewardWidget>LevelUpRewardWidgetClass;
+
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FUnitSaveData>SavedUnits;
 
+	UPROPERTY(BlueprintReadWrite,Category="Units")
+	TArray<FName>OwnedUnitIDs;
 
+	UPROPERTY(BlueprintReadWrite,Category="Ref")
+	ABoardManager* BoardManagerRef = nullptr;
 
-};
+	};

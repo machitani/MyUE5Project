@@ -13,15 +13,27 @@ public:
     UPROPERTY(BlueprintReadWrite)
     FName UnitID;
 
+    // ---- 基礎ステータス（アイテム適用前の素の値） ----
     UPROPERTY(BlueprintReadWrite)
-    float BaseHP;
+    float BaseHP = 0.f;
 
     UPROPERTY(BlueprintReadWrite)
-    float BaseAttack;
+    float BaseAttack = 0.f;
 
+    UPROPERTY(BlueprintReadWrite)
+    float BaseDefense = 0.f;
+
+    UPROPERTY(BlueprintReadWrite)
+    float BaseMagicPower = 0.f;
+
+    UPROPERTY(BlueprintReadWrite)
+    float BaseMagicDefense = 0.f;
+
+    // ---- 装備アイテム ----
     UPROPERTY(BlueprintReadWrite)
     TArray<FItemData> EquippedItems;
 
+    // ---- どのタイルにいたか ----
     UPROPERTY(BlueprintReadWrite)
-    int32 SavedTileIndex;
+    int32 SavedTileIndex = -1;
 };

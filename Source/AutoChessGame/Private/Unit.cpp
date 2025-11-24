@@ -1,22 +1,10 @@
 #include "Unit.h"
-#include "Components/StaticMeshComponent.h"
-#include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
-#include "EngineUtils.h"
-#include "ItemData.h"
-#include "UnitSaveData.h"
 #include "Tile.h"
 #include "BoardManager.h"
-#include "PlayerManager.h"
-#include "CoreMinimal.h"
-#include "Engine/DataTable.h"
-#include "Engine/Texture2D.h"
-#include "CustomPlayerController.h"
-#include "UnitEquiqSlot.h"
 #include "Kismet/GameplayStatics.h"
-#include "Components/VerticalBox.h"
-
-//UUnitHoverInfoWidget* AUnit::CurrentHoverWidget = nullptr;
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "UnitHoverInfoWidget.h"
 
 AUnit::AUnit()
 {
@@ -25,120 +13,33 @@ AUnit::AUnit()
     UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
     RootComponent = UnitMesh;
 
-    bIsDragging = false;
-    DragOffset = FVector::ZeroVector;
-
-    UnitMesh->SetMobility(EComponentMobility::Movable);
-    UnitMesh->SetGenerateOverlapEvents(true);
-    UnitMesh->bSelectable = true;
-
-    // ★ ここ追加
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     UnitMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     UnitMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
     UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
 
-    CurrentTile = nullptr;
-    OriginalLocation = FVector::ZeroVector;
-    bCanDrag = true;
-    TimeSinceLastAttack = 0.0f;
-}
-
-
-void AUnit::StartDrag(const FVector& MouseWorld)
-{
-    if (!bCanDrag) return;
-
-    bIsDragging = true;
-    UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-    DragOffset = GetActorLocation() - MouseWorld;
-}
-
-void AUnit::EndDrag()
-{
     bIsDragging = false;
-    UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-    if (!OwningBoardManager)
-    {
-        SetActorLocation(OriginalLocation);
-        return;
-    }
-
-    FVector UnitLoc = GetActorLocation();
-    ATile* Tile = OwningBoardManager->GetTileUnderLocation(UnitLoc);
-
-    if (Tile)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("[EndDrag] Drop on tile: %s"), *Tile->GetName());
-
-        // プレイヤー側タイルに置く場合だけチェックする
-        if (Tile->bIsPlayerTile && OwningBoardManager->PlayerMangerInstance)
-        {
-            const int32 MaxCount = OwningBoardManager->PlayerMangerInstance->MaxUnitCount;
-
-            // 今ボードに出ているプレイヤーユニット数
-            const int32 CurrentCount = OwningBoardManager->GetDeployedPlayerUnitCount();
-
-            // このユニットが「もともとプレイヤーボードにいたか？」を判定
-            const bool bWasOnPlayerBoard =
-                (CurrentTile && CurrentTile->bIsPlayerTile);
-
-            // 新しい状態でのユニット数（新しく出す場合だけ +1）
-            int32 NewCount = CurrentCount;
-            if (!bWasOnPlayerBoard)
-            {
-                NewCount += 1;
-            }
-
-            if (!bWasOnPlayerBoard && NewCount > MaxCount)
-            {
-                // 上限オーバーなので元の位置に戻す
-                UE_LOG(LogTemp, Warning,
-                    TEXT("[EndDrag] Cannot place unit: over max unit count (New:%d / Max:%d)"),
-                    NewCount, MaxCount);
-
-                SetActorLocation(OriginalLocation);
-                return;
-            }
-        }
-
-        OwningBoardManager->MoveUnitToTile(this, Tile);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("[EndDrag] No tile found, restore pos"));
-        SetActorLocation(OriginalLocation);
-    }
+    bCanDrag = true;
 }
 
-
-void AUnit::UpdateDrag(const FVector& MouseWorld)
+void AUnit::BeginPlay()
 {
-    if (!bIsDragging) return;
+    Super::BeginPlay();
 
-    FVector Target = MouseWorld + DragOffset;
-    Target.Z = GetActorLocation().Z; // 高さ維持
-    SetActorLocation(Target);
-}
+    BaseHP = HP;
+    BaseAttack = Attack;
+    BaseDefense = Defense;
+    BaseMagicPower = MagicPower;
+    BaseMagicDefense = MagicDefense;
 
-void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
-{
-    UE_LOG(LogTemp, Warning, TEXT("CLICK!! %s"), *GetName());
-
-    if (ButtonPressed == EKeys::RightMouseButton)
-    {
-        ShowUnitInfo();
-    }
+    LastLocation = GetActorLocation();
 }
 
 void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    
     if (bIsDragging)
     {
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -161,28 +62,55 @@ void AUnit::Tick(float DeltaTime)
     UpdateAnimationState();
 }
 
-void AUnit::BeginPlay()
+void AUnit::StartDrag(const FVector& MouseWorld)
 {
-    Super::BeginPlay();
+    if (!bCanDrag) return;
 
-    BaseHP = HP;
-    BaseAttack = Attack;
+    bIsDragging = true;
+    UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    LastLocation = GetActorLocation();
-
+    DragOffset = GetActorLocation() - MouseWorld;
 }
 
-void AUnit::CheckForTarget(const float DeltaTime)
+void AUnit::UpdateDrag(const FVector& MouseWorld)
 {
-    if (!OwningBoardManager) return;
-    if (OwningBoardManager->CurrentPhase != EGamePhase::Battle) return;
+    if (!bIsDragging) return;
 
-    // 攻撃クールダウン更新
+    FVector Target = MouseWorld + DragOffset;
+    Target.Z = GetActorLocation().Z;
+
+    SetActorLocation(Target);
+}
+
+void AUnit::EndDrag()
+{
+    bIsDragging = false;
+    UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    if (!OwningBoardManager)
+    {
+        SetActorLocation(OriginalLocation);
+        return;
+    }
+
+    FVector UnitLoc = GetActorLocation();
+    ATile* Tile = OwningBoardManager->GetTileUnderLocation(UnitLoc);
+
+    if (Tile)
+    {
+        OwningBoardManager->MoveUnitToTile(this, Tile);
+    }
+    else
+    {
+        SetActorLocation(OriginalLocation);
+    }
+}
+
+void AUnit::CheckForTarget(float DeltaTime)
+{
     TimeSinceLastAttack += DeltaTime;
-
     if (TimeSinceLastAttack < AttackInterval) return;
 
-    // 最も近い敵を探索
     AUnit* ClosestEnemy = nullptr;
     float ClosestDist = FLT_MAX;
 
@@ -193,10 +121,10 @@ void AUnit::CheckForTarget(const float DeltaTime)
         if (Other->Team == Team) continue;
         if (Other->HP <= 0.f) continue;
 
-        float Distance = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
-        if (Distance < ClosestDist)
+        float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
+        if (Dist < ClosestDist)
         {
-            ClosestDist = Distance;
+            ClosestDist = Dist;
             ClosestEnemy = Other;
         }
     }
@@ -205,20 +133,18 @@ void AUnit::CheckForTarget(const float DeltaTime)
 
     if (ClosestDist <= Range)
     {
-        // 射程内なら攻撃
         AttackTarget(ClosestEnemy);
         TimeSinceLastAttack = 0.f;
     }
     else
     {
-        // 射程外なら移動
-        FVector NewLocation = FMath::VInterpConstantTo(
+        FVector NewLoc = FMath::VInterpConstantTo(
             GetActorLocation(),
             ClosestEnemy->GetActorLocation(),
             DeltaTime,
-            MoveSpeed // 1秒あたりの移動距離
+            MoveSpeed
         );
-        SetActorLocation(NewLocation);
+        SetActorLocation(NewLoc);
     }
 }
 
@@ -228,96 +154,72 @@ void AUnit::AttackTarget(AUnit* Target)
 
     bIsAttacking = true;
 
-    Target->HP -= Attack;
+    // 物理攻撃（基本攻撃）
+    Target->TakePhysicalDamage(Attack);
 
-    UE_LOG(LogTemp, Warning, TEXT("%s attacked %s (HP: %.1f)"),
-        *GetName(), *Target->GetName(), Target->HP);
-
-    if (Target->HP <= 0.f)
+    // スキルが使えるなら発動
+    if (CanUseSkill())
     {
-        Target->OnDeath();
+        UseSkill(Target);
     }
+}
 
-    //bIsAttacking = false;
+void AUnit::TakePhysicalDamage(float DamageAmount)
+{
+    float FinalDamage = FMath::Max(1.f, DamageAmount - Defense);
+    HP -= FinalDamage;
+
+    UE_LOG(LogTemp, Warning, TEXT("%s Takes Physical Damage: %.1f"), *GetName(), FinalDamage);
+
+    if (HP <= 0.f) OnDeath();
+}
+
+void AUnit::TakeMagicDamage(float DamageAmount)
+{
+    float FinalDamage = FMath::Max(1.f, DamageAmount - MagicDefense);
+    HP -= FinalDamage;
+
+    UE_LOG(LogTemp, Warning, TEXT("%s Takes Magic Damage: %.1f"), *GetName(), FinalDamage);
+
+    if (HP <= 0.f) OnDeath();
 }
 
 void AUnit::OnDeath()
 {
-    UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
-
+    bIsDead = true;
     bIsAttacking = false;
     bIsMoving = false;
-    bIsDead = true;
 
-   
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
         CurrentTile->OccupiedUnit = nullptr;
-        //CurrentTile = nullptr;
     }
 
-    // BoardManager の配列から削除
-    /*if (OwningBoardManager)
-    {
-        if (Team == EUnitTeam::Player)
-            OwningBoardManager->PlayerUnits.Remove(this);
-        else
-            OwningBoardManager->EnemyUnits.Remove(this);
-    }*/
-
-    Destroy();   // ← これが重要！
+    Destroy();
 }
-
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
-    UE_LOG(LogTemp, Warning, TEXT("GET ITEM"))
-
-        EquipedItems.Add(Item);
-
-        ApplyItemEffect(Item);
+    EquipedItems.Add(Item);
+    ApplyItemEffect(Item);
 }
 
 void AUnit::ApplyItemEffect(const FItemData& Item)
 {
-    if (Item.EffectType == "Attack")
-    {
-        UE_LOG(LogTemp, Warning, TEXT("ATTACK"))
-        Attack += Item.EffectValue;
-        
-    }
-    if (Item.EffectType == "HP")
-    {
-        HP += Item.EffectValue;
-    }
-}
-
-void AUnit::UpdateAnimationState()
-{
-    // 移動判定
-    FVector Now = GetActorLocation();
-    float Distance = FVector::Dist(Now, LastLocation);
-    bIsMoving = (Distance > 0.1f);
-    LastLocation = Now;
-
-    // 攻撃中の判定は Tick で触らない
-    // bIsAttacking は AttackTarget 内で管理される
-
-    // 死亡状態の設定
-    if (HP <= 0.f)
-    {
-        //bIsDead = true;
-    }
+    if (Item.EffectType == "Attack") Attack += Item.EffectValue;
+    if (Item.EffectType == "HP") HP += Item.EffectValue;
 }
 
 void AUnit::ReapplayAllItemEffects()
 {
-
     HP = BaseHP;
     Attack = BaseAttack;
+    Defense = BaseDefense;
+    MagicPower = BaseMagicPower;
+    MagicDefense = BaseMagicDefense;
 
-    for (const FItemData& Item : EquipedItems)
+    for (auto& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
     }
@@ -330,15 +232,13 @@ FUnitSaveData AUnit::MakeSaveData()
     Data.BaseHP = BaseHP;
     Data.BaseAttack = BaseAttack;
     Data.EquippedItems = EquipedItems;
+
     if (CurrentTile && OwningBoardManager)
     {
-        Data.SavedTileIndex = OwningBoardManager
-             ->PlayerTiles.IndexOfByKey(CurrentTile);
+        Data.SavedTileIndex =
+            OwningBoardManager->PlayerTiles.IndexOfByKey(CurrentTile);
     }
-     else
-     {
-        Data.SavedTileIndex = -1;
-     }
+    else Data.SavedTileIndex = -1;
 
     return Data;
 }
@@ -347,19 +247,45 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
 {
     BaseHP = Data.BaseHP;
     BaseAttack = Data.BaseAttack;
+    BaseDefense = Data.BaseDefense;
+    BaseMagicPower = Data.BaseMagicPower;
+    BaseMagicDefense = Data.BaseMagicDefense;
+
     EquipedItems = Data.EquippedItems;
 
+    //一旦素の値を反映
     HP = BaseHP;
     Attack = BaseAttack;
+    Defense = BaseDefense;
+    MagicPower = BaseMagicPower;
+    MagicDefense = BaseMagicDefense;
+
     for (auto& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
     }
 }
 
-void AUnit::UpdateHoverWidget()
+void AUnit::ShowUnitInfo()
 {
-   
+    if (bIsDead) return;
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC || !HoverWidgetClass) return;
+
+    // 既存削除
+    if (HoverWidget)
+    {
+        HoverWidget->RemoveFromParent();
+        HoverWidget = nullptr;
+    }
+
+    HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
+    if (HoverWidget)
+    {
+        HoverWidget->SetUnitInfo(UnitID, HP, Attack,Defense,MagicPower,MagicDefense,EquipedItems);
+        HoverWidget->AddToViewport();
+    }
 }
 
 void AUnit::HideUnitInfo()
@@ -371,40 +297,17 @@ void AUnit::HideUnitInfo()
     }
 }
 
-void AUnit::ShowUnitInfo()
+void AUnit::UpdateAnimationState()
 {
-    if (bIsDead) return;
+    FVector Now = GetActorLocation();
+    bIsMoving = (FVector::Dist(Now, LastLocation) > 0.1f);
+    LastLocation = Now;
+}
 
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (!PC || !HoverWidgetClass) return;
-
-    UE_LOG(LogTemp, Warning, TEXT("RIGHT CLICK"));
-
-    //1. 他のユニットが持っている HoverWidget を全部消す
-    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+    if (ButtonPressed == EKeys::RightMouseButton)
     {
-        AUnit* Other = *It;
-        if (Other && Other != this && Other->HoverWidget)
-        {
-            Other->HoverWidget->RemoveFromParent();
-            Other->HoverWidget = nullptr;
-        }
-    }
-
-    //2. 自分の HoverWidget を作り直す or 再利用する
-
-    // すでに自分のがあれば一旦消す（重複防止）
-    if (HoverWidget)
-    {
-        HoverWidget->RemoveFromParent();
-        HoverWidget = nullptr;
-    }
-
-    // 新しく作る
-    HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
-    if (HoverWidget)
-    {
-        HoverWidget->SetUnitInfo(UnitID, HP, Attack, EquipedItems);
-        HoverWidget->AddToViewport();
+        ShowUnitInfo();
     }
 }

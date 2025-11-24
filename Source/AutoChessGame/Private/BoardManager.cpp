@@ -4,6 +4,7 @@
 #include "UGameHUD.h"
 #include "PlayerManager.h"
 #include "ShopManager.h"
+#include "PlayerHUD.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -51,12 +52,14 @@ void ABoardManager::BeginPlay()
 
         if (Found.Num() > 0)
         {
-            PlayerMangerInstance = Cast<APlayerManager>(Found[0]);
-            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerMangerInstance));
+            PlayerManagerInstance = Cast<APlayerManager>(Found[0]);
+            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerManagerInstance));
+
+            PlayerManagerInstance->BoardManagerRef = this;
         }
         else
         {
-            PlayerMangerInstance = nullptr;
+            PlayerManagerInstance = nullptr;
             UE_LOG(LogTemp, Error, TEXT("No PlayerManager found in level!"));
         }
     }
@@ -113,59 +116,39 @@ void ABoardManager::SpawnInitialUnits()
     PlayerUnits.Empty();
 
     // ★ Knight
-    if (PlayerTiles.IsValidIndex(0))
+    if (PlayerTiles.IsValidIndex(1))
     {
-        FVector SpawnLocation = PlayerTiles[0]->GetActorLocation() + FVector(0, 0, 100);
+        FVector SpawnLocation = PlayerTiles[1]->GetActorLocation() + FVector(0, 0, 100);
 
         AUnit* NewKnight = GetWorld()->SpawnActor<AUnit>(PlayerKnightClass, SpawnLocation, FRotator::ZeroRotator);
         if (NewKnight)
         {
             NewKnight->Team = EUnitTeam::Player;
-            NewKnight->CurrentTile = PlayerTiles[0];
+            NewKnight->CurrentTile = PlayerTiles[1];
             NewKnight->OwningBoardManager = this;
             NewKnight->UnitID = FName("Knight");
 
-            PlayerTiles[0]->bIsOccupied = true;
-            PlayerTiles[0]->OccupiedUnit = NewKnight;
+            PlayerTiles[1]->bIsOccupied = true;
+            PlayerTiles[1]->OccupiedUnit = NewKnight;
 
             PlayerUnits.Add(NewKnight);
         }
     }
 
-    // ★ Wizard
-    if (PlayerTiles.IsValidIndex(2))
-    {
-        FVector SpawnLocation = PlayerTiles[2]->GetActorLocation() + FVector(0, 0, 100);
-
-        AUnit* NewWizard = GetWorld()->SpawnActor<AUnit>(PlayerWizardClass, SpawnLocation, FRotator::ZeroRotator);
-        if (NewWizard)
-        {
-            NewWizard->Team = EUnitTeam::Player;
-            NewWizard->CurrentTile = PlayerTiles[2];
-            NewWizard->OwningBoardManager = this;
-            NewWizard->UnitID = FName("Wizard");
-
-            PlayerTiles[2]->bIsOccupied = true;
-            PlayerTiles[2]->OccupiedUnit = NewWizard;
-
-            PlayerUnits.Add(NewWizard);
-        }
-    }
-
     // ★ Archer
-    if (PlayerTiles.IsValidIndex(4))
+    if (PlayerTiles.IsValidIndex(5))
     {
-        FVector SpawnLocation = PlayerTiles[4]->GetActorLocation() + FVector(0, 0, 100);
+        FVector SpawnLocation = PlayerTiles[5]->GetActorLocation() + FVector(0, 0, 100);
 
         AUnit* NewArcher = GetWorld()->SpawnActor<AUnit>(PlayerArcherClass, SpawnLocation, FRotator::ZeroRotator);
         if (NewArcher)
         {
             NewArcher->Team = EUnitTeam::Player;
-            NewArcher->CurrentTile = PlayerTiles[4];
+            NewArcher->CurrentTile = PlayerTiles[5];
             NewArcher->OwningBoardManager = this;
             NewArcher->UnitID = FName("Archer");
-            PlayerTiles[4]->bIsOccupied = true;
-            PlayerTiles[4]->OccupiedUnit = NewArcher;
+            PlayerTiles[5]->bIsOccupied = true;
+            PlayerTiles[5]->OccupiedUnit = NewArcher;
 
             PlayerUnits.Add(NewArcher);
         }
@@ -313,9 +296,9 @@ void ABoardManager::ProcessBattleTick()
         {
             UE_LOG(LogTemp, Warning, TEXT("Victory!"));
 
-            if (PlayerMangerInstance)
+            if (PlayerManagerInstance)
             {
-                PlayerMangerInstance->AddExp(2);
+                PlayerManagerInstance->AddExp(2);
                 UE_LOG(LogTemp, Warning, TEXT("Round Clear: +2 EXP"));
             }
             if (ShopManagerRef)
@@ -380,16 +363,16 @@ void ABoardManager::ResetBoardForNextRound()
     bRoundEnded = false;
 
     // ★ プレイヤーユニット保存して Destroy
-    if (PlayerMangerInstance)
+    if (PlayerManagerInstance)
     {
-        PlayerMangerInstance->SavedUnits.Empty();
+        PlayerManagerInstance->SavedUnits.Empty();
 
         for (AUnit* Unit : PlayerUnits)
         {
             if (!Unit) continue;
 
             FUnitSaveData Data = Unit->MakeSaveData();
-            PlayerMangerInstance->SavedUnits.Add(Data);
+            PlayerManagerInstance->SavedUnits.Add(Data);
 
             Unit->Destroy();
         }
@@ -538,11 +521,11 @@ ATile* ABoardManager::GetTileUnderLocation(const FVector& Location)
 
 void ABoardManager::SpawnPlayerUnitsFromSaveData()
 {
-    if (!PlayerMangerInstance) return;
+    if (!PlayerManagerInstance) return;
 
     PlayerUnits.Empty();
 
-    for (const FUnitSaveData& Data : PlayerMangerInstance->SavedUnits)
+    for (const FUnitSaveData& Data : PlayerManagerInstance->SavedUnits)
     {
         // UnitID からクラスを決定
         TSubclassOf<AUnit> UnitClass = GetPlayerUnitClassByID(Data.UnitID);
@@ -645,7 +628,82 @@ TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
     {
         return PlayerArcherClass;
     }
+    else if (UnitID == FName("Bear"))
+    {
+        return PlayerBearClass;
+    }
+    else if (UnitID == FName("Nurse"))
+    {
+        return PlayerNurseClass;
+    }
+    else if (UnitID == FName("Adventurer"))
+    {
+        return PlayerAdventurerClass;
+    }
 
     // どれにも当てはまらない場合の保険（適当にKnight返すなど）
-    return PlayerKnightClass;
+    return PlayerWizardClass;
+}
+
+AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
+{
+    TSubclassOf<AUnit>UnitClass = GetPlayerUnitClassByID(UnitID);
+    if (!UnitClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpawnRewardUnit: No Class for UnitID %s"), *UnitID.ToString());
+        return nullptr;
+    }
+
+    if (PlayerManagerInstance)
+    {
+        int32 CurrentDeployed = GetDeployedPlayerUnitCount();
+        if (CurrentDeployed >= PlayerManagerInstance->MaxUnitCount)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: MaxdUnitCount reached (%d / %d)."), CurrentDeployed, PlayerManagerInstance->MaxUnitCount);
+            return nullptr;
+        }
+    }
+
+    ATile* FreeTile = nullptr;
+    for (ATile* Tile : PlayerTiles)
+    {
+        if (Tile && !Tile->bIsOccupied)
+        {
+            FreeTile = Tile;
+            break;
+        }
+    }
+    
+    if (!FreeTile)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("SpwanRewardUnit: No free player tile!"));
+        return nullptr;
+    }
+
+    FVector SpawnLocation = FreeTile->GetActorLocation() + FVector(0, 0, 100);
+
+    AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(UnitClass, SpawnLocation, FRotator::ZeroRotator);
+    if (!NewUnit)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpawnRewardUnit: Failed to spawn unit for %s"), *UnitID.ToString());
+        return nullptr;
+    }
+
+    //各種設定
+    NewUnit->Team = EUnitTeam::Player;
+    NewUnit->CurrentTile = FreeTile;
+    NewUnit->OriginalLocation = SpawnLocation;
+    NewUnit->OwningBoardManager = this;
+    NewUnit->UnitID = UnitID;
+
+    //タイル側の状態更新
+    FreeTile->bIsOccupied = true;
+    FreeTile->OccupiedUnit = NewUnit;
+
+    //管理用配列の追加
+    PlayerUnits.Add(NewUnit);
+
+    UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: Spawned %s at tile %s"), *UnitID.ToString(), *FreeTile->GetName());
+
+    return NewUnit;
 }
