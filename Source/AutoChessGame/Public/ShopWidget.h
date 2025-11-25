@@ -72,10 +72,5 @@ public:
     UFUNCTION(BlueprintCallable)
     void OnReadyButtonClicked();
 
-    //ƒhƒƒbƒv‚ğó‚¯æ‚é
-    virtual bool NativeOnDrop(
-        const FGeometry& InGeometry,
-        const FDragDropEvent& InDragDropEvent,
-        UDragDropOperation* InOperation
-    ) override;
+   
 };

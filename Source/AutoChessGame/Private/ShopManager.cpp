@@ -158,12 +158,13 @@ EItemRarity AShopManager::GetRandomRarityForLevel(int32 PlayerLevel) const
 
 bool AShopManager::GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem) const
 {
-    if (!ItemTable)return false;
-
-    TArray<FItemData*>Candidates;
+    if (!ItemTable) return false;
 
     static const FString Context(TEXT("ItemRandomPick"));
-    TArray<FName>RowNames = ItemTable->GetRowNames();
+    TArray<FName> RowNames = ItemTable->GetRowNames();
+
+    // ★ Rarity が一致する RowName だけ集める
+    TArray<FName> Candidates;
 
     for (const FName& RowName : RowNames)
     {
@@ -171,38 +172,90 @@ bool AShopManager::GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem)
         {
             if (Row->Rarity == Rarity)
             {
-                Candidates.Add(Row);
+                Candidates.Add(RowName);
             }
         }
     }
 
+    if (Candidates.Num() == 0)
+    {
+        return false;
+    }
+
+    int32 Index = FMath::RandRange(0, Candidates.Num() - 1);
+    FName SelectedRowName = Candidates[Index];
+
+    if (FItemData* Row = ItemTable->FindRow<FItemData>(SelectedRowName, Context))
+    {
+        OutItem = *Row;
+        OutItem.RowName = SelectedRowName;   // ★ ここで RowName を覚えさせる
+        return true;
+    }
+
     return false;
+}
+
+FItemData AShopManager::CreateRandomShopItem()
+{
+    FItemData Result;
+
+    if (!PlayerManagerRef || !ItemTable)
+    {
+        return Result; // デフォルト（全部0）返す
+    }
+
+    int32 Level = PlayerManagerRef->PlayerLevel;
+
+    // 1. レベルからレアリティを決める
+    EItemRarity Rarity = GetRandomRarityForLevel(Level);
+
+    // 2. そのレアリティからアイテムを1つ選ぶ
+    if (!GetRandomItemByRarity(Rarity, Result))
+    {
+        // 指定レアリティのアイテムがなかった場合 → 全レアリティからランダムに拾う fallback
+        UE_LOG(LogTemp, Warning, TEXT("No items for rarity %d, fallback to any rarity."), (int32)Rarity);
+
+        static const FString Context(TEXT("ItemFallback"));
+        TArray<FName> RowNames = ItemTable->GetRowNames();
+        if (RowNames.Num() > 0)
+        {
+            int32 Index = FMath::RandRange(0, RowNames.Num() - 1);
+            FName SelectedRowName = RowNames[Index];
+
+            if (FItemData* Row = ItemTable->FindRow<FItemData>(SelectedRowName, Context))
+            {
+                Result = *Row;
+                Result.RowName = SelectedRowName; // ★ fallback でも RowName セット
+            }
+        }
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("Shop Item: %s (Rarity=%d, Level=%d)"),
+        *Result.RowName.ToString(),
+        (int32)Result.Rarity,
+        PlayerManagerRef->PlayerLevel
+    );
+
+    return Result;
 }
 
 void AShopManager::RerollShop(int32 ItemCount)
 {
     if (!ShopWidget || !ItemTable) return;
 
-    TArray<FName> RowNames = ItemTable->GetRowNames();
-    if (RowNames.Num() == 0) return;
-
     CurrentItems.Empty();
 
     for (int32 i = 0; i < ItemCount; i++)
     {
-        int32 Index = FMath::RandRange(0, RowNames.Num() - 1);
-        FName SelectedRow = RowNames[Index];
+        // ★ ここでレベルを見て、レアリティを決めて、アイテムを1つ作る
+        FItemData NewItem = CreateRandomShopItem();
 
-        const FItemData* FoundItem = ItemTable->FindRow<FItemData>(SelectedRow, TEXT("Reroll"));
-
-        if (FoundItem)
-        {
-            FItemData Copy = *FoundItem;
-            Copy.RowName = SelectedRow;   // ← ★これが最重要 ★
-            CurrentItems.Add(Copy);
-        }
+        // RowName が中にセットされていることが前提
+        CurrentItems.Add(NewItem);
     }
 
+    // UI更新
     ShopWidget->UpdateShopUI();
 
     for (int32 i = 0; i < CurrentItems.Num(); i++)
@@ -211,8 +264,8 @@ void AShopManager::RerollShop(int32 ItemCount)
         {
             ShopWidget->ShopSlots[i]->RefreshItemView(CurrentItems[i]);
         }
-
     }
 
     ShopWidget->RefreshSlots();
 }
+

@@ -54,6 +54,12 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
     float BaseMagicDefense;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseRange;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseMoveSpeed;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float Range = 200.f;
 
@@ -100,18 +106,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     TArray<FItemData> EquipedItems;
 
-    /*UPROPERTY()
-    class UUnitEquipSlot* EquipSlotWidget;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Equip")
-    TSubclassOf<class UUnitEquipSlot> EquipSlotClass;
-
-    UPROPERTY()
-    UUnitEquipSlot* EquipSlotInstance;*/
-
     void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
     void ApplyItemEffect(const FItemData& Item);
     void ReapplayAllItemEffects();
+
+    UFUNCTION(BlueprintCallable,Category="Item")
+    void RemoveItems();
 
     // ====== Hover ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -122,7 +122,6 @@ public:
 
     void ShowUnitInfo();
     void HideUnitInfo();
-    void UpdateHoverWidget();
 
     // ====== èÛë‘ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
@@ -182,4 +181,5 @@ public:
     // ====== É}ÉEÉX ======
     UFUNCTION()
     void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
+
 };

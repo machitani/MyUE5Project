@@ -9,6 +9,8 @@
 class UImage;
 class UTextBlock;
 
+// ItemBenchSlot.h
+
 UCLASS()
 class AUTOCHESSGAME_API UItemBenchSlot : public UUserWidget
 {
@@ -27,17 +29,15 @@ public:
     UFUNCTION(BlueprintCallable)
     void SetBenchItem(const FItemData& NewItem);
 
-    // すでに UUserWidget 継承してるクラスの中に
-
-    virtual void NativeOnDragCancelled(
-        const FDragDropEvent& InDragDropEvent,
-        UDragDropOperation* InOperation
-    ) override;
-
-
 protected:
     virtual void NativePreConstruct() override;
     void RefreshBenchView();
+
+    // ★ 左クリックを拾う
+    virtual FReply NativeOnMouseButtonDown(
+        const FGeometry& InGeometry,
+        const FPointerEvent& InMouseEvent
+    ) override;
 
     UPROPERTY(meta = (BindWidget))
     UImage* ItemIcon;

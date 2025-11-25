@@ -37,6 +37,8 @@ void AUnit::BeginPlay()
     BaseDefense = Defense;
     BaseMagicPower = MagicPower;
     BaseMagicDefense = MagicDefense;
+    BaseRange = Range;
+    BaseMoveSpeed = MoveSpeed;
 
     LastLocation = GetActorLocation();
 
@@ -216,7 +218,7 @@ void AUnit::OnDeath()
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
-    EquipedItems.Add(Item);
+   EquipedItems.Add(Item);
     ApplyItemEffect(Item);
 }
 
@@ -224,6 +226,11 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
 {
     if (Item.EffectType == "Attack") Attack += Item.EffectValue;
     if (Item.EffectType == "HP") HP += Item.EffectValue;
+    if (Item.EffectType == "Defense")Defense += Item.EffectValue;
+    if (Item.EffectType == "MagicPower")MagicPower += Item.EffectValue;
+    if (Item.EffectType == "MagicDefense")MagicDefense += Item.EffectValue;
+    if (Item.EffectType == "Range")Range += Item.EffectValue;
+    if (Item.EffectType == "MoveSpeed")MoveSpeed += Item.EffectValue;
 }
 
 void AUnit::ReapplayAllItemEffects()
@@ -233,11 +240,25 @@ void AUnit::ReapplayAllItemEffects()
     Defense = BaseDefense;
     MagicPower = BaseMagicPower;
     MagicDefense = BaseMagicDefense;
+    Range = BaseRange;
+    MoveSpeed = BaseMoveSpeed;
 
     for (auto& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
     }
+}
+
+void AUnit::RemoveItems()
+{
+    // 装備アイテム配列を空っぽに
+    EquipedItems.Empty();
+
+    // ステータスを基礎値＋アイテム無しの状態に戻す
+    ReapplayAllItemEffects();
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("[Unit] RemoveAllItems called on %s"), *GetName());
 }
 
 FUnitSaveData AUnit::MakeSaveData()
@@ -246,6 +267,9 @@ FUnitSaveData AUnit::MakeSaveData()
     Data.UnitID = UnitID;
     Data.BaseHP = BaseHP;
     Data.BaseAttack = BaseAttack;
+    Data.BaseDefense = BaseDefense;
+    Data.BaseMagicPower = BaseMagicPower;
+    Data.BaseMagicDefense = BaseMagicDefense;
     Data.EquippedItems = EquipedItems;
 
     if (CurrentTile && OwningBoardManager)
@@ -265,6 +289,8 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     BaseDefense = Data.BaseDefense;
     BaseMagicPower = Data.BaseMagicPower;
     BaseMagicDefense = Data.BaseMagicDefense;
+    BaseRange = Data.BaseRange;
+    BaseMoveSpeed = Data.BaseMoveSpeed;
 
     EquipedItems = Data.EquippedItems;
 
@@ -274,6 +300,8 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     Defense = BaseDefense;
     MagicPower = BaseMagicPower;
     MagicDefense = BaseMagicDefense;
+    Range = BaseRange;
+    MoveSpeed = BaseMoveSpeed;
 
     for (auto& Item : EquipedItems)
     {
@@ -288,7 +316,7 @@ void AUnit::ShowUnitInfo()
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC || !HoverWidgetClass) return;
 
-    // ① すでに画面に出ているホバーUIを全部消す
+    // ① すでに出ているホバーUIを全部消す
     {
         TArray<UUserWidget*> Existing;
         UWidgetBlueprintLibrary::GetAllWidgetsOfClass(
@@ -311,10 +339,23 @@ void AUnit::ShowUnitInfo()
     HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
     if (HoverWidget)
     {
-        HoverWidget->SetUnitInfo(UnitID, HP, Attack, Defense, MagicPower, MagicDefense, EquipedItems);
+        HoverWidget->OwnerUnit = this;
+
+        HoverWidget->SetUnitInfo(
+            UnitID,
+            HP,
+            Attack,
+            Defense,
+            MagicPower,
+            MagicDefense,
+            Range,
+            MoveSpeed,
+            EquipedItems
+        );
         HoverWidget->AddToViewport();
     }
 }
+
 
 void AUnit::HideUnitInfo()
 {
@@ -339,54 +380,14 @@ void AUnit::UpdateAnimationState()
 void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
     UE_LOG(LogTemp, Warning,
-        TEXT("[Unit] OnUnitClicked: %s  Button=%s"),
-        *GetName(),
-        *ButtonPressed.ToString());
+        TEXT("[Unit] OnUnitClicked %s Button=%s"),
+        *GetName(), *ButtonPressed.ToString());
 
-    // 左クリック → アイテム対象にする
-    if (ButtonPressed == EKeys::LeftMouseButton)
-    {
-        // まず OwningBoardManager を使う
-        ABoardManager* BM = OwningBoardManager;
-
-        // もしまだ入ってなければ、世界から拾う
-        if (!BM)
-        {
-            BM = Cast<ABoardManager>(
-                UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
-            if (BM)
-            {
-                OwningBoardManager = BM;
-            }
-        }
-
-        if (!BM)
-        {
-            UE_LOG(LogTemp, Warning,
-                TEXT("[Unit] OnUnitClicked but BoardManager NOT found for %s"),
-                *GetName());
-            return;
-        }
-
-        // ★ ここが超重要：ItemUnit に自分をセット
-        BM->ItemUnit = this;
-
-        UE_LOG(LogTemp, Warning,
-            TEXT("[Unit] %s set as ItemUnit on %s"),
-            *GetName(),
-            *BM->GetName());
-
-        return;
-    }
-
+    // 右クリックのときだけホバー表示（元の機能だけ残す）
     if (ButtonPressed == EKeys::RightMouseButton)
     {
         ShowUnitInfo();
-        UE_LOG(LogTemp, Warning, TEXT("HOVER"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("NO HOVER"));
-
     }
 }
+
+

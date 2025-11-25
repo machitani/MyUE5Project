@@ -6,12 +6,17 @@
 #include "Components/TextBlock.h"
 #include "UnitHoverInfoWidget.generated.h"
 
+class AUnit;
+
 UCLASS()
 class AUTOCHESSGAME_API UUnitHoverInfoWidget : public UUserWidget
 {
     GENERATED_BODY()
 
 public:
+
+    UPROPERTY(BlueprintReadWrite, Category = "Unit")
+    AUnit* OwnerUnit = nullptr;
 
     // --- テキスト類 ---
     UPROPERTY(meta = (BindWidget))
@@ -32,11 +37,20 @@ public:
     UPROPERTY(meta=(BindWidget))
     UTextBlock* MagicDefenceText;
 
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* RangeText;
+
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* MoveSpeedText;
+
     // --- アイテム一覧 VerticalBox ---
     UPROPERTY(meta = (BindWidget))
     class UVerticalBox* ItemList;
 
 public:
     // ユニット情報を書き込む関数
-    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR, const TArray<FItemData>& Items);
+    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE, const TArray<FItemData>& Items);
+
+    UFUNCTION(BlueprintCallable, Category = "Unit")
+    void OnRemoveAllItemsClicked();
 };

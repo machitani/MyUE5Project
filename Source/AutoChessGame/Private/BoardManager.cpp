@@ -17,7 +17,7 @@ ABoardManager::ABoardManager()
     SelectedUnit = nullptr;
     CurrentPhase = EGamePhase::Preparation;
     bRoundEnded = false;
-    ItemUnit = nullptr;
+    //ItemUnit = nullptr;
 }
 
 void ABoardManager::BeginPlay()
@@ -56,6 +56,7 @@ void ABoardManager::BeginPlay()
             PlayerManagerInstance = Cast<APlayerManager>(Found[0]);
             UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerManagerInstance));
 
+            // BoardManager → PlayerManager の参照
             PlayerManagerInstance->BoardManagerRef = this;
         }
         else
@@ -65,8 +66,33 @@ void ABoardManager::BeginPlay()
         }
     }
 
+    // --- レベルに配置済み ShopManager を取得 ---
+    {
+        TArray<AActor*> FoundShop;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShopManager::StaticClass(), FoundShop);
+
+        if (FoundShop.Num() > 0)
+        {
+            ShopManagerRef = Cast<AShopManager>(FoundShop[0]);
+            UE_LOG(LogTemp, Warning, TEXT("ShopManager found: %s"), *GetNameSafe(ShopManagerRef));
+
+            // ShopManager が PlayerLevel を見れるようにする
+            if (ShopManagerRef && PlayerManagerInstance)
+            {
+                ShopManagerRef->PlayerManagerRef = PlayerManagerInstance;
+                UE_LOG(LogTemp, Warning, TEXT("ShopManagerRef->PlayerManagerRef set."));
+            }
+        }
+        else
+        {
+            ShopManagerRef = nullptr;
+            UE_LOG(LogTemp, Error, TEXT("No ShopManager found in level!"));
+        }
+    }
+
     StartPreparationPhase();
 }
+
 
 void ABoardManager::GenerateBoard()
 {
@@ -127,6 +153,7 @@ void ABoardManager::SpawnInitialUnits()
             NewKnight->Team = EUnitTeam::Player;
             NewKnight->CurrentTile = PlayerTiles[1];
             NewKnight->OwningBoardManager = this;
+            MoveUnitToTile(NewKnight, PlayerTiles[1]);
             NewKnight->UnitID = FName("Knight");
 
             PlayerTiles[1]->bIsOccupied = true;
@@ -147,6 +174,7 @@ void ABoardManager::SpawnInitialUnits()
             NewArcher->Team = EUnitTeam::Player;
             NewArcher->CurrentTile = PlayerTiles[5];
             NewArcher->OwningBoardManager = this;
+            MoveUnitToTile(NewArcher, PlayerTiles[5]);
             NewArcher->UnitID = FName("Archer");
             PlayerTiles[5]->bIsOccupied = true;
             PlayerTiles[5]->OccupiedUnit = NewArcher;
@@ -467,6 +495,11 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
 {
     if (!Unit || !NewTile) return;
 
+    UE_LOG(LogTemp, Warning,
+        TEXT("[BoardManager] MoveUnitToTile: %s -> %s"),
+        *Unit->GetName(),
+        *NewTile->GetName());
+
     ATile* OldTile = Unit->CurrentTile;
 
     // 他人がいるマスには置かない
@@ -476,7 +509,6 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
         return;
     }
 
-    // 古いタイルを解放（StartDragで既に解放済みなら OldTile は null）
     if (OldTile && OldTile != NewTile)
     {
         OldTile->bIsOccupied = false;
@@ -488,13 +520,14 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
     Unit->CurrentTile = NewTile;
 
     FVector Center = NewTile->GetTileCenterWorld();
-    Center.Z += 50.f; // 好きなオフセット
+    Center.Z += 50.f;
 
     Unit->SetActorLocation(Center);
     Unit->OriginalLocation = Center;
 
     NewTile->SetTileHighlight(false);
 }
+
 
 
 

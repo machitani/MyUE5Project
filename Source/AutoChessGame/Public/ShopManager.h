@@ -64,4 +64,6 @@ public:
 
     bool GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem)const;
 
+    FItemData CreateRandomShopItem();
+
 };

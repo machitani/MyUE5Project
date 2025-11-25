@@ -29,6 +29,12 @@ public:
     UPROPERTY(BlueprintReadWrite)
     float BaseMagicDefense = 0.f;
 
+    UPROPERTY(BlueprintReadWrite)
+    float BaseRange = 0.f;
+
+    UPROPERTY(BlueprintReadWrite)
+    float BaseMoveSpeed = 0.f;
+
     // ---- ‘•”õƒAƒCƒeƒ€ ----
     UPROPERTY(BlueprintReadWrite)
     TArray<FItemData> EquippedItems;
