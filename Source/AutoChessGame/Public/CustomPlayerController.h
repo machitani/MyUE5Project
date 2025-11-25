@@ -29,6 +29,7 @@ private:
     void OnLeftMouseDown();
     void OnLeftMouseUp();
     void OnRightClick();
+    void OnLeftClick();
 
     void CloseAllUnitInfoWidgets();
 

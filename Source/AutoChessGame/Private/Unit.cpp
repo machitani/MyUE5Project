@@ -3,6 +3,7 @@
 #include "BoardManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "BoardManager.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "EngineUtils.h"
@@ -18,6 +19,8 @@ AUnit::AUnit()
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     UnitMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     UnitMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    UE_LOG(LogTemp, Warning, TEXT("[Unit] Constructor: %s  binding OnClicked"), *GetName());
 
     UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
 
@@ -335,8 +338,55 @@ void AUnit::UpdateAnimationState()
 
 void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
+    UE_LOG(LogTemp, Warning,
+        TEXT("[Unit] OnUnitClicked: %s  Button=%s"),
+        *GetName(),
+        *ButtonPressed.ToString());
+
+    // 左クリック → アイテム対象にする
+    if (ButtonPressed == EKeys::LeftMouseButton)
+    {
+        // まず OwningBoardManager を使う
+        ABoardManager* BM = OwningBoardManager;
+
+        // もしまだ入ってなければ、世界から拾う
+        if (!BM)
+        {
+            BM = Cast<ABoardManager>(
+                UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
+            if (BM)
+            {
+                OwningBoardManager = BM;
+            }
+        }
+
+        if (!BM)
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("[Unit] OnUnitClicked but BoardManager NOT found for %s"),
+                *GetName());
+            return;
+        }
+
+        // ★ ここが超重要：ItemUnit に自分をセット
+        BM->ItemUnit = this;
+
+        UE_LOG(LogTemp, Warning,
+            TEXT("[Unit] %s set as ItemUnit on %s"),
+            *GetName(),
+            *BM->GetName());
+
+        return;
+    }
+
     if (ButtonPressed == EKeys::RightMouseButton)
     {
         ShowUnitInfo();
+        UE_LOG(LogTemp, Warning, TEXT("HOVER"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("NO HOVER"));
+
     }
 }

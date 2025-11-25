@@ -17,6 +17,7 @@ ABoardManager::ABoardManager()
     SelectedUnit = nullptr;
     CurrentPhase = EGamePhase::Preparation;
     bRoundEnded = false;
+    ItemUnit = nullptr;
 }
 
 void ABoardManager::BeginPlay()

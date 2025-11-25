@@ -126,6 +126,9 @@ public:
 
     void ProcessBattleTick();
 
+    UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="Unit")
+    class AUnit* ItemUnit;
+
     //FTimerHandle RoundTimerHandle;    // BattlePhase —p
     FTimerHandle PhaseTimerHandle;    // Preparation / Result —p
 

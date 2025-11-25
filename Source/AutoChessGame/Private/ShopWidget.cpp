@@ -6,6 +6,8 @@
 #include "BoardManager.h"
 #include "ItemBenchSlot.h"
 #include "Unit.h"
+#include "Tile.h"
+#include "BoardManager.h"
 #include "ShopSlotWidget.h"
 #include "ShopManager.h"
 #include "GameFramework/PlayerController.h"
@@ -100,58 +102,42 @@ bool UShopWidget::NativeOnDrop(
     const FDragDropEvent& InDragDropEvent,
     UDragDropOperation* InOperation)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] NativeOnDrop called"));
+
     Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 
-    UItemBenchSlot* BenchSlot = Cast<UItemBenchSlot>(InOperation->Payload);
+    UItemBenchSlot* BenchSlot = Cast<UItemBenchSlot>(InOperation ? InOperation->Payload : nullptr);
     if (!BenchSlot)
     {
+        UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] BenchSlot cast FAILED"));
         return false;
     }
 
     const FItemData& ItemData = BenchSlot->ItemData;
 
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (!PC) return false;
+    ABoardManager* BoardManager = Cast<ABoardManager>(
+        UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
 
-    const FVector2D DropScreenPos = InDragDropEvent.GetScreenSpacePosition();
-
-    AUnit* BestUnit = nullptr;
-    float BestDistSq = FLT_MAX;
-
-    for (TActorIterator<AUnit> It(PC->GetWorld()); It; ++It)
+    if (!BoardManager)
     {
-        AUnit* Unit = *It;
-        if (!Unit) continue;
-        if (Unit->Team != EUnitTeam::Player) continue;
-        if (Unit->bIsDead) continue;
-
-        FVector2D UnitScreenPos;
-        if (!UGameplayStatics::ProjectWorldToScreen(PC, Unit->GetActorLocation(), UnitScreenPos))
-        {
-            continue;
-        }
-
-        float DistSq = FVector2D::DistSquared(DropScreenPos, UnitScreenPos);
-
-        if (DistSq < BestDistSq)
-        {
-            BestDistSq = DistSq;
-            BestUnit = Unit;
-        }
+        UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] BoardManager not found"));
+        return false;
     }
 
-    // ドロップ位置からどれくらい近いかの許容範囲（調整ポイント）
-    const float MaxRadiusPx = 400.0f;
-
-    if (BestUnit && BestDistSq <= MaxRadiusPx * MaxRadiusPx)
+    AUnit* TargetUnit = BoardManager->ItemUnit;
+    if (!TargetUnit)
     {
-        BestUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
-        BestUnit->ReapplayAllItemEffects();
-
-        BenchSlot->ClearBenchItem();
-
-        return true;
+        UE_LOG(LogTemp, Warning,
+            TEXT("[ShopWidget] ItemUnit is NULL (no unit selected for item)"));
+        return false;
     }
 
-    return false;
+    UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] Equip item to %s"),
+        *TargetUnit->GetName());
+
+    TargetUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
+    TargetUnit->ReapplayAllItemEffects();
+    BenchSlot->ClearBenchItem();
+
+    return true;
 }
