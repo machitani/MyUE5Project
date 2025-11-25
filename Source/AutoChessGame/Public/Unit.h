@@ -100,6 +100,15 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     TArray<FItemData> EquipedItems;
 
+    /*UPROPERTY()
+    class UUnitEquipSlot* EquipSlotWidget;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Equip")
+    TSubclassOf<class UUnitEquipSlot> EquipSlotClass;
+
+    UPROPERTY()
+    UUnitEquipSlot* EquipSlotInstance;*/
+
     void EquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
     void ApplyItemEffect(const FItemData& Item);
     void ReapplayAllItemEffects();

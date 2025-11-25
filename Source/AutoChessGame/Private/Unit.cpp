@@ -3,6 +3,8 @@
 #include "BoardManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "EngineUtils.h"
 #include "UnitHoverInfoWidget.h"
 
@@ -34,6 +36,8 @@ void AUnit::BeginPlay()
     BaseMagicDefense = MagicDefense;
 
     LastLocation = GetActorLocation();
+
+    
 }
 
 void AUnit::Tick(float DeltaTime)
@@ -64,14 +68,22 @@ void AUnit::Tick(float DeltaTime)
 
 void AUnit::StartDrag(const FVector& MouseWorld)
 {
-    if (!bCanDrag) return;
+    if (!bCanDrag || bIsDragging) return;
 
     bIsDragging = true;
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+    OriginalLocation = GetActorLocation();
+
+    if (CurrentTile)
+    {
+        CurrentTile->bIsOccupied = false;
+        CurrentTile->OccupiedUnit = nullptr;
+        CurrentTile = nullptr;
+    }
+
     DragOffset = GetActorLocation() - MouseWorld;
 }
-
 void AUnit::UpdateDrag(const FVector& MouseWorld)
 {
     if (!bIsDragging) return;
@@ -273,17 +285,30 @@ void AUnit::ShowUnitInfo()
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC || !HoverWidgetClass) return;
 
-    // 既存削除
-    if (HoverWidget)
+    // ① すでに画面に出ているホバーUIを全部消す
     {
-        HoverWidget->RemoveFromParent();
-        HoverWidget = nullptr;
+        TArray<UUserWidget*> Existing;
+        UWidgetBlueprintLibrary::GetAllWidgetsOfClass(
+            this,                                      // WorldContextObject
+            Existing,                                  // 結果を入れる配列
+            UUnitHoverInfoWidget::StaticClass(),       // 探したいWidgetクラス
+            false                                      // TopLevelOnly -> falseでOK
+        );
+
+        for (UUserWidget* W : Existing)
+        {
+            if (W)
+            {
+                W->RemoveFromParent();
+            }
+        }
     }
 
+    // ② このユニット用のホバーUIを1枚だけ作る
     HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
     if (HoverWidget)
     {
-        HoverWidget->SetUnitInfo(UnitID, HP, Attack,Defense,MagicPower,MagicDefense,EquipedItems);
+        HoverWidget->SetUnitInfo(UnitID, HP, Attack, Defense, MagicPower, MagicDefense, EquipedItems);
         HoverWidget->AddToViewport();
     }
 }
@@ -296,6 +321,10 @@ void AUnit::HideUnitInfo()
         HoverWidget = nullptr;
     }
 }
+
+
+
+
 
 void AUnit::UpdateAnimationState()
 {

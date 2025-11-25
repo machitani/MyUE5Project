@@ -27,6 +27,14 @@ public:
     UFUNCTION(BlueprintCallable)
     void SetBenchItem(const FItemData& NewItem);
 
+    // Ç∑Ç≈Ç… UUserWidget åpè≥ÇµÇƒÇÈÉNÉâÉXÇÃíÜÇ…
+
+    virtual void NativeOnDragCancelled(
+        const FDragDropEvent& InDragDropEvent,
+        UDragDropOperation* InOperation
+    ) override;
+
+
 protected:
     virtual void NativePreConstruct() override;
     void RefreshBenchView();

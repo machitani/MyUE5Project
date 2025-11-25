@@ -466,30 +466,33 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
 {
     if (!Unit || !NewTile) return;
 
-    // 元のタイルを空にする
-    if (Unit->CurrentTile && Unit->CurrentTile != NewTile)
+    ATile* OldTile = Unit->CurrentTile;
+
+    // 他人がいるマスには置かない
+    if (NewTile->bIsOccupied && NewTile->OccupiedUnit != Unit)
     {
-        Unit->CurrentTile->bIsOccupied = false;
-        Unit->CurrentTile->OccupiedUnit = nullptr;
+        Unit->SetActorLocation(Unit->OriginalLocation);
+        return;
     }
 
-    // 新しいタイルを占有
+    // 古いタイルを解放（StartDragで既に解放済みなら OldTile は null）
+    if (OldTile && OldTile != NewTile)
+    {
+        OldTile->bIsOccupied = false;
+        OldTile->OccupiedUnit = nullptr;
+    }
+
     NewTile->bIsOccupied = true;
     NewTile->OccupiedUnit = Unit;
     Unit->CurrentTile = NewTile;
 
     FVector Center = NewTile->GetTileCenterWorld();
-
-    // ユニットの高さ分だけ浮かせる（ここは好みで調整）
-    const float UnitHeightOffset = 50.0f;
-    Center.Z += UnitHeightOffset;
+    Center.Z += 50.f; // 好きなオフセット
 
     Unit->SetActorLocation(Center);
     Unit->OriginalLocation = Center;
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[MoveUnitToTile] %s -> %s pos=%s"),
-        *Unit->GetName(), *NewTile->GetName(), *Center.ToString());
+    NewTile->SetTileHighlight(false);
 }
 
 

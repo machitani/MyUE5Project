@@ -22,6 +22,12 @@ public:
 	virtual void NativeConstruct()override;
 	virtual void NativeTick(const FGeometry& MyGeometyr, float DeltaTime)override;
 
+	virtual bool NativeOnDrop(
+		const FGeometry& InGeometry,
+		const FDragDropEvent& InDragDropEvent,
+		UDragDropOperation* InOperation
+	) override;
+
 protected:
 	UPROPERTY(meta=(BindWidget))
 	UTextBlock* LevelText;

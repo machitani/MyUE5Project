@@ -21,6 +21,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equip")
     E_EquiqSlotType SlotType;
 
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    class UImage* ItemIcon;
+
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    class UTextBlock* ItemNameText;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equip")
     FItemData ItemData;
 
