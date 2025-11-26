@@ -270,6 +270,9 @@ FUnitSaveData AUnit::MakeSaveData()
     Data.BaseDefense = BaseDefense;
     Data.BaseMagicPower = BaseMagicPower;
     Data.BaseMagicDefense = BaseMagicDefense;
+    Data.BaseRange = BaseRange;
+    Data.BaseMoveSpeed = BaseMoveSpeed;
+
     Data.EquippedItems = EquipedItems;
 
     if (CurrentTile && OwningBoardManager)

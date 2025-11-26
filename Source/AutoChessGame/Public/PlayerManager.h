@@ -47,6 +47,9 @@ public:
 	UFUNCTION()
 	void OnRewardSelected(FName SelectedUnitID);
 
+	UFUNCTION()
+	void RegisterOwnedUnit(FName UnitID);
+
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Level")
 	TSubclassOf<class ULevelUpRewardWidget>LevelUpRewardWidgetClass;
 

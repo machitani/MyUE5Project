@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "EnemyWaveData.h"
 #include "BoardManager.generated.h"
 
 class ATile;
@@ -179,6 +180,17 @@ public:
 
     UFUNCTION()
     AUnit* SpawnRewardUnit(FName UnitID);
+
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Reward")
+    TArray<FName>RewardUnitIDList;
+
+    TArray<FName> GenerateRewardUnitCandidates(int32 Num)const;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnemyWave")
+    TArray<FEnemyWaveData> EnemyWaves;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="EnemyWave")
+    int32 CurrentWaveIndex = 0;
 
     protected:
         virtual void BeginPlay() override;

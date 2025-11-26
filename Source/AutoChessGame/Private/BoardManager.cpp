@@ -20,6 +20,47 @@ ABoardManager::ABoardManager()
     //ItemUnit = nullptr;
 }
 
+TArray<FName> ABoardManager::GenerateRewardUnitCandidates(int32 Num)const 
+{
+    // まず RewardUnitIDList をコピー
+    TArray<FName> Available = RewardUnitIDList;
+
+    // ★ すでに持っているユニットを除外
+    if (PlayerManagerInstance)
+    {
+        for (const FName& OwnedID : PlayerManagerInstance->OwnedUnitIDs)
+        {
+            Available.Remove(OwnedID);
+        }
+    }
+
+    TArray<FName> Result;
+
+    // 候補ゼロならそのまま返す
+    if (Available.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("GenerateRewardUnitCandidates: No available units (all owned)."));
+        return Result;
+    }
+
+    // ★ 被りなしでランダムに Num 個まで取り出す
+    while (Available.Num() > 0 && Result.Num() < Num)
+    {
+        int32 Index = FMath::RandRange(0, Available.Num() - 1);
+        Result.Add(Available[Index]);
+
+        // 同じIDがまた出ないように候補側から削除
+        Available.RemoveAtSwap(Index);
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("GenerateRewardUnitCandidates: %d candidates generated."),
+        Result.Num());
+
+    return Result;
+}
+
 void ABoardManager::BeginPlay()
 {
     Super::BeginPlay();
@@ -160,6 +201,11 @@ void ABoardManager::SpawnInitialUnits()
             PlayerTiles[1]->OccupiedUnit = NewKnight;
 
             PlayerUnits.Add(NewKnight);
+
+            if(PlayerManagerInstance)
+            {
+                PlayerManagerInstance->RegisterOwnedUnit(NewKnight->UnitID);
+            }
         }
     }
 
@@ -180,6 +226,11 @@ void ABoardManager::SpawnInitialUnits()
             PlayerTiles[5]->OccupiedUnit = NewArcher;
 
             PlayerUnits.Add(NewArcher);
+
+            if (PlayerManagerInstance)
+            {
+                PlayerManagerInstance->RegisterOwnedUnit(NewArcher->UnitID);
+            }
         }
     }
 
@@ -272,10 +323,10 @@ void ABoardManager::StartBattlePhase()
             Unit->bCanDrag = false;
             Unit->ReapplayAllItemEffects();
         }
-
+    }
         UpdateHUD();
         StartNextRound();
-    }
+    
 }
 
 void ABoardManager::StartNextRound()
@@ -435,6 +486,11 @@ void ABoardManager::ResetBoardForNextRound()
     CurrentRound++;
     UE_LOG(LogTemp, Warning, TEXT("Next Round: %d"), CurrentRound);
 
+    if (ShopManagerRef)
+    {
+        ShopManagerRef->OnRoundChanged();
+    }
+
     StartPreparationPhase();
 }
 
@@ -587,12 +643,21 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
         NewUnit->OriginalLocation = SpawnLoc;
         NewUnit->CurrentTile = Tile;
 
+        NewUnit->Team = EUnitTeam::Player;
+
+        //NewUnit->InitialTile = Tile;
+
         Tile->OccupiedUnit = NewUnit;
         Tile->bIsOccupied = true;
 
         NewUnit->OwningBoardManager = this;
 
         PlayerUnits.Add(NewUnit);
+
+        if (PlayerManagerInstance)
+        {
+            PlayerManagerInstance->RegisterOwnedUnit(NewUnit->UnitID);
+        }
     }
 }
 

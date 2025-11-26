@@ -4,6 +4,7 @@
 #include "ShopSlotWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "PlayerManager.h"
+#include "BoardManager.h"
 #include "ItemData.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -84,6 +85,17 @@ void AShopManager::PaidReroll(int32 ItemCount)
 
 void AShopManager::BuyExp()
 {
+    //フェーズチェック
+    if (!PlayerManagerRef || !PlayerManagerRef->BoardManagerRef)
+    {
+        return;
+    }
+
+    if (PlayerManagerRef->BoardManagerRef->CurrentPhase != EGamePhase::Preparation)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BuyExp: Only available in Preparation phase"));
+        return;
+    }
     const int32 Cost = 4;
     const int32 ExpGain = 4;
 
@@ -104,6 +116,19 @@ void AShopManager::RoundClearGold()
 {
     PlayerGold += 5;
     ShopWidget->UpdateGold(PlayerGold);
+}
+
+void AShopManager::OnRoundChanged()
+{
+    const int32 ItemCount = 4;
+
+    RerollShop(ItemCount);
+
+    if (ShopWidget)
+    {
+        ShopWidget->UpdateGold(PlayerGold);
+        ShopWidget->RefreshSlots();
+    }
 }
 
 void AShopManager::AddItemToBench(const FItemData& Item)

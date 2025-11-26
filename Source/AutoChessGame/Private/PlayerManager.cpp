@@ -68,13 +68,20 @@ void APlayerManager::OnLevelUp()
 
     RewardWidget->OwnerPlayerManager = this;
 
-    // ★ とりあえず候補3つを決める（仮）
     TArray<FName> Candidates;
-    Candidates.Add(FName("Nurse"));
-    Candidates.Add(FName("Bear"));
-    Candidates.Add(FName("Adventurer"));
 
-    // TODO: 本当はランダム抽選にしてもいい
+    if (BoardManagerRef)
+    {
+        // 例: 3体の候補をランダム取得
+        Candidates = BoardManagerRef->GenerateRewardUnitCandidates(3);
+    }
+
+    // 候補が1つも無い場合（全ユニット取り切った等）は何もしない or メッセージ表示
+    if (Candidates.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("OnLevelUp: No reward candidates (all units owned?)"));
+        return;
+    }
 
     RewardWidget->SetupChoices(Candidates);
     RewardWidget->AddToViewport();
@@ -85,10 +92,10 @@ void APlayerManager::OnRewardSelected(FName SelectedUnitID)
 {
     UE_LOG(LogTemp, Warning, TEXT("Reward Selected: %s"), *SelectedUnitID.ToString());
 
-    // （お好み）手持ちリストに保存しておきたい場合
-    OwnedUnitIDs.Add(SelectedUnitID);
+    // ★ 所持ユニットとして登録（重複チェック込み）
+    RegisterOwnedUnit(SelectedUnitID);
 
-    // ★ BoardManager に「このユニットを出して」とお願いする
+    // BoardManager に「このユニットを出して」とお願い
     if (BoardManagerRef)
     {
         AUnit* Spawned = BoardManagerRef->SpawnRewardUnit(SelectedUnitID);
@@ -100,6 +107,16 @@ void APlayerManager::OnRewardSelected(FName SelectedUnitID)
     else
     {
         UE_LOG(LogTemp, Error, TEXT("OnRewardSelected: BoardManagerRef is null!"));
+    }
+}
+
+void APlayerManager::RegisterOwnedUnit(FName UnitID)
+{
+    if (UnitID.IsNone())return;
+
+    if (!OwnedUnitIDs.Contains(UnitID))
+    {
+        OwnedUnitIDs.Add(UnitID);
     }
 }
 

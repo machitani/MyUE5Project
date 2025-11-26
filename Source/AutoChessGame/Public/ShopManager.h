@@ -36,6 +36,9 @@ public:
 
     void RoundClearGold();
 
+    UFUNCTION()
+    void OnRoundChanged();
+
     UFUNCTION(BlueprintCallable)
     void AddItemToBench(const FItemData& Item);
 
