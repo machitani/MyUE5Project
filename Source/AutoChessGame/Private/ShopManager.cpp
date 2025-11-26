@@ -265,6 +265,30 @@ FItemData AShopManager::CreateRandomShopItem()
     return Result;
 }
 
+bool AShopManager::RemoveItemFromBenchByRowName(FName RowName)
+{
+    for (int32 i = 0; i < BenchItems.Num(); ++i)
+    {
+        if (BenchItems[i].RowName == RowName)
+        {
+            BenchItems.RemoveAt(i);
+
+            if (ShopWidget)
+            {
+                ShopWidget->RefreshItemBench();
+            }
+
+            return true;
+        }
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("RemoveItemFromBenchByRowName: Item %s not found in bench"),
+        *RowName.ToString());
+
+    return false;
+}
+
 void AShopManager::RerollShop(int32 ItemCount)
 {
     if (!ShopWidget || !ItemTable) return;

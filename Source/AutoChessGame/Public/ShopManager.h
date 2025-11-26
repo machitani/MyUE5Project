@@ -69,4 +69,7 @@ public:
 
     FItemData CreateRandomShopItem();
 
+    UFUNCTION(BlueprintCallable)
+    bool RemoveItemFromBenchByRowName(FName RowName);
+
 };

@@ -278,6 +278,7 @@ void ABoardManager::HandleTileClicked(ATile* ClickedTile)
     if (!ClickedTile) return;
     ClickedTile->SetTileColor(FLinearColor::Yellow);
 }
+
 void ABoardManager::StartPreparationPhase()
 {
     GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
@@ -287,20 +288,24 @@ void ABoardManager::StartPreparationPhase()
 
     OpenShop();
 
-    UE_LOG(LogTemp, Warning, TEXT("=== Preparation Phase ==="));
+    UE_LOG(LogTemp, Warning,
+        TEXT("[Prep] StartPreparationPhase: PlayerUnits=%d"),
+        PlayerUnits.Num());
 
     for (AUnit* Unit : PlayerUnits)
     {
-        if (!Unit)continue;
+        if (!Unit) continue;
 
-        if (Unit->InitialTile)   // ← 保存しておく必要あり
-        {
-            Unit->SetActorLocation(Unit->InitialTile->GetActorLocation());
-            Unit->CurrentTile = Unit->InitialTile;
-        }
+        // 位置はいじらないでそのまま
+        UE_LOG(LogTemp, Warning,
+            TEXT("[Prep] Unit=%s Loc=%s Tile=%s"),
+            *Unit->GetName(),
+            *Unit->GetActorLocation().ToString(),
+            Unit->CurrentTile ? *Unit->CurrentTile->GetName() : TEXT("NULL"));
+
+        // HP・アイテム・ドラッグ許可だけリセット
         Unit->HP = Unit->BaseHP;
         Unit->ReapplayAllItemEffects();
-
         Unit->bCanDrag = true;
     }
 
@@ -452,6 +457,12 @@ void ABoardManager::ResetBoardForNextRound()
             if (!Unit) continue;
 
             FUnitSaveData Data = Unit->MakeSaveData();
+            UE_LOG(LogTemp, Warning,
+                TEXT("[Save] Unit=%s ID=%s TileIndex=%d"),
+                *Unit->GetName(),
+                *Data.UnitID.ToString(),
+                Data.SavedTileIndex);
+
             PlayerManagerInstance->SavedUnits.Add(Data);
 
             Unit->Destroy();
@@ -614,45 +625,75 @@ ATile* ABoardManager::GetTileUnderLocation(const FVector& Location)
 
 void ABoardManager::SpawnPlayerUnitsFromSaveData()
 {
-    if (!PlayerManagerInstance) return;
+    if (!PlayerManagerInstance)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpawnPlayerUnitsFromSaveData: PlayerManagerInstance is NULL"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("SpawnPlayerUnitsFromSaveData: SavedUnits=%d"),
+        PlayerManagerInstance->SavedUnits.Num());
 
     PlayerUnits.Empty();
 
     for (const FUnitSaveData& Data : PlayerManagerInstance->SavedUnits)
     {
-        // UnitID からクラスを決定
+        UE_LOG(LogTemp, Warning,
+            TEXT("[Load] UnitID=%s TileIndex=%d"),
+            *Data.UnitID.ToString(),
+            Data.SavedTileIndex);
+
         TSubclassOf<AUnit> UnitClass = GetPlayerUnitClassByID(Data.UnitID);
-        if (!UnitClass) continue;
-
-        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(UnitClass);
-        if (!NewUnit) continue;
-
-        // セーブデータ適用
-        NewUnit->ApplySaveData(Data);
+        if (!UnitClass)
+        {
+            UE_LOG(LogTemp, Error, TEXT("  -> No UnitClass for ID=%s"), *Data.UnitID.ToString());
+            continue;
+        }
 
         int32 TileIndex = Data.SavedTileIndex;
         if (!PlayerTiles.IsValidIndex(TileIndex))
         {
-            continue; // 異常値ならスキップ
+            UE_LOG(LogTemp, Error, TEXT("  -> Invalid TileIndex=%d"), TileIndex);
+            continue;
         }
 
         ATile* Tile = PlayerTiles[TileIndex];
         FVector SpawnLoc = Tile->GetActorLocation() + FVector(0, 0, 100);
 
-        NewUnit->SetActorLocation(SpawnLoc);
-        NewUnit->OriginalLocation = SpawnLoc;
-        NewUnit->CurrentTile = Tile;
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(UnitClass, SpawnLoc, FRotator::ZeroRotator);
+        if (!NewUnit)
+        {
+            UE_LOG(LogTemp, Error, TEXT("  -> Failed SpawnActor for ID=%s"), *Data.UnitID.ToString());
+            continue;
+        }
 
+        // セーブデータ適用
+        NewUnit->ApplySaveData(Data);
+
+        // 管理系
         NewUnit->Team = EUnitTeam::Player;
-
-        //NewUnit->InitialTile = Tile;
-
-        Tile->OccupiedUnit = NewUnit;
-        Tile->bIsOccupied = true;
-
         NewUnit->OwningBoardManager = this;
+        NewUnit->UnitID = Data.UnitID;
+
+        // 初期タイルを設定
+        NewUnit->InitialTile = Tile;
+
+        // ここでタイルに正式に配置（OriginalLocation や Occupied も一括でやる）
+        MoveUnitToTile(NewUnit, Tile);
+
+        // 戦闘フラグ系リセット（必要なら）
+        NewUnit->bIsAttacking = false;
+        NewUnit->bIsDead = false;
+        NewUnit->bCanDrag = true;
 
         PlayerUnits.Add(NewUnit);
+
+        UE_LOG(LogTemp, Warning,
+            TEXT("  -> Spawned %s at TileIndex=%d (%s)"),
+            *Data.UnitID.ToString(),
+            TileIndex,
+            *Tile->GetName());
 
         if (PlayerManagerInstance)
         {
@@ -660,6 +701,8 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
         }
     }
 }
+
+
 
 
 void ABoardManager::SpawnEnemyUnits()
@@ -761,7 +804,8 @@ AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
         int32 CurrentDeployed = GetDeployedPlayerUnitCount();
         if (CurrentDeployed >= PlayerManagerInstance->MaxUnitCount)
         {
-            UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: MaxdUnitCount reached (%d / %d)."), CurrentDeployed, PlayerManagerInstance->MaxUnitCount);
+            UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: MaxUnitCount reached (%d / %d)."),
+                CurrentDeployed, PlayerManagerInstance->MaxUnitCount);
             return nullptr;
         }
     }
@@ -775,10 +819,10 @@ AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
             break;
         }
     }
-    
+
     if (!FreeTile)
     {
-        UE_LOG(LogTemp, Warning, TEXT("SpwanRewardUnit: No free player tile!"));
+        UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: No free player tile!"));
         return nullptr;
     }
 
@@ -791,21 +835,22 @@ AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
         return nullptr;
     }
 
-    //各種設定
     NewUnit->Team = EUnitTeam::Player;
-    NewUnit->CurrentTile = FreeTile;
-    NewUnit->OriginalLocation = SpawnLocation;
     NewUnit->OwningBoardManager = this;
     NewUnit->UnitID = UnitID;
+    NewUnit->InitialTile = FreeTile;
 
-    //タイル側の状態更新
-    FreeTile->bIsOccupied = true;
-    FreeTile->OccupiedUnit = NewUnit;
+    MoveUnitToTile(NewUnit, FreeTile);
 
-    //管理用配列の追加
     PlayerUnits.Add(NewUnit);
 
-    UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: Spawned %s at tile %s"), *UnitID.ToString(), *FreeTile->GetName());
+    UE_LOG(LogTemp, Warning, TEXT("SpawnRewardUnit: Spawned %s at tile %s"),
+        *UnitID.ToString(), *FreeTile->GetName());
+
+    if (PlayerManagerInstance)
+    {
+        PlayerManagerInstance->RegisterOwnedUnit(UnitID);
+    }
 
     return NewUnit;
 }
