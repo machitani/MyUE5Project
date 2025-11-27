@@ -38,6 +38,9 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Level")
 	int32 MaxUnitCount = 3;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Game")
+	int32 PlayerLife = 3;
+
 	UFUNCTION(BlueprintCallable,Category="Level")
 	void AddExp(int32 Amout);
 

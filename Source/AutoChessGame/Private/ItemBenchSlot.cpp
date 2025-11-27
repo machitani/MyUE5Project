@@ -47,7 +47,6 @@ FReply UItemBenchSlot::NativeOnMouseButtonDown(
     const FGeometry& InGeometry,
     const FPointerEvent& InMouseEvent)
 {
-    // 左クリックだけ扱う
     if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
     {
         return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
@@ -59,7 +58,7 @@ FReply UItemBenchSlot::NativeOnMouseButtonDown(
         return FReply::Handled();
     }
 
-    // --- BoardManager から「今アイテムをつけるユニット」を取得 ---
+    // --- 対象ユニット ---
     ABoardManager* BM = Cast<ABoardManager>(
         UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
     if (!BM || !BM->ItemUnit)
@@ -68,49 +67,17 @@ FReply UItemBenchSlot::NativeOnMouseButtonDown(
             TEXT("[BenchSlot] No ItemUnit selected (right-click a unit first)"));
         return FReply::Handled();
     }
-
     AUnit* TargetUnit = BM->ItemUnit;
 
-    // --- ShopManager を取得 ---
+    // --- ShopManager取得 ---
     AShopManager* ShopManager = Cast<AShopManager>(
         UGameplayStatics::GetActorOfClass(this, AShopManager::StaticClass()));
 
     if (ShopManager)
     {
-        // ★ BenchItems から「このスロットの ItemData に対応するやつ」を1個だけ探す
-        int32 IndexToRemove = INDEX_NONE;
-
-        for (int32 i = 0; i < ShopManager->BenchItems.Num(); ++i)
-        {
-            const FItemData& Data = ShopManager->BenchItems[i];
-
-            // 「同じアイテム」とみなす条件は RowName で判定（必要なら他も見る）
-            if (Data.RowName == ItemData.RowName)
-            {
-                IndexToRemove = i;
-                break;
-            }
-        }
-
-        if (IndexToRemove != INDEX_NONE)
-        {
-            ShopManager->BenchItems.RemoveAt(IndexToRemove);
-            UE_LOG(LogTemp, Warning,
-                TEXT("[BenchSlot] Removed bench item at index %d"), IndexToRemove);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning,
-                TEXT("[BenchSlot] No matching item in BenchItems"));
-        }
-
-        // ベンチUIを作り直す
-        if (ShopManager->ShopWidget)
-        {
-            ShopManager->ShopWidget->RefreshItemBench();
-        }
+        // ★ 共通関数を呼ぶだけにする
+        ShopManager->RemoveItemFromBenchByRowName(ItemData.RowName);
     }
-
 
     // --- ユニットに装備 ---
     UE_LOG(LogTemp, Warning,
@@ -120,10 +87,6 @@ FReply UItemBenchSlot::NativeOnMouseButtonDown(
 
     TargetUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
     TargetUnit->ReapplayAllItemEffects();
-
-    // このスロット自体は RefreshItemBench で作り直されるから、
-    // 見た目をいじる必要はない
-    // ClearBenchItem();
 
     return FReply::Handled();
 }

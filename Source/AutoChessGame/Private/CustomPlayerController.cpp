@@ -5,6 +5,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Unit.h"
 #include "BoardManager.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 ACustomPlayerController::ACustomPlayerController()
@@ -83,7 +86,34 @@ void ACustomPlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
-    
+    ACameraActor* FixedCamera = nullptr;
+
+    TArray<AActor*> Cameras;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACameraActor::StaticClass(), Cameras);
+
+    if (Cameras.Num() > 0)
+    {
+        FixedCamera = Cast<ACameraActor>(Cameras[0]); // 1個目を使う（1個しか置かない前提）
+    }
+
+    if (FixedCamera)
+    {
+
+        if (UCameraComponent* Cam = FixedCamera->GetCameraComponent())
+        {
+            Cam->AspectRatio = 16.0f / 9.0f;      // 1.77778...
+            Cam->bConstrainAspectRatio = true;    // アスペクト比を固定
+        }
+
+        FViewTargetTransitionParams Params;
+        Params.BlendTime = 0.0f; // フェード無しで即切り替え
+
+        SetViewTarget(FixedCamera, Params);
+
+        // マウス操作用（ボードゲームならマウスカーソル出しておくと便利）
+        bShowMouseCursor = true;
+        DefaultMouseCursor = EMouseCursor::Default;
+    }
 }
 
 void ACustomPlayerController::OnLeftMouseDown()

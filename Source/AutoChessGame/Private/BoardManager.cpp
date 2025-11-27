@@ -17,7 +17,13 @@ ABoardManager::ABoardManager()
     SelectedUnit = nullptr;
     CurrentPhase = EGamePhase::Preparation;
     bRoundEnded = false;
-    //ItemUnit = nullptr;
+    
+    CurrentStageIndex = 1;
+    CurrentWaveIndex = 1;
+
+    bIsGameClear = false;
+    bIsGameOver = false;
+    bLastRoundWasVictory = false;
 }
 
 TArray<FName> ABoardManager::GenerateRewardUnitCandidates(int32 Num)const 
@@ -59,6 +65,90 @@ TArray<FName> ABoardManager::GenerateRewardUnitCandidates(int32 Num)const
         Result.Num());
 
     return Result;
+}
+
+FEnemyWaveData* ABoardManager::GetCurrentWaveData()
+{
+    if (EnemyWaves.Num() == 0)
+    {
+        return nullptr;
+    }
+
+    FEnemyWaveData* Found = EnemyWaves.FindByPredicate(
+        [this](const FEnemyWaveData& Data)
+        {
+            return Data.StageIndex == CurrentStageIndex
+                && Data.WaveIndex == CurrentWaveIndex;
+        }
+    );
+
+    if (Found)
+    {
+        return Found;
+    }
+
+    // ★ 対応するWaveが無い → 全Waveクリア → ゲームクリア
+    UE_LOG(LogTemp, Warning,
+        TEXT("GetCurrentWaveData: No data for Stage=%d Wave=%d. GameClear!"),
+        CurrentStageIndex, CurrentWaveIndex);
+
+    bIsGameClear = true;
+    return nullptr;
+}
+void ABoardManager::HandleGameOver()
+{
+    bIsGameOver = true;
+    CurrentPhase = EGamePhase::Result;
+
+    UE_LOG(LogTemp, Warning, TEXT("=== GAME OVER ==="));
+
+    if (HUDInstance)
+    {
+        if (UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText"))))
+        {
+            ResultText->SetText(FText::FromString(TEXT("Result: GAME OVER")));
+        }
+    }
+}
+
+void ABoardManager::HandleGameClear()
+{
+    bIsGameClear = true;
+    CurrentPhase = EGamePhase::Result;
+
+    UE_LOG(LogTemp, Warning, TEXT("=== GAME CLEAR! ==="));
+
+    if (HUDInstance)
+    {
+        if (UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText"))))
+        {
+            ResultText->SetText(FText::FromString(TEXT("Result: GAME CLEAR")));
+        }
+    }
+}
+
+void ABoardManager::HandleDefeat()
+{
+    UE_LOG(LogTemp, Warning, TEXT("HandleDefeat"));
+
+    if (!PlayerManagerInstance)
+    {
+        StartResultPhase();
+        return;
+    }
+
+    PlayerManagerInstance->PlayerLife--;
+
+    UE_LOG(LogTemp, Warning, TEXT("PlayerLife now: %d"), PlayerManagerInstance->PlayerLife);
+
+    if (PlayerManagerInstance->PlayerLife <= 0)
+    {
+        HandleGameOver();
+    }
+    else
+    {
+        StartResultPhase();
+    }
 }
 
 void ABoardManager::BeginPlay()
@@ -352,8 +442,7 @@ void ABoardManager::StartNextRound()
 
 void ABoardManager::ProcessBattleTick()
 {
-    // ★ ラウンドは1回しか終了させない
-    if (bRoundEnded || CurrentPhase != EGamePhase::Battle)
+    if (bRoundEnded || CurrentPhase != EGamePhase::Battle || bIsGameOver || bIsGameClear)
         return;
 
     bool bPlayerAlive = false;
@@ -376,10 +465,19 @@ void ABoardManager::ProcessBattleTick()
         if (!bPlayerAlive)
         {
             UE_LOG(LogTemp, Warning, TEXT("Defeat!"));
+
+            // ★ 敗北したラウンド
+            bLastRoundWasVictory = false;
+
+            // ラウンド敗北 → ライフ減少＆GameOver判定
+            HandleDefeat();
         }
         else
         {
             UE_LOG(LogTemp, Warning, TEXT("Victory!"));
+
+            // ★ 勝利したラウンド
+            bLastRoundWasVictory = true;
 
             if (PlayerManagerInstance)
             {
@@ -389,22 +487,12 @@ void ABoardManager::ProcessBattleTick()
             if (ShopManagerRef)
             {
                 ShopManagerRef->RoundClearGold();
-                UE_LOG(LogTemp,Warning,TEXT("CLEAR GOLD"))
+                UE_LOG(LogTemp, Warning, TEXT("CLEAR GOLD"));
             }
-        }
 
-        if (HUDInstance)
-        {
-            UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText")));
-            if (ResultText)
-            {
-                if (!bPlayerAlive) ResultText->SetText(FText::FromString("Result:Defeat!"));
-                else ResultText->SetText(FText::FromString("Result:Victory!"));
-            }
+            // 勝利時は通常通り ResultPhase → 次のWaveへ
+            StartResultPhase();
         }
-
-        UpdateHUD();
-        StartResultPhase();
     }
 }
 
@@ -442,10 +530,22 @@ void ABoardManager::ResetBoardForNextRound()
 {
     UE_LOG(LogTemp, Warning, TEXT("== ResetBoardForNextRound() =="));
 
+    // ★ もうゲーム終了していたら何もしない
+    if (bIsGameOver || bIsGameClear)
+    {
+        GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
+        GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
+        UE_LOG(LogTemp, Warning, TEXT("Game finished. Skip ResetBoardForNextRound."));
+        return;
+    }
+
+    // タイマーは一旦全部止める
     GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
     GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
 
     bRoundEnded = false;
+
+    // === ここが前と同じ「リセット処理」 ===
 
     // ★ プレイヤーユニット保存して Destroy
     if (PlayerManagerInstance)
@@ -457,12 +557,6 @@ void ABoardManager::ResetBoardForNextRound()
             if (!Unit) continue;
 
             FUnitSaveData Data = Unit->MakeSaveData();
-            UE_LOG(LogTemp, Warning,
-                TEXT("[Save] Unit=%s ID=%s TileIndex=%d"),
-                *Unit->GetName(),
-                *Data.UnitID.ToString(),
-                Data.SavedTileIndex);
-
             PlayerManagerInstance->SavedUnits.Add(Data);
 
             Unit->Destroy();
@@ -480,30 +574,56 @@ void ABoardManager::ResetBoardForNextRound()
     // ★ タイルリセット
     for (ATile* Tile : PlayerTiles)
     {
+        if (!Tile) continue;
         Tile->bIsOccupied = false;
         Tile->OccupiedUnit = nullptr;
         Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
     }
     for (ATile* Tile : EnemyTiles)
     {
+        if (!Tile) continue;
         Tile->bIsOccupied = false;
         Tile->OccupiedUnit = nullptr;
         Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
     }
 
+    // === ここから Wave 関連 ===
+
+    // 勝利したラウンドから呼ばれている前提なら、とりあえず Wave を1つ進める
+    if (bLastRoundWasVictory)
+    {
+        CurrentWaveIndex++;
+    }
+    else
+    {
+        // 敗北 → 同じ Wave をリトライ
+        UE_LOG(LogTemp, Warning,
+            TEXT("Retry same Wave: Stage=%d Wave=%d"),
+            CurrentStageIndex, CurrentWaveIndex);
+    }
+
+    // 次のWaveデータがあるか確認
+    FEnemyWaveData* NextWave = GetCurrentWaveData();
+    if (!NextWave)
+    {
+        // GetCurrentWaveData 内で bIsGameClear = true; しているならここで終了
+        HandleGameClear();
+        return;
+    }
+
+    // ★ セーブデータからプレイヤーユニットを復元
     SpawnPlayerUnitsFromSaveData();
+
+    // ★ Waveデータを使って敵ユニットを生成
     SpawnEnemyUnits();
 
     CurrentRound++;
-    UE_LOG(LogTemp, Warning, TEXT("Next Round: %d"), CurrentRound);
-
-    if (ShopManagerRef)
-    {
-        ShopManagerRef->OnRoundChanged();
-    }
+    UE_LOG(LogTemp, Warning, TEXT("Next Round: %d  (Stage=%d Wave=%d)"),
+        CurrentRound, CurrentStageIndex, CurrentWaveIndex);
 
     StartPreparationPhase();
 }
+
 
 void ABoardManager::UpdateHUD()
 {
@@ -707,37 +827,84 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
 
 void ABoardManager::SpawnEnemyUnits()
 {
-    if (!EnemyUnitClass) return;
-
     EnemyUnits.Empty();
 
+    // ★ 今の Stage/Wave に対応するデータを取得
+    FEnemyWaveData* WaveData = GetCurrentWaveData();
+    if (!WaveData)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("SpawnEnemyUnits: No WaveData. No enemies spawned."));
+        return;
+    }
+
+    if (!WaveData->EnemyClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpawnEnemyUnits: EnemyClass is NULL in WaveData."));
+        return;
+    }
+
+    const int32 EnemyCount = WaveData->EnemyCount;
+
+    // ★ 敵を置けるタイル候補を作る（今は「一番後ろ2行の偶数列」を使う）
+    TArray<int32> SpawnTileIndices;
     for (int32 Row = Rows - 2; Row < Rows; Row++)
     {
         for (int32 Col = 0; Col < Columns; Col += 2)
         {
             int32 Index = Row * Columns + Col;
-            if (!EnemyTiles.IsValidIndex(Index)) continue;
-
-            FVector SpawnLocation = EnemyTiles[Index]->GetActorLocation() + FVector(0, 0, 100);
-
-            AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
-                EnemyUnitClass,
-                SpawnLocation,
-                FRotator(0, 180, 0)
-            );
-
-            if (!NewUnit) continue;
-
-            NewUnit->Team = EUnitTeam::Enemy;
-            NewUnit->CurrentTile = EnemyTiles[Index];
-            NewUnit->OwningBoardManager = this;
-
-            EnemyTiles[Index]->bIsOccupied = true;
-            EnemyTiles[Index]->OccupiedUnit = NewUnit;
-
-            EnemyUnits.Add(NewUnit);
+            if (EnemyTiles.IsValidIndex(Index))
+            {
+                SpawnTileIndices.Add(Index);
+            }
         }
     }
+
+    if (SpawnTileIndices.Num() == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpawnEnemyUnits: No enemy tiles to spawn on."));
+        return;
+    }
+
+    // 念のため、タイル候補数を EnemyCount 以上に保証するわけではないので、
+    // Min(EnemyCount, SpawnTileIndices.Num()) までスポーン
+    int32 ToSpawn = FMath::Min(EnemyCount, SpawnTileIndices.Num());
+
+    for (int32 i = 0; i < ToSpawn; ++i)
+    {
+        int32 TileIndex = SpawnTileIndices[i];
+        ATile* Tile = EnemyTiles[TileIndex];
+        if (!Tile) continue;
+
+        FVector SpawnLocation = Tile->GetActorLocation() + FVector(0, 0, 100.f);
+
+        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
+            WaveData->EnemyClass,
+            SpawnLocation,
+            FRotator(0, 180, 0)
+        );
+
+        if (!NewUnit) continue;
+
+        NewUnit->Team = EUnitTeam::Enemy;
+        NewUnit->CurrentTile = Tile;
+        NewUnit->OwningBoardManager = this;
+
+        // ★ Waveごとの倍率を反映（Baseも一緒にスケールしておく）
+        NewUnit->BaseHP *= WaveData->HPScale;
+        NewUnit->HP = NewUnit->BaseHP;
+
+        NewUnit->BaseAttack *= WaveData->AttackScale;
+        NewUnit->Attack = NewUnit->BaseAttack;
+
+        Tile->bIsOccupied = true;
+        Tile->OccupiedUnit = NewUnit;
+
+        EnemyUnits.Add(NewUnit);
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("SpawnEnemyUnits: Stage=%d Wave=%d, Spawned %d enemies."),
+        CurrentStageIndex, CurrentWaveIndex, EnemyUnits.Num());
 }
 
 int32 ABoardManager::GetDeployedPlayerUnitCount() const

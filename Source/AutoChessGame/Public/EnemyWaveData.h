@@ -13,6 +13,9 @@ struct FEnemyWaveData
 {
     GENERATED_BODY()
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Wave")
+    int32 StageIndex = 1;
+
     // 何 Wave 目か（1,2,3…）※なくても動くけど分かりやすさ用
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
     int32 WaveIndex = 1;
@@ -32,13 +35,4 @@ struct FEnemyWaveData
     // 攻撃力の倍率（必要になったら使う）
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
     float AttackScale = 1.0f;
-};
-
-
-/**
- * 
- */
-class AUTOCHESSGAME_API EnemyWaveData
-{
-public:
 };

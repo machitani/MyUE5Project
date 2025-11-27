@@ -5,6 +5,7 @@
 #include "Unit.h"
 #include "ShopManager.h"
 #include "ShopWidget.h"
+#include "BoardManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/VerticalBoxSlot.h"
 
@@ -68,7 +69,7 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
         return;
     }
 
-    // 1) まず「外す対象のアイテム」をコピーしておく
+    // 装備中アイテムが無ければ何もしない
     if (OwnerUnit->EquipedItems.Num() == 0)
     {
         UE_LOG(LogTemp, Warning,
@@ -77,11 +78,20 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
         return;
     }
 
+    // 1) 外す対象のアイテム一覧をコピーしておく
     TArray<FItemData> ItemsToReturn = OwnerUnit->EquipedItems;
 
-    // 2) ShopManager を探す
-    AShopManager* ShopManager = Cast<AShopManager>(
-        UGameplayStatics::GetActorOfClass(this, AShopManager::StaticClass()));
+    // 2) ShopManager を取得（BoardManager経由が優先、なければ検索）
+    AShopManager* ShopManager = nullptr;
+    if (OwnerUnit->OwningBoardManager)
+    {
+        ShopManager = OwnerUnit->OwningBoardManager->ShopManagerRef;
+    }
+    if (!ShopManager)
+    {
+        ShopManager = Cast<AShopManager>(
+            UGameplayStatics::GetActorOfClass(this, AShopManager::StaticClass()));
+    }
 
     if (!ShopManager)
     {
@@ -90,26 +100,22 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
     }
     else
     {
-        // 3) ベンチ配列に戻す
+        // 3) アイテムをベンチへ戻す（共通関数経由）
         for (const FItemData& Item : ItemsToReturn)
         {
-            ShopManager->BenchItems.Add(Item);
+            ShopManager->AddItemToBench(Item);
+
             UE_LOG(LogTemp, Warning,
                 TEXT("[Hover] Return %s to Bench"),
                 *Item.Name.ToString());
         }
-
-        // 4) ベンチUIを更新
-        if (ShopManager->ShopWidget)
-        {
-            ShopManager->ShopWidget->RefreshItemBench();
-        }
     }
 
-    // 5) ユニット側からはアイテムを全部外す（ステータスもリセット）
+    // 4) ユニット側からアイテムを全部外す（内部配列／ステータスリセット用）
     OwnerUnit->RemoveItems();
+    OwnerUnit->ReapplayAllItemEffects();   // 念のため再適用
 
-    // 6) ホバーの表示を最新状態に更新
+    // 5) ホバーの表示を最新状態に更新
     SetUnitInfo(
         OwnerUnit->UnitID,
         OwnerUnit->HP,
@@ -119,6 +125,6 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
         OwnerUnit->MagicDefense,
         OwnerUnit->Range,
         OwnerUnit->MoveSpeed,
-        OwnerUnit->EquipedItems
+        OwnerUnit->EquipedItems  // RemoveItems 後なので多分空配列
     );
 }

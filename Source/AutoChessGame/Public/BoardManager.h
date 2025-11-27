@@ -189,8 +189,28 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnemyWave")
     TArray<FEnemyWaveData> EnemyWaves;
 
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="EnemyWave")
+    int32 CurrentStageIndex = 1;
+
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="EnemyWave")
-    int32 CurrentWaveIndex = 0;
+    int32 CurrentWaveIndex = 1;
+
+    FEnemyWaveData* GetCurrentWaveData();
+
+    // ゲーム終了フラグ
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game")
+    bool bIsGameOver = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game")
+    bool bIsGameClear = false;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
+    bool bLastRoundWasVictory = false;
+
+    //ハンドラ関数
+    void HandleGameOver();
+    void HandleGameClear();
+    void HandleDefeat();
 
     protected:
         virtual void BeginPlay() override;

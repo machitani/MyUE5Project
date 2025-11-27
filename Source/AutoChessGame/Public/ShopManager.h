@@ -9,7 +9,6 @@
 class ABoardManager;
 class APlayerManager;
 class UShopWidget;
-
 class APlayerManager;
 
 UCLASS()
