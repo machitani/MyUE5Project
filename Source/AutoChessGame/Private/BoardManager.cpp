@@ -823,8 +823,6 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
 }
 
 
-
-
 void ABoardManager::SpawnEnemyUnits()
 {
     EnemyUnits.Empty();
@@ -837,15 +835,7 @@ void ABoardManager::SpawnEnemyUnits()
         return;
     }
 
-    if (!WaveData->EnemyClass)
-    {
-        UE_LOG(LogTemp, Error, TEXT("SpawnEnemyUnits: EnemyClass is NULL in WaveData."));
-        return;
-    }
-
-    const int32 EnemyCount = WaveData->EnemyCount;
-
-    // ★ 敵を置けるタイル候補を作る（今は「一番後ろ2行の偶数列」を使う）
+    // ★ 敵を置けるタイル候補（今は「一番後ろ2行の偶数列」）
     TArray<int32> SpawnTileIndices;
     for (int32 Row = Rows - 2; Row < Rows; Row++)
     {
@@ -865,41 +855,50 @@ void ABoardManager::SpawnEnemyUnits()
         return;
     }
 
-    // 念のため、タイル候補数を EnemyCount 以上に保証するわけではないので、
-    // Min(EnemyCount, SpawnTileIndices.Num()) までスポーン
-    int32 ToSpawn = FMath::Min(EnemyCount, SpawnTileIndices.Num());
+    int32 TileCursor = 0;
 
-    for (int32 i = 0; i < ToSpawn; ++i)
+    // ★ Wave 内の「敵グループ」ごとに回す
+    for (const FEnemySpawnEntry& Entry : WaveData->Enemies)
     {
-        int32 TileIndex = SpawnTileIndices[i];
-        ATile* Tile = EnemyTiles[TileIndex];
-        if (!Tile) continue;
+        if (!Entry.EnemyClass) continue;
 
-        FVector SpawnLocation = Tile->GetActorLocation() + FVector(0, 0, 100.f);
+        for (int32 i = 0; i < Entry.Count; ++i)
+        {
+            if (TileCursor >= SpawnTileIndices.Num())
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SpawnEnemyUnits: Not enough tiles for all enemies."));
+                return;
+            }
 
-        AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
-            WaveData->EnemyClass,
-            SpawnLocation,
-            FRotator(0, 180, 0)
-        );
+            int32 TileIndex = SpawnTileIndices[TileCursor++];
+            ATile* Tile = EnemyTiles[TileIndex];
+            if (!Tile) continue;
 
-        if (!NewUnit) continue;
+            FVector SpawnLocation = Tile->GetActorLocation() + FVector(0, 0, 100.f);
 
-        NewUnit->Team = EUnitTeam::Enemy;
-        NewUnit->CurrentTile = Tile;
-        NewUnit->OwningBoardManager = this;
+            AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
+                Entry.EnemyClass,
+                SpawnLocation,
+                FRotator(0, 180, 0)
+            );
 
-        // ★ Waveごとの倍率を反映（Baseも一緒にスケールしておく）
-        NewUnit->BaseHP *= WaveData->HPScale;
-        NewUnit->HP = NewUnit->BaseHP;
+            if (!NewUnit) continue;
 
-        NewUnit->BaseAttack *= WaveData->AttackScale;
-        NewUnit->Attack = NewUnit->BaseAttack;
+            NewUnit->Team = EUnitTeam::Enemy;
+            NewUnit->CurrentTile = Tile;
+            NewUnit->OwningBoardManager = this;
 
-        Tile->bIsOccupied = true;
-        Tile->OccupiedUnit = NewUnit;
+            // Waveごとの倍率を反映
+            NewUnit->BaseHP *= WaveData->HPScale;
+            NewUnit->HP = NewUnit->BaseHP;
+            NewUnit->BaseAttack *= WaveData->AttackScale;
+            NewUnit->Attack = NewUnit->BaseAttack;
 
-        EnemyUnits.Add(NewUnit);
+            Tile->bIsOccupied = true;
+            Tile->OccupiedUnit = NewUnit;
+
+            EnemyUnits.Add(NewUnit);
+        }
     }
 
     UE_LOG(LogTemp, Warning,
