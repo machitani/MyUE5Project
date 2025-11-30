@@ -9,11 +9,11 @@
 #include "ItemBenchSlot.h"
 #include "ShopWidget.generated.h"
 
-// 先行宣言（循環参照を避けつつ型名を使えるようにする）
 class UShopSlotWidget;
 class AShopManager;
 class AUnit;
 class UItemBechSlot;
+class UItemHoverInfoWidget;
 
 UCLASS()
 class AUTOCHESSGAME_API UShopWidget : public UUserWidget
@@ -21,6 +21,8 @@ class AUTOCHESSGAME_API UShopWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
+    virtual void NativeConstruct() override;   // ★ 追加
+
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UHorizontalBox* ItemBox;
 
@@ -30,7 +32,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     TSubclassOf<UUserWidget> ItemBenchClass;
 
-    // スロットのBP/C++クラス
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
     TSubclassOf<UShopSlotWidget> SlotWidgetClass;
 
@@ -46,8 +47,6 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "Shop")
     TArray<FItemData> BenchItems;
 
-    // ★ここを修正：UWBP_ShopSlot* → UShopSlotWidget*
-    // 動的に作る配列なので BindWidgetOptional は外す
     UPROPERTY(BlueprintReadWrite, Category = "Shop")
     TArray<UShopSlotWidget*> ShopSlots;
 
@@ -72,5 +71,16 @@ public:
     UFUNCTION(BlueprintCallable)
     void OnReadyButtonClicked();
 
-   
+    UFUNCTION(BlueprintCallable, Category = "Hover")
+    void ShowItemHover(const FItemData& ItemData);
+
+    UFUNCTION(BlueprintCallable, Category = "Hover")
+    void HideItemHover();
+
+    // ★ 追加：ホバー情報用のWidgetクラスとインスタンス
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hover")
+    TSubclassOf<UItemHoverInfoWidget> ItemHoverWidgetClass;
+
+    UPROPERTY()
+    UItemHoverInfoWidget* ItemHoverWidgetInstance = nullptr;
 };

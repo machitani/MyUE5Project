@@ -95,6 +95,32 @@ FEnemyWaveData* ABoardManager::GetCurrentWaveData()
     bIsGameClear = true;
     return nullptr;
 }
+void ABoardManager::ReviveAllEnemiesOnDefeat()
+{
+    for (AUnit* Unit : EnemyUnits)
+    {
+        if (!Unit) continue;
+
+        Unit->HP = Unit->BaseHP;
+        Unit->bIsDead = false;
+        Unit->bIsAttacking = false;
+        Unit->bIsMoving = false;
+
+        if (Unit->UnitMesh)
+        {
+            Unit->UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        }
+
+        if (Unit->CurrentTile)
+        {
+            FVector Center = Unit->CurrentTile->GetTileCenterWorld();
+            Center.Z += 50.f;
+            Unit->SetActorLocation(Center);
+            Unit->OriginalLocation = Center;
+        }
+    }
+}
+
 void ABoardManager::HandleGameOver()
 {
     bIsGameOver = true;
@@ -133,23 +159,27 @@ void ABoardManager::HandleDefeat()
 
     if (!PlayerManagerInstance)
     {
+        // 敗北だけ伝えて、そのままリザルトへ
         StartResultPhase();
         return;
     }
 
+    // ライフを1減らす
     PlayerManagerInstance->PlayerLife--;
-
     UE_LOG(LogTemp, Warning, TEXT("PlayerLife now: %d"), PlayerManagerInstance->PlayerLife);
 
     if (PlayerManagerInstance->PlayerLife <= 0)
     {
+        // ライフ0 → ゲームオーバー
         HandleGameOver();
     }
     else
     {
+        // まだライフ残ってる → 通常通り ResultPhase へ
         StartResultPhase();
     }
 }
+
 
 void ABoardManager::BeginPlay()
 {

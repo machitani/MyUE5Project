@@ -161,11 +161,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
     float SkillCooldown = 5.0f;
 
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
     float SkillTimer = 0.0f;
 
     // ====== 死亡 ======
     virtual void OnDeath();
+
+    UFUNCTION(BlueprintCallable,Category="Death")
+    void OnDeathFinished();
 
     // ====== アニメ ======
     void UpdateAnimationState();
@@ -182,4 +186,27 @@ public:
     UFUNCTION()
     void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
+    // ==== ターゲット =====
+    UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="Combat")
+    AUnit* CurrentTarget = nullptr;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+    float TargetSearchRadius = 2000.f;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+    float TargetLostDistance = 2500.f;
+
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+    bool bFaceTarget = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+    float RotationInterpSpeed = 10.f;       
+
+    // ※見た目用の微調整が必要になったらこれを使う（今は 0 でOK）
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+    float FacingYawOffset = 0.f;
+
+    void UpdateFacing(float DeltaTime);
 };
+

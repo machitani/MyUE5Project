@@ -14,4 +14,14 @@ class AUTOCHESSGAME_API AAssaultEnemy : public AUnit
 {
 	GENERATED_BODY()
 	
+public:
+    AAssaultEnemy();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    // 必要ならアサルト専用の攻撃処理に変える
+    virtual void AttackTarget(AUnit* Target) override;
+
 };

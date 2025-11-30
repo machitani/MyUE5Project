@@ -49,6 +49,13 @@ void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    // 死亡中はAIもドラッグも止める
+    if (bIsDead)
+    {
+        return;
+    }
+
+    // ドラッグ中は常にマウス追従だけ
     if (bIsDragging)
     {
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -63,10 +70,24 @@ void AUnit::Tick(float DeltaTime)
         return;
     }
 
+    // スキルタイマー進行（今は使ってなくてもOK）
+    if (bHasSkill)
+    {
+        SkillTimer = FMath::Min(SkillTimer + DeltaTime, SkillCooldown);
+    }
+
+    // バトル中だけAIを動かす
     if (OwningBoardManager && OwningBoardManager->CurrentPhase == EGamePhase::Battle)
     {
         CheckForTarget(DeltaTime);
+        //UpdateFacing(DeltaTime);
     }
+    else
+    {
+        // 戦闘外はターゲットを忘れる
+        CurrentTarget = nullptr;
+    }
+
 
     UpdateAnimationState();
 }
@@ -125,49 +146,79 @@ void AUnit::EndDrag()
 
 void AUnit::CheckForTarget(float DeltaTime)
 {
-    TimeSinceLastAttack += DeltaTime;
-    if (TimeSinceLastAttack < AttackInterval) return;
+    if (bIsDead) return;
 
-    AUnit* ClosestEnemy = nullptr;
-    float ClosestDist = FLT_MAX;
-
-    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    // --- 1. 既存ターゲットのチェック ---
+    if (CurrentTarget)
     {
-        AUnit* Other = *It;
-        if (Other == this) continue;
-        if (Other->Team == Team) continue;
-        if (Other->HP <= 0.f) continue;
-
-        float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
-        if (Dist < ClosestDist)
+        // 死んでたらターゲット解除
+        if (CurrentTarget->bIsDead || CurrentTarget->HP <= 0.f)
         {
-            ClosestDist = Dist;
-            ClosestEnemy = Other;
+            CurrentTarget = nullptr;
+            bIsAttacking = false;
         }
     }
 
-    if (!ClosestEnemy) return;
-
-    if (ClosestDist <= Range)
+    // --- 2. ターゲットがいなければ探す ---
+    if (!CurrentTarget)
     {
-        AttackTarget(ClosestEnemy);
-        TimeSinceLastAttack = 0.f;
+        AUnit* ClosestEnemy = nullptr;
+        float ClosestDist = FLT_MAX;
+
+        for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+        {
+            AUnit* Other = *It;
+            if (Other == this) continue;
+            if (Other->Team == Team) continue;
+            if (Other->bIsDead || Other->HP <= 0.f) continue;
+
+            float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
+            if (Dist < ClosestDist)
+            {
+                ClosestDist = Dist;
+                ClosestEnemy = Other;
+            }
+        }
+
+        CurrentTarget = ClosestEnemy;
+    }
+
+    // 敵いなければ何もしない
+    if (!CurrentTarget) return;
+
+    // --- 3. 射程内なら攻撃、射程外なら移動 ---
+    const float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
+
+    if (DistToTarget <= Range)
+    {
+        UpdateFacing(DeltaTime);
+
+        TimeSinceLastAttack += DeltaTime;
+        if (TimeSinceLastAttack >= AttackInterval)
+        {
+            TimeSinceLastAttack = 0.f;
+            AttackTarget(CurrentTarget);
+        }
     }
     else
     {
+        bIsAttacking = false;
+
         FVector NewLoc = FMath::VInterpConstantTo(
             GetActorLocation(),
-            ClosestEnemy->GetActorLocation(),
+            CurrentTarget->GetActorLocation(),
             DeltaTime,
             MoveSpeed
         );
+        NewLoc.Z = GetActorLocation().Z; // 高さは固定
         SetActorLocation(NewLoc);
     }
 }
 
+
 void AUnit::AttackTarget(AUnit* Target)
 {
-    if (!Target) return;
+    if (!Target || Target->bIsDead) return;
 
     bIsAttacking = true;
 
@@ -183,36 +234,74 @@ void AUnit::AttackTarget(AUnit* Target)
 
 void AUnit::TakePhysicalDamage(float DamageAmount)
 {
+    if (bIsDead) return;
+
     float FinalDamage = FMath::Max(1.f, DamageAmount - Defense);
     HP -= FinalDamage;
 
     UE_LOG(LogTemp, Warning, TEXT("%s Takes Physical Damage: %.1f"), *GetName(), FinalDamage);
 
-    if (HP <= 0.f) OnDeath();
+    if (HP <= 0.f && !bIsDead)
+    {
+        OnDeath();
+    }
 }
 
 void AUnit::TakeMagicDamage(float DamageAmount)
 {
+    if (bIsDead) return;
+
     float FinalDamage = FMath::Max(1.f, DamageAmount - MagicDefense);
     HP -= FinalDamage;
 
     UE_LOG(LogTemp, Warning, TEXT("%s Takes Magic Damage: %.1f"), *GetName(), FinalDamage);
 
-    if (HP <= 0.f) OnDeath();
+    if (HP <= 0.f && !bIsDead)
+    {
+        OnDeath();
+    }
 }
+
 
 void AUnit::OnDeath()
 {
+    if (bIsDead) return; // 二重呼び出し防止
+
     bIsDead = true;
     bIsAttacking = false;
     bIsMoving = false;
+    bIsDragging = false;
+    bCanDrag = false;
 
+    // ★ タイル処理をチームで分ける
     if (CurrentTile)
     {
-        CurrentTile->bIsOccupied = false;
-        CurrentTile->OccupiedUnit = nullptr;
+        if (Team == EUnitTeam::Enemy)
+        {
+            // 敵は死んだらその場のマスをすぐ空けてOK
+            CurrentTile->bIsOccupied = false;
+            CurrentTile->OccupiedUnit = nullptr;
+        }
+
+        // プレイヤーユニットは CurrentTile を残す
+        // → MakeSaveData で正しい TileIndex を保存できるようにする
     }
 
+    // ターゲット解除
+    CurrentTarget = nullptr;
+
+    // これ以上攻撃対象にならないようにコリジョンを切る
+    if (UnitMesh)
+    {
+        UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // ★ Destroy はここではしない（敵は OnDeathFinished で Destroy、プレイヤーは残す）
+}
+
+
+void AUnit::OnDeathFinished()
+{
     Destroy();
 }
 
@@ -393,4 +482,39 @@ void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPres
     }
 }
 
+void AUnit::UpdateFacing(float DeltaTime)
+{
+    if (!bFaceTarget) return;
+    if (bIsDead)     return;
+    if (!CurrentTarget) return;
 
+    FVector MyLoc = GetActorLocation();
+    FVector TargetLoc = CurrentTarget->GetActorLocation();
+
+    FVector ToTarget = TargetLoc - MyLoc;
+    ToTarget.Z = 0.f;              // 2D 平面に投影
+
+    if (ToTarget.IsNearlyZero())
+    {
+        return;
+    }
+
+    // ターゲット方向の角度
+    FRotator TargetRot = ToTarget.Rotation();
+
+    // （必要ならオフセットで微調整）
+    TargetRot.Yaw += FacingYawOffset;   // 普段は 0 でOK
+
+    TargetRot.Pitch = 0.f;
+    TargetRot.Roll = 0.f;
+
+    // なめらかに向きを合わせる
+    FRotator NewRot = FMath::RInterpTo(
+        GetActorRotation(),
+        TargetRot,
+        DeltaTime,
+        RotationInterpSpeed   // 1015 くらいが分かりやすい
+    );
+
+    SetActorRotation(NewRot);
+}

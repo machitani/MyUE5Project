@@ -13,5 +13,14 @@ UCLASS()
 class AUTOCHESSGAME_API AChargerEnemy : public AUnit
 {
 	GENERATED_BODY()
-	
+
+public:
+    AChargerEnemy();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    // «—ˆƒXƒLƒ‹‚Æ‚©“ü‚ê‚é‚È‚ç‚±‚±‚ğê—pˆ—‚É
+    virtual void AttackTarget(AUnit* Target) override;
 };

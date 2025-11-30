@@ -14,4 +14,13 @@ class AUTOCHESSGAME_API ABotEnemy : public AUnit
 {
 	GENERATED_BODY()
 	
+public:
+    ABotEnemy();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    // 必要になったらボット専用の攻撃処理に差し替え
+    virtual void AttackTarget(AUnit* Target) override;
 };

@@ -207,6 +207,10 @@ public:
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
     bool bLastRoundWasVictory = false;
 
+    UFUNCTION()
+    void ReviveAllEnemiesOnDefeat();
+
+
     //ƒnƒ“ƒhƒ‰ŠÖ”
     void HandleGameOver();
     void HandleGameClear();

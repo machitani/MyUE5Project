@@ -7,38 +7,62 @@
 #include "ItemBenchSlot.h"
 #include "Unit.h"
 #include "Tile.h"
-#include "BoardManager.h"
 #include "ShopSlotWidget.h"
 #include "ShopManager.h"
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/DragDropOperation.h"
 #include "EngineUtils.h"
 
+#include "ItemHoverInfoWidget.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Components/CanvasPanelSlot.h" 
+
+
+void UShopWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // 既存の初期化があればここに書く（今は無し）
+
+    // ★ ホバー用Widget生成
+    if (ItemHoverWidgetClass)
+    {
+        ItemHoverWidgetInstance = CreateWidget<UItemHoverInfoWidget>(GetWorld(), ItemHoverWidgetClass);
+        if (ItemHoverWidgetInstance)
+        {
+            ItemHoverWidgetInstance->AddToViewport();
+            ItemHoverWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+        }
+    }
+}
+
 void UShopWidget::UpdateShopUI()
 {
-    if (!ItemBox || !ShopManager || !SlotWidgetClass|| !ItemTable) return;
+    if (!ItemBox || !ShopManager || !SlotWidgetClass || !ItemTable) return;
 
     ItemBox->ClearChildren();
-    //TArray<FName> RowNames = ShopManager->ItemTable->GetRowNames();
 
-    for (const FItemData& ItemData:ShopManager->CurrentItems)
+    for (const FItemData& ItemData : ShopManager->CurrentItems)
     {
         UShopSlotWidget* ShopSlot = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
-     
+
         if (ShopSlot)
         {
             ShopSlot->ItemName = ItemData.Name;
             ShopSlot->Price = ItemData.Price;
-            ShopSlot->RowName = ItemData.RowName;       // ← ここ重要
+            ShopSlot->RowName = ItemData.RowName;
             ShopSlot->ShopManagerRef = ShopManager;
 
+            // ★ 親ショップを教える（ホバー通知のため）
+            ShopSlot->OwnerShopWidget = this;
+
+            // アイコンなど見た目を更新（ここでCachedItemDataもセットされる）
             ShopSlot->RefreshItemView(ItemData);
 
             ItemBox->AddChild(ShopSlot);
         }
     }
 }
-
 
 void UShopWidget::UpdateGold(int32 NewGold)
 {
@@ -68,7 +92,6 @@ void UShopWidget::RefreshItemBench()
 
     for (const FItemData& Item : ShopManager->BenchItems)
     {
-        // ★ ここだけ名前を変える
         UItemBenchSlot* NewBenchSlot = CreateWidget<UItemBenchSlot>(GetWorld(), ItemBenchSlotClass);
         if (!NewBenchSlot) continue;
 
@@ -89,7 +112,8 @@ void UShopWidget::OnBuyExpButtonPressed()
 
 void UShopWidget::OnReadyButtonClicked()
 {
-    ABoardManager* BoardManager = Cast<ABoardManager>(UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
+    ABoardManager* BoardManager = Cast<ABoardManager>(
+        UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
 
     if (BoardManager)
     {
@@ -97,3 +121,27 @@ void UShopWidget::OnReadyButtonClicked()
     }
 }
 
+void UShopWidget::ShowItemHover(const FItemData& ItemData)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] ShowItemHover: %s"), *ItemData.Name.ToString());
+
+    if (!ItemHoverWidgetInstance)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] ItemHoverWidgetInstance is NULL"));
+        return;
+    }
+
+    ItemHoverWidgetInstance->SetItemInfo(ItemData);
+
+    // まずは位置移動は一旦無視して、ただ表示するだけにする
+    ItemHoverWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+}
+
+
+void UShopWidget::HideItemHover()
+{
+    if (ItemHoverWidgetInstance)
+    {
+        ItemHoverWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+    }
+}
