@@ -1,6 +1,7 @@
 #include "ItemBenchSlot.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/Button.h"
 #include "BoardManager.h"
 #include "Unit.h"
 #include "ShopManager.h"
@@ -12,6 +13,21 @@ void UItemBenchSlot::NativePreConstruct()
 {
     Super::NativePreConstruct();
     RefreshBenchView();
+}
+
+void UItemBenchSlot::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // ★ Button に OnClicked をバインド
+    if (ClickArea)
+    {
+        ClickArea->OnClicked.AddDynamic(this, &UItemBenchSlot::HandleClicked);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] ClickArea is NULL (BindWidget missing?)"));
+    }
 }
 
 void UItemBenchSlot::ClearBenchItem()
@@ -43,50 +59,68 @@ void UItemBenchSlot::RefreshBenchView()
     ItemTextIcon->SetText(ItemData.Name);
 }
 
-FReply UItemBenchSlot::NativeOnMouseButtonDown(
-    const FGeometry& InGeometry,
-    const FPointerEvent& InMouseEvent)
+void UItemBenchSlot::HandleClicked()
 {
-    if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
-    {
-        return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-    }
+    UE_LOG(LogTemp, Warning,
+        TEXT("[BenchSlot] HandleClicked: bHasItem=%d Name=%s"),
+        bHasItem ? 1 : 0,
+        *ItemData.Name.ToString());
 
     if (!bHasItem)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[BenchSlot] No item to equip"));
-        return FReply::Handled();
+        UE_LOG(LogTemp, Warning, TEXT("[BenchSlot] No item in this slot."));
+        return;
     }
 
-    // --- 対象ユニット ---
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] World is NULL"));
+        return;
+    }
+
+    // --- BoardManager 取得 ---
     ABoardManager* BM = Cast<ABoardManager>(
-        UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass()));
-    if (!BM || !BM->ItemUnit)
+        UGameplayStatics::GetActorOfClass(World, ABoardManager::StaticClass()));
+    if (!BM)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] BoardManager not found"));
+        return;
+    }
+
+    if (!BM->ItemUnit)
     {
         UE_LOG(LogTemp, Warning,
             TEXT("[BenchSlot] No ItemUnit selected (right-click a unit first)"));
-        return FReply::Handled();
+        return;
     }
+
     AUnit* TargetUnit = BM->ItemUnit;
 
-    // --- ShopManager取得 ---
-    AShopManager* ShopManager = Cast<AShopManager>(
-        UGameplayStatics::GetActorOfClass(this, AShopManager::StaticClass()));
-
-    if (ShopManager)
-    {
-        // ★ 共通関数を呼ぶだけにする
-        ShopManager->RemoveItemFromBenchByRowName(ItemData.RowName);
-    }
-
-    // --- ユニットに装備 ---
     UE_LOG(LogTemp, Warning,
         TEXT("[BenchSlot] Equip %s to %s"),
         *ItemData.Name.ToString(),
         *TargetUnit->GetName());
 
+    // --- ① 先にユニットへ装備 ---
     TargetUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
     TargetUnit->ReapplayAllItemEffects();
 
-    return FReply::Handled();
+    // --- ② そのあとベンチから削除 ---
+    AShopManager* ShopManager = Cast<AShopManager>(
+        UGameplayStatics::GetActorOfClass(World, AShopManager::StaticClass()));
+    if (ShopManager)
+    {
+        bool bRemoved = ShopManager->RemoveItemFromBenchByRowName(ItemData.RowName);
+        UE_LOG(LogTemp, Warning,
+            TEXT("[BenchSlot] RemoveItemFromBenchByRowName(%s) -> %s"),
+            *ItemData.RowName.ToString(),
+            bRemoved ? TEXT("true") : TEXT("false"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] ShopManager not found"));
+    }
 }
+
+

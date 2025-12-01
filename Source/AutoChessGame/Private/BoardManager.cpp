@@ -24,6 +24,8 @@ ABoardManager::ABoardManager()
     bIsGameClear = false;
     bIsGameOver = false;
     bLastRoundWasVictory = false;
+
+    ItemUnit = nullptr;
 }
 
 TArray<FName> ABoardManager::GenerateRewardUnitCandidates(int32 Num)const 
@@ -252,6 +254,24 @@ void ABoardManager::BeginPlay()
     }
 
     StartPreparationPhase();
+}
+
+
+void ABoardManager::SetItemTargetUnit(AUnit* NewUnit)
+{
+    if (NewUnit)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[BoardManager] SetItemTargetUnit: %s"),
+            *NewUnit->GetName());
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[BoardManager] SetItemTargetUnit: nullptr"));
+    }
+
+    ItemUnit = NewUnit;
 }
 
 

@@ -76,6 +76,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Runtime")
     AUnit* SelectedUnit;
 
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Item")
+    AUnit* ItemUnit = nullptr;
+
+    UFUNCTION()
+    void SetItemTargetUnit(AUnit* NewUnit);
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     AShopManager* ShopManagerRef;
 
@@ -127,8 +133,7 @@ public:
 
     void ProcessBattleTick();
 
-    UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="Selection")
-    class AUnit* ItemUnit;
+   
 
     //FTimerHandle RoundTimerHandle;    // BattlePhase —p
     FTimerHandle PhaseTimerHandle;    // Preparation / Result —p

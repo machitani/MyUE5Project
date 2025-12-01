@@ -324,23 +324,16 @@ bool AShopManager::TryBuyItem(FName RowName)
         return false;
     }
 
-    // 購入処理
     PlayerGold -= Item->Price;
     BenchItems.Add(*Item);
 
-    // ★ この RowName を「このショップ中は売り切れ」として記録
-    MarkItemSold(RowName);
+    // MarkItemSold(RowName);  // ← ここをコメントアウト or 削除
 
     if (ShopWidget)
     {
         ShopWidget->UpdateGold(PlayerGold);
         ShopWidget->RefreshItemBench();
-    }
-
-    // スロットの見た目更新（売り切れ or ゴールド不足）
-    if (ShopWidget)
-    {
-        ShopWidget->RefreshSlots();
+        ShopWidget->RefreshSlots();   // ゴールド変化に合わせて色更新
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Buy %s"), *Item->Name.ToString());

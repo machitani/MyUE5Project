@@ -69,6 +69,10 @@ public:
     UFUNCTION(BlueprintCallable)
     void RefreshItemView(const FItemData& ItemData);
 
+    UPROPERTY(BlueprintReadWrite, Category = "Shop")
+    int32 SlotIndex = -1;
+
+
 protected:
     UFUNCTION()
     void HandleClicked();

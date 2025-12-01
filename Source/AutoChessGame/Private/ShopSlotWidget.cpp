@@ -54,10 +54,11 @@ void UShopSlotWidget::UpdateShopState()
     const int32 ItemPrice = Price;
 
     const bool bCanAfford = (CurrentGold >= ItemPrice);
-    const bool bSoldInShop = ShopManagerRef->IsItemSoldOut(RowName);
 
-    // すでにこのショップで購入済みなら、必ず SOLD 表示に固定
-    if (bSoldInShop)
+  
+
+    // 代わりに「自分が既に売り切れならそれを優先」
+    if (bIsSoldOut)
     {
         SetSoldOut(true);
         return;
@@ -65,13 +66,11 @@ void UShopSlotWidget::UpdateShopState()
 
     // ここまで来たら「未購入」
 
-    // ボタンのON/OFF（お金足りる？）
     if (Button)
     {
         Button->SetIsEnabled(bCanAfford);
     }
 
-    // お金足りないときだけ少し薄く
     if (RarityFrame)
     {
         FLinearColor Color = RarityFrame->ColorAndOpacity;
@@ -79,8 +78,7 @@ void UShopSlotWidget::UpdateShopState()
         RarityFrame->SetColorAndOpacity(Color);
     }
 
-    // 内部フラグも一応同期
-    bIsSoldOut = false;
+    bIsSoldOut = false;  // 未購入として扱う
 }
 
 void UShopSlotWidget::RefreshItemView(const FItemData& ItemData)
@@ -143,8 +141,9 @@ void UShopSlotWidget::HandleClicked()
 {
     if (!ShopManagerRef) return;
 
-    // Manager 側の情報で、すでにこの RowName が売り切れなら何もしない
-    if (ShopManagerRef->IsItemSoldOut(RowName))
+   
+
+    if (bIsSoldOut)
     {
         return;
     }
@@ -153,11 +152,11 @@ void UShopSlotWidget::HandleClicked()
 
     if (bSuccess)
     {
-        // Manager で MarkItemSold してるので、
-        // 見た目だけここで SOLD にする
+        // このスロットだけ SOLD にする
         SetSoldOut(true);
     }
 }
+
 
 void UShopSlotWidget::SetSoldOut(bool bSold)
 {

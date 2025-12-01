@@ -92,12 +92,17 @@ void UShopWidget::RefreshItemBench()
 {
     if (!ShopManager || !ItemBenchBox || !ItemBenchSlotClass) return;
 
+    UE_LOG(LogTemp, Warning,
+        TEXT("[ShopWidget] RefreshItemBench: BenchItems=%d"),
+        ShopManager->BenchItems.Num());
+
     ItemBenchBox->ClearChildren();
     ItemBenchSlots.Empty();
 
     for (const FItemData& Item : ShopManager->BenchItems)
     {
-        UItemBenchSlot* NewBenchSlot = CreateWidget<UItemBenchSlot>(GetWorld(), ItemBenchSlotClass);
+        UItemBenchSlot* NewBenchSlot =
+            CreateWidget<UItemBenchSlot>(GetWorld(), ItemBenchSlotClass);
         if (!NewBenchSlot) continue;
 
         NewBenchSlot->SetBenchItem(Item);
@@ -106,6 +111,7 @@ void UShopWidget::RefreshItemBench()
         ItemBenchSlots.Add(NewBenchSlot);
     }
 }
+
 
 void UShopWidget::OnBuyExpButtonPressed()
 {

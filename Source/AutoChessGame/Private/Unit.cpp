@@ -296,6 +296,12 @@ void AUnit::OnDeath()
         UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
 
+    if (OwningBoardManager && OwningBoardManager->ItemUnit == this)
+    {
+        OwningBoardManager->SetItemTargetUnit(nullptr);
+    }
+
+
     // ★ Destroy はここではしない（敵は OnDeathFinished で Destroy、プレイヤーは残す）
 }
 
@@ -412,10 +418,10 @@ void AUnit::ShowUnitInfo()
     {
         TArray<UUserWidget*> Existing;
         UWidgetBlueprintLibrary::GetAllWidgetsOfClass(
-            this,                                      // WorldContextObject
-            Existing,                                  // 結果を入れる配列
-            UUnitHoverInfoWidget::StaticClass(),       // 探したいWidgetクラス
-            false                                      // TopLevelOnly -> falseでOK
+            this,
+            Existing,
+            UUnitHoverInfoWidget::StaticClass(),
+            false
         );
 
         for (UUserWidget* W : Existing)
@@ -444,9 +450,17 @@ void AUnit::ShowUnitInfo()
             MoveSpeed,
             EquipedItems
         );
+
         HoverWidget->AddToViewport();
+
+        // ★ ここがポイント：後ろのクリックをブロックしない
+        HoverWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+        // ※ 子ウィジェットはヒットテストされるけど、
+        //   ホバー全体としては後ろのボード / ベンチにクリックが通る
     }
 }
+
+
 
 
 void AUnit::HideUnitInfo()
@@ -475,12 +489,19 @@ void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPres
         TEXT("[Unit] OnUnitClicked %s Button=%s"),
         *GetName(), *ButtonPressed.ToString());
 
-    // 右クリックのときだけホバー表示（元の機能だけ残す）
+    // 右クリック：このユニットをアイテム装備対象にする ＋ 情報ホバー表示
     if (ButtonPressed == EKeys::RightMouseButton)
     {
+        if (OwningBoardManager)
+        {
+            OwningBoardManager->SetItemTargetUnit(this);
+        }
+
         ShowUnitInfo();
     }
 }
+
+
 
 void AUnit::UpdateFacing(float DeltaTime)
 {

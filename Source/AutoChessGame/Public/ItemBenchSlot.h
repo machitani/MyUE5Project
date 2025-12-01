@@ -6,10 +6,10 @@
 #include "ItemData.h"
 #include "ItemBenchSlot.generated.h"
 
+// 先頭の forward 宣言
 class UImage;
 class UTextBlock;
-
-// ItemBenchSlot.h
+class UButton;   // ★ 追加
 
 UCLASS()
 class AUTOCHESSGAME_API UItemBenchSlot : public UUserWidget
@@ -31,17 +31,22 @@ public:
 
 protected:
     virtual void NativePreConstruct() override;
+    virtual void NativeConstruct() override;   // ★ 追加
+
     void RefreshBenchView();
 
-    // ★ 左クリックを拾う
-    virtual FReply NativeOnMouseButtonDown(
-        const FGeometry& InGeometry,
-        const FPointerEvent& InMouseEvent
-    ) override;
+    // ★ クリック処理用の関数（Button から呼ぶ）
+    UFUNCTION()
+    void HandleClicked();
 
     UPROPERTY(meta = (BindWidget))
     UImage* ItemIcon;
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* ItemTextIcon;
+
+    // ★ ここを Button にする（BP 側に "ClickArea" って名前の Button を置く）
+    UPROPERTY(meta = (BindWidget))
+    UButton* ClickArea;
 };
+
