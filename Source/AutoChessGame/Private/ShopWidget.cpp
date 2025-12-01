@@ -38,31 +38,34 @@ void UShopWidget::NativeConstruct()
 
 void UShopWidget::UpdateShopUI()
 {
-    if (!ItemBox || !ShopManager || !SlotWidgetClass || !ItemTable) return;
+    if (!ItemBox || !ShopManager || !SlotWidgetClass) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("[ShopWidget] UpdateShopUI: CurrentItems=%d"),
+        ShopManager->CurrentItems.Num());
 
     ItemBox->ClearChildren();
+    ShopSlots.Empty();
 
     for (const FItemData& ItemData : ShopManager->CurrentItems)
     {
-        UShopSlotWidget* ShopSlot = CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
+        UShopSlotWidget* ShopSlot =
+            CreateWidget<UShopSlotWidget>(GetOwningPlayer(), SlotWidgetClass);
 
-        if (ShopSlot)
-        {
-            ShopSlot->ItemName = ItemData.Name;
-            ShopSlot->Price = ItemData.Price;
-            ShopSlot->RowName = ItemData.RowName;
-            ShopSlot->ShopManagerRef = ShopManager;
+        if (!ShopSlot) continue;
 
-            // ★ 親ショップを教える（ホバー通知のため）
-            ShopSlot->OwnerShopWidget = this;
+        ShopSlot->ItemName = ItemData.Name;
+        ShopSlot->Price = ItemData.Price;
+        ShopSlot->RowName = ItemData.RowName;
+        ShopSlot->ShopManagerRef = ShopManager;
+        ShopSlot->OwnerShopWidget = this;
 
-            // アイコンなど見た目を更新（ここでCachedItemDataもセットされる）
-            ShopSlot->RefreshItemView(ItemData);
+        ShopSlot->RefreshItemView(ItemData); // ここで soldout もリセットされる
 
-            ItemBox->AddChild(ShopSlot);
-        }
+        ItemBox->AddChild(ShopSlot);
+        ShopSlots.Add(ShopSlot);
     }
 }
+
 
 void UShopWidget::UpdateGold(int32 NewGold)
 {
@@ -74,6 +77,8 @@ void UShopWidget::UpdateGold(int32 NewGold)
 
 void UShopWidget::RefreshSlots()
 {
+    
+
     for (UWidget* Child : ItemBox->GetAllChildren())
     {
         if (UShopSlotWidget* ItemSlot = Cast<UShopSlotWidget>(Child))

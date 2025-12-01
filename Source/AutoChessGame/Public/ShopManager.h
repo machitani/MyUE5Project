@@ -71,4 +71,12 @@ public:
     UFUNCTION(BlueprintCallable)
     bool RemoveItemFromBenchByRowName(FName RowName);
 
+    UFUNCTION(BlueprintCallable, Category = "Shop")
+    bool TryBuyItem(FName RowName);
+
+    UPROPERTY()
+    TSet<FName> SoldOutItemRowNames;
+
+    bool IsItemSoldOut(FName RowName) const;
+    void MarkItemSold(FName RowName);
 };

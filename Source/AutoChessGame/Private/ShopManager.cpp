@@ -46,41 +46,35 @@ void AShopManager::BeginPlay()
 
 void AShopManager::BuyItem(FName RowName, int32 Price)
 {
-    if (PlayerGold < Price) return;
-    PlayerGold -= Price;
-
-    const FItemData* FoundItem = ItemTable->FindRow<FItemData>(RowName, TEXT(""));
-    if (FoundItem)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("RINGO"));
-
-        // ★ RowName もコピーしたうえで Bench に追加
-        FItemData Copy = *FoundItem;
-        Copy.RowName = RowName;
-
-        AddItemToBench(Copy);
-    }
-
-    ShopWidget->UpdateGold(PlayerGold);
-    ShopWidget->RefreshSlots();
+   
 }
 
 
 void AShopManager::PaidReroll(int32 ItemCount)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[ShopManager] PaidReroll called. Gold=%d"), PlayerGold);
+
     const int32 RerollCost = 1;
 
-    if (!ShopWidget) return;                       // ← 追加: 念のため
+    if (!ShopWidget)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[ShopManager] PaidReroll: ShopWidget is NULL"));
+        return;
+    }
+
     if (PlayerGold < RerollCost)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Not enough gold to Reroll"));
+        UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Not enough gold to Reroll"));
         return;
     }
 
     PlayerGold -= RerollCost;
     ShopWidget->UpdateGold(PlayerGold);
 
-    RerollShop(ItemCount);                         // 無料版を呼ぶ
+    RerollShop(ItemCount);
+
+    // ★ ここで各スロットの「買える / 買えない」状態も更新
+    ShopWidget->RefreshSlots();
 }
 
 void AShopManager::BuyExp()
@@ -96,6 +90,7 @@ void AShopManager::BuyExp()
         UE_LOG(LogTemp, Warning, TEXT("BuyExp: Only available in Preparation phase"));
         return;
     }
+
     const int32 Cost = 4;
     const int32 ExpGain = 4;
 
@@ -103,8 +98,16 @@ void AShopManager::BuyExp()
     {
         return;
     }
+
     PlayerGold -= Cost;
-    ShopWidget->UpdateGold(PlayerGold);
+
+    if (ShopWidget)
+    {
+        ShopWidget->UpdateGold(PlayerGold);
+
+        // ★ ここ追加：ゴールド変わったので「買える/買えない」色を更新
+        ShopWidget->RefreshSlots();
+    }
 
     if (PlayerManagerRef)
     {
@@ -293,28 +296,64 @@ void AShopManager::RerollShop(int32 ItemCount)
 {
     if (!ShopWidget || !ItemTable) return;
 
+    // ★ このショップの売り切れ情報をリセット
+    SoldOutItemRowNames.Empty();
+
     CurrentItems.Empty();
 
     for (int32 i = 0; i < ItemCount; i++)
     {
-        // ★ ここでレベルを見て、レアリティを決めて、アイテムを1つ作る
         FItemData NewItem = CreateRandomShopItem();
-
-        // RowName が中にセットされていることが前提
         CurrentItems.Add(NewItem);
     }
 
-    // UI更新
     ShopWidget->UpdateShopUI();
-
-    for (int32 i = 0; i < CurrentItems.Num(); i++)
-    {
-        if (ShopWidget->ShopSlots.IsValidIndex(i) && ShopWidget->ShopSlots[i])
-        {
-            ShopWidget->ShopSlots[i]->RefreshItemView(CurrentItems[i]);
-        }
-    }
-
     ShopWidget->RefreshSlots();
 }
 
+bool AShopManager::TryBuyItem(FName RowName)
+{
+    if (!ItemTable) return false;
+
+    FItemData* Item = ItemTable->FindRow<FItemData>(RowName, TEXT("Shop Buy"));
+    if (!Item) return false;
+
+    if (PlayerGold < Item->Price)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Not enough gold"));
+        return false;
+    }
+
+    // 購入処理
+    PlayerGold -= Item->Price;
+    BenchItems.Add(*Item);
+
+    // ★ この RowName を「このショップ中は売り切れ」として記録
+    MarkItemSold(RowName);
+
+    if (ShopWidget)
+    {
+        ShopWidget->UpdateGold(PlayerGold);
+        ShopWidget->RefreshItemBench();
+    }
+
+    // スロットの見た目更新（売り切れ or ゴールド不足）
+    if (ShopWidget)
+    {
+        ShopWidget->RefreshSlots();
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Buy %s"), *Item->Name.ToString());
+    return true;
+}
+
+
+bool AShopManager::IsItemSoldOut(FName RowName) const
+{
+    return SoldOutItemRowNames.Contains(RowName);
+}
+
+void AShopManager::MarkItemSold(FName RowName)
+{
+    SoldOutItemRowNames.Add(RowName);
+}

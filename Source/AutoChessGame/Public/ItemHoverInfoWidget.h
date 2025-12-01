@@ -30,6 +30,5 @@ protected:
     UPROPERTY(meta = (BindWidget))
     UTextBlock* RarityText = nullptr;
 
-    UPROPERTY(meta = (BindWidget))
-    UImage* ItemIconImage = nullptr;
+   
 };
