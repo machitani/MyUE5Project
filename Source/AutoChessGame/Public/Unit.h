@@ -98,6 +98,9 @@ public:
 
     FVector OriginalLocation;
 
+    UPROPERTY()
+    ATile* DragStartTile = nullptr;
+
     // ====== É{Å[ÉhManager ======
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     ABoardManager* OwningBoardManager;
@@ -208,5 +211,10 @@ public:
     float FacingYawOffset = 0.f;
 
     void UpdateFacing(float DeltaTime);
+
+    UFUNCTION()
+    void RefreshHoverInfo();
+
 };
+
 

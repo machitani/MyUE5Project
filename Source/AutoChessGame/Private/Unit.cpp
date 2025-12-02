@@ -101,6 +101,10 @@ void AUnit::StartDrag(const FVector& MouseWorld)
 
     OriginalLocation = GetActorLocation();
 
+    // ★ ドラッグ開始時にいたタイルを覚える
+    DragStartTile = CurrentTile;
+
+    // 一旦タイルを空ける
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
@@ -110,6 +114,8 @@ void AUnit::StartDrag(const FVector& MouseWorld)
 
     DragOffset = GetActorLocation() - MouseWorld;
 }
+
+
 void AUnit::UpdateDrag(const FVector& MouseWorld)
 {
     if (!bIsDragging) return;
@@ -136,13 +142,25 @@ void AUnit::EndDrag()
 
     if (Tile)
     {
+        // 正常にタイルに落とせたとき
         OwningBoardManager->MoveUnitToTile(this, Tile);
     }
     else
     {
+        // ★ タイルの外 → 位置もタイル情報も元に戻す
         SetActorLocation(OriginalLocation);
+
+        if (DragStartTile)
+        {
+            CurrentTile = DragStartTile;
+            DragStartTile->bIsOccupied = true;
+            DragStartTile->OccupiedUnit = this;
+        }
     }
+
+    DragStartTile = nullptr;
 }
+
 
 void AUnit::CheckForTarget(float DeltaTime)
 {
@@ -490,7 +508,7 @@ void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPres
         *GetName(), *ButtonPressed.ToString());
 
     // 右クリック：このユニットをアイテム装備対象にする ＋ 情報ホバー表示
-    if (ButtonPressed == EKeys::RightMouseButton)
+    if (ButtonPressed == EKeys::LeftMouseButton)
     {
         if (OwningBoardManager)
         {
@@ -538,4 +556,23 @@ void AUnit::UpdateFacing(float DeltaTime)
     );
 
     SetActorRotation(NewRot);
+}
+
+void AUnit::RefreshHoverInfo()
+{
+    // 今ホバーが出ているなら、中身だけ更新
+    if (HoverWidget)
+    {
+        HoverWidget->SetUnitInfo(
+            UnitID,
+            HP,
+            Attack,
+            Defense,
+            MagicPower,
+            MagicDefense,
+            Range,
+            MoveSpeed,
+            EquipedItems
+        );
+    }
 }

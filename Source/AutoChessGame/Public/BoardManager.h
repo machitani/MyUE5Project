@@ -133,7 +133,9 @@ public:
 
     void ProcessBattleTick();
 
-   
+    // BoardManager.h ‚Ì public: ‚ ‚½‚è‚É’Ç‰Á
+    void RebuildPlayerTileOccupancy();
+
 
     //FTimerHandle RoundTimerHandle;    // BattlePhase —p
     FTimerHandle PhaseTimerHandle;    // Preparation / Result —p

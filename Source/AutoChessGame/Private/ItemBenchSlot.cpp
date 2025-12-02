@@ -7,6 +7,7 @@
 #include "ShopManager.h"
 #include "ShopWidget.h"
 #include "CoreMinimal.h"
+#include "ItemHoverInfoWidget.h"
 #include "Kismet/GameplayStatics.h"
 
 void UItemBenchSlot::NativePreConstruct()
@@ -106,6 +107,8 @@ void UItemBenchSlot::HandleClicked()
     TargetUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
     TargetUnit->ReapplayAllItemEffects();
 
+    TargetUnit->RefreshHoverInfo();
+
     // --- ‡A ‚»‚Ì‚ ‚Æƒxƒ“ƒ`‚©‚çíœ ---
     AShopManager* ShopManager = Cast<AShopManager>(
         UGameplayStatics::GetActorOfClass(World, AShopManager::StaticClass()));
@@ -121,6 +124,8 @@ void UItemBenchSlot::HandleClicked()
     {
         UE_LOG(LogTemp, Error, TEXT("[BenchSlot] ShopManager not found"));
     }
+
+    
 }
 
 

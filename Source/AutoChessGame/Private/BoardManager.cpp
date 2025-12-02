@@ -560,6 +560,27 @@ void ABoardManager::ProcessBattleTick()
     }
 }
 
+void ABoardManager::RebuildPlayerTileOccupancy()
+{
+    for (ATile* Tile : PlayerTiles)
+    {
+        if (!Tile) continue;
+        Tile->bIsOccupied = false;
+        Tile->OccupiedUnit = nullptr;
+    }
+
+    for (AUnit* Unit : PlayerUnits)
+    {
+        if (!Unit) continue;
+        if (!Unit->CurrentTile) continue;
+
+        ATile* Tile = Unit->CurrentTile;
+        Tile->bIsOccupied = true;
+        Tile->OccupiedUnit = Unit;
+    }
+}
+
+
 void ABoardManager::EndBattlePhase()
 {
     // ç°ÇÃédólÇ≈ÇÕ Result Phase Ç…à⁄çsÇ∑ÇÈÇæÇØ
@@ -1057,6 +1078,8 @@ TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
 
 AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
 {
+    RebuildPlayerTileOccupancy();
+
     TSubclassOf<AUnit>UnitClass = GetPlayerUnitClassByID(UnitID);
     if (!UnitClass)
     {
@@ -1064,7 +1087,7 @@ AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
         return nullptr;
     }
 
-    if (PlayerManagerInstance)
+ /*   if (PlayerManagerInstance)
     {
         int32 CurrentDeployed = GetDeployedPlayerUnitCount();
         if (CurrentDeployed >= PlayerManagerInstance->MaxUnitCount)
@@ -1073,7 +1096,7 @@ AUnit* ABoardManager::SpawnRewardUnit(FName UnitID)
                 CurrentDeployed, PlayerManagerInstance->MaxUnitCount);
             return nullptr;
         }
-    }
+    }*/
 
     ATile* FreeTile = nullptr;
     for (ATile* Tile : PlayerTiles)
