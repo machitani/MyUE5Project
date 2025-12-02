@@ -9,6 +9,7 @@
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 
 
 ABoardManager::ABoardManager()
@@ -170,6 +171,8 @@ void ABoardManager::HandleDefeat()
     PlayerManagerInstance->PlayerLife--;
     UE_LOG(LogTemp, Warning, TEXT("PlayerLife now: %d"), PlayerManagerInstance->PlayerLife);
 
+    UpdateHUD();
+
     if (PlayerManagerInstance->PlayerLife <= 0)
     {
         // ライフ0 → ゲームオーバー
@@ -187,10 +190,35 @@ void ABoardManager::BeginPlay()
 {
     Super::BeginPlay();
 
+    // 1) まずボード生成
     GenerateBoard();
-    SpawnInitialUnits();
 
-    // --- HUD作成（1回だけ） ---
+    // 2) PlayerManager を取得（BoardManagerRef を渡す）
+    {
+        TArray<AActor*> Found;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
+
+        if (Found.Num() > 0)
+        {
+            PlayerManagerInstance = Cast<APlayerManager>(Found[0]);
+            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerManagerInstance));
+
+            PlayerManagerInstance->BoardManagerRef = this;
+        }
+        else
+        {
+            PlayerManagerInstance = nullptr;
+            UE_LOG(LogTemp, Error, TEXT("No PlayerManager found in level!"));
+        }
+    }
+
+    // ★ 3) 初期プレイヤーユニットをスポーン（前と同じ感じ）
+    SpawnInitialUnits();   // ← ここで Knight / Archer を出す
+
+    // ★ 4) EnemyWaves から敵ユニットをスポーン
+    SpawnEnemyUnits();     // ← 1ラウンド目の敵も Wave データから出す
+
+    // 5) HUD作成
     if (HUDClass && !HUDInstance)
     {
         HUDInstance = CreateWidget<UUserWidget>(GetWorld(), HUDClass);
@@ -209,27 +237,7 @@ void ABoardManager::BeginPlay()
         }
     }
 
-    // --- レベルに配置済み PlayerManager を取得 ---
-    {
-        TArray<AActor*> Found;
-        UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
-
-        if (Found.Num() > 0)
-        {
-            PlayerManagerInstance = Cast<APlayerManager>(Found[0]);
-            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerManagerInstance));
-
-            // BoardManager → PlayerManager の参照
-            PlayerManagerInstance->BoardManagerRef = this;
-        }
-        else
-        {
-            PlayerManagerInstance = nullptr;
-            UE_LOG(LogTemp, Error, TEXT("No PlayerManager found in level!"));
-        }
-    }
-
-    // --- レベルに配置済み ShopManager を取得 ---
+    // 6) ShopManager を取得して PlayerManager を渡す
     {
         TArray<AActor*> FoundShop;
         UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShopManager::StaticClass(), FoundShop);
@@ -239,7 +247,6 @@ void ABoardManager::BeginPlay()
             ShopManagerRef = Cast<AShopManager>(FoundShop[0]);
             UE_LOG(LogTemp, Warning, TEXT("ShopManager found: %s"), *GetNameSafe(ShopManagerRef));
 
-            // ShopManager が PlayerLevel を見れるようにする
             if (ShopManagerRef && PlayerManagerInstance)
             {
                 ShopManagerRef->PlayerManagerRef = PlayerManagerInstance;
@@ -253,7 +260,49 @@ void ABoardManager::BeginPlay()
         }
     }
 
+    // 7) 準備フェーズスタート
     StartPreparationPhase();
+}
+
+void ABoardManager::InitializePlayerSavedUnitsIfEmpty()
+{
+    if (!PlayerManagerInstance)
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("InitializePlayerSavedUnitsIfEmpty: PlayerManagerInstance is NULL"));
+        return;
+    }
+
+    // すでにセーブデータがあれば「続きから」とみなして何もしない
+    if (PlayerManagerInstance->SavedUnits.Num() > 0)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("InitializePlayerSavedUnitsIfEmpty: SavedUnits already exists. Skip seeding initial units."));
+        return;
+    }
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("InitializePlayerSavedUnitsIfEmpty: Seed initial Knight & Archer."));
+
+    // ★ Knight
+    {
+        FUnitSaveData KnightData;
+        KnightData.UnitID = FName("Knight");
+        KnightData.SavedTileIndex = 1;   // PlayerTiles[1] に出す前提（GenerateBoard で埋まっている）
+
+        PlayerManagerInstance->SavedUnits.Add(KnightData);
+        PlayerManagerInstance->RegisterOwnedUnit(KnightData.UnitID);
+    }
+
+    // ★ Archer
+    {
+        FUnitSaveData ArcherData;
+        ArcherData.UnitID = FName("Archer");
+        ArcherData.SavedTileIndex = 5;   // PlayerTiles[5]
+
+        PlayerManagerInstance->SavedUnits.Add(ArcherData);
+        PlayerManagerInstance->RegisterOwnedUnit(ArcherData.UnitID);
+    }
 }
 
 
@@ -342,7 +391,7 @@ void ABoardManager::SpawnInitialUnits()
 
             PlayerUnits.Add(NewKnight);
 
-            if(PlayerManagerInstance)
+            if (PlayerManagerInstance)
             {
                 PlayerManagerInstance->RegisterOwnedUnit(NewKnight->UnitID);
             }
@@ -374,43 +423,8 @@ void ABoardManager::SpawnInitialUnits()
         }
     }
 
-    // ★ 敵側は今まで通り2体
-    EnemyUnits.Empty();
-    int32 EnemySpawnCount = 2;
-    int32 EnemySpawned = 0;
-
-    int32 StartRow = Rows - 1;
-
-    for (int32 Col = 0; Col < Columns && EnemySpawned < EnemySpawnCount; Col += 2)
-    {
-        int32 TileIndex = StartRow * Columns + Col;
-
-        if (EnemyTiles.IsValidIndex(TileIndex))
-        {
-            FVector SpawnLocation = EnemyTiles[TileIndex]->GetActorLocation() + FVector(0, 0, 100);
-
-            AUnit* NewUnit = GetWorld()->SpawnActor<AUnit>(
-                EnemyUnitClass,
-                SpawnLocation,
-                FRotator(0, 180, 0)
-            );
-
-            if (NewUnit)
-            {
-                NewUnit->Team = EUnitTeam::Enemy;
-                NewUnit->CurrentTile = EnemyTiles[TileIndex];
-                NewUnit->OwningBoardManager = this;
-
-                EnemyTiles[TileIndex]->bIsOccupied = true;
-                EnemyTiles[TileIndex]->OccupiedUnit = NewUnit;
-
-                EnemyUnits.Add(NewUnit);
-                EnemySpawned++;
-            }
-        }
-    }
+    // ★ 敵スポーン部分（EnemyUnitClass で 2体出してた for文）は丸ごと削除してOK
 }
-
 
 
 void ABoardManager::HandleTileClicked(ATile* ClickedTile)
@@ -643,6 +657,7 @@ void ABoardManager::ResetBoardForNextRound()
     if (bLastRoundWasVictory)
     {
         CurrentWaveIndex++;
+        CurrentRound++;
     }
     else
     {
@@ -661,16 +676,17 @@ void ABoardManager::ResetBoardForNextRound()
         return;
     }
 
+    if (ShopManagerRef)
+    {
+        ShopManagerRef->RerollShop(4); // スロット数に合わせて
+    }
+
+
     // ★ セーブデータからプレイヤーユニットを復元
     SpawnPlayerUnitsFromSaveData();
 
     // ★ Waveデータを使って敵ユニットを生成
     SpawnEnemyUnits();
-
-    CurrentRound++;
-    UE_LOG(LogTemp, Warning, TEXT("Next Round: %d  (Stage=%d Wave=%d)"),
-        CurrentRound, CurrentStageIndex, CurrentWaveIndex);
-
     StartPreparationPhase();
 }
 
@@ -679,9 +695,13 @@ void ABoardManager::UpdateHUD()
 {
     if (!HUDInstance) return;
 
-    UTextBlock* RoundText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("RoundText")));
-    if (RoundText)
-        RoundText->SetText(FText::FromString(FString::Printf(TEXT("Round: %d"), CurrentRound)));
+    // ラウンド番号だけをバッジに表示
+    if (UTextBlock* RoundNumText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("RoundNumberText"))))
+    {
+        RoundNumText->SetText(
+            FText::FromString(FString::Printf(TEXT("%d"), CurrentRound))
+        );
+    }
 
     UTextBlock* PhaseText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("PhaseText")));
     if (PhaseText)
@@ -701,6 +721,25 @@ void ABoardManager::UpdateHUD()
     {
         if (ResultText)
             ResultText->SetText(FText::FromString("Result:"));
+    }
+
+    if (PlayerManagerInstance)
+    {
+        int32 Life = PlayerManagerInstance->PlayerLife;
+
+        UImage* Heart1 = Cast<UImage>(HUDInstance->GetWidgetFromName(TEXT("Heart1")));
+        UImage* Heart2 = Cast<UImage>(HUDInstance->GetWidgetFromName(TEXT("Heart2")));
+        UImage* Heart3 = Cast<UImage>(HUDInstance->GetWidgetFromName(TEXT("Heart3")));
+
+        auto SetHeartVisible = [](UImage* Heart, bool bVisible)
+            {
+                if (!Heart) return;
+                Heart->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+            };
+
+        SetHeartVisible(Heart1, Life >= 1);
+        SetHeartVisible(Heart2, Life >= 2);
+        SetHeartVisible(Heart3, Life >= 3);
     }
 }
 
@@ -941,8 +980,18 @@ void ABoardManager::SpawnEnemyUnits()
             // Waveごとの倍率を反映
             NewUnit->BaseHP *= WaveData->HPScale;
             NewUnit->HP = NewUnit->BaseHP;
+
             NewUnit->BaseAttack *= WaveData->AttackScale;
             NewUnit->Attack = NewUnit->BaseAttack;
+
+            NewUnit->BaseDefense *= WaveData->DefenseScale;
+            NewUnit->Defense = NewUnit->BaseDefense;
+
+            NewUnit->BaseMagicDefense *= WaveData->MagicDefenseScale;
+            NewUnit->MagicDefense = NewUnit->BaseMagicDefense;
+
+            NewUnit->BaseMagicPower *= WaveData->MagicPowerScale;
+            NewUnit->MagicPower = NewUnit->MagicPower;
 
             Tile->bIsOccupied = true;
             Tile->OccupiedUnit = NewUnit;

@@ -43,4 +43,13 @@ struct FEnemyWaveData
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
     float AttackScale = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    float DefenseScale = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    float MagicDefenseScale = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    float MagicPowerScale = 1.0f;
 };
