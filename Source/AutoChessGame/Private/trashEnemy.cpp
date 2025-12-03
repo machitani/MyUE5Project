@@ -1,5 +1,89 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// trashEnemy.cpp
 
 #include "trashEnemy.h"
+#include "Animation/AnimInstance.h"
 
+ATrashEnemy::ATrashEnemy()
+{
+    // ★ ザコ敵っぽいステータス
+    MaxHP = 60.f;
+    HP = MaxHP;
+
+    Attack = 10.f;  // そこそこ殴ってくる
+    Defense = 1.f;
+    MagicDefense = 1.f;
+    MagicPower = 0.f;
+
+    Range = 150.f; // 完全近接
+    MoveSpeed = 130.f;
+    AttackInterval = 1.0f;
+
+    Team = EUnitTeam::Enemy;
+    UnitID = FName("TrashEnemy");
+}
+
+void ATrashEnemy::BeginPlay()
+{
+    Super::BeginPlay();
+}
+
+bool ATrashEnemy::CanUseSkill() const
+{
+    // 親の Skill システムは使わない
+    return false;
+}
+
+void ATrashEnemy::UseSkill(AUnit* Target)
+{
+    // 今のところ未使用（あとで何か入れたくなったらここへ）
+}
+
+void ATrashEnemy::AttackTarget(AUnit* Target)
+{
+    if (!Target || Target->bIsDead) return;
+    if (bIsDead) return;
+
+    bIsAttacking = true;
+
+    // ★ この攻撃で殴るターゲットを保存
+    PendingTarget = Target;
+
+    // ★ ここではダメージは入れない。攻撃モーション再生だけ
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (AttackMontage)
+            {
+                // 連打防止したいならチェックつきで
+                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
+                {
+                    AnimInstance->Montage_Play(AttackMontage);
+                }
+            }
+        }
+    }
+
+    // ※ Super::AttackTarget(Target) は絶対に呼ばない！
+    //   親の「即ダメージ＋Skill」を切るため。
+}
+
+void ATrashEnemy::ApplyMeleeDamage(AUnit* Target)
+{
+    if (!Target || Target->bIsDead) return;
+
+    // 普通に物理ダメージ
+    Target->TakePhysicalDamage(Attack);
+}
+
+void ATrashEnemy::HandleMeleeHitNotify()
+{
+    // 攻撃中にターゲットが死んでた / 消えてたら何もしない
+    if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
+    {
+        return;
+    }
+
+    // ★ ここが「当たりフレーム」で呼ばれる
+    ApplyMeleeDamage(PendingTarget);
+}

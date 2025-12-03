@@ -2,6 +2,10 @@
 
 
 #include "BotEnemy.h"
+#include "EnemyAssaultProjectile.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Animation/AnimInstance.h"
 
 ABotEnemy::ABotEnemy()
 {
@@ -33,5 +37,67 @@ void ABotEnemy::BeginPlay()
 
 void ABotEnemy::AttackTarget(AUnit* Target)
 {
-    Super::AttackTarget(Target);
+    if (!Target || Target->bIsDead) return;
+
+    bIsAttacking = true;
+    PendingTarget = Target;
+
+    // ★ まずは「攻撃タイミングで即ビーム発射」にしておく
+    SpawnBusterShot(Target);
+}
+
+bool ABotEnemy::CanUseSkill() const
+{
+    return false;
+}
+
+void ABotEnemy::UseSkill(AUnit* Target)
+{
+}
+
+void ABotEnemy::SpawnBusterShot(AUnit* Target)
+{
+    if (!BusterBulletClass || !Target) return;
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector SpawnLocation = GetActorLocation() + MuzzleOffset;
+
+    FVector TargetLocation = Target->GetActorLocation();
+    TargetLocation.Z = SpawnLocation.Z;
+
+    FVector Dir = (TargetLocation - SpawnLocation);
+    Dir.Z = 0.f;
+    Dir.Normalize();
+
+    const FRotator SpawnRotation = Dir.Rotation();
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+
+    AEnemyAssaultProjectile* P = World->SpawnActor<AEnemyAssaultProjectile>(
+        BusterBulletClass, SpawnLocation, SpawnRotation, Params);
+
+    if (P && P->ProjectileMovement)
+    {
+        const float PhysicalDamage = Attack * BusterDamageMultiplier;
+
+        P->TargetUnit = Target;
+        P->DamageAmount = PhysicalDamage;
+        P->OwnerTeam = Team;  // Enemy
+
+        P->ProjectileMovement->Velocity =
+            Dir * P->ProjectileMovement->InitialSpeed;
+    }
+}
+
+void ABotEnemy::HandleBusterShootNotify()
+{
+    if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
+    {
+        return;
+    }
+
+    SpawnBusterShot(PendingTarget);
 }

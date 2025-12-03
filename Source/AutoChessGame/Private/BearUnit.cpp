@@ -1,4 +1,5 @@
 #include "BearUnit.h"
+#include "Animation/AnimInstance.h"
 
 ABearUnit::ABearUnit()
 {
@@ -6,7 +7,7 @@ ABearUnit::ABearUnit()
     MaxHP = 220.f;
     HP = MaxHP;
 
-    Attack = 14.f;
+    Attack = 12.f;
     Defense = 10.f;     // 物理にかなり強い
     MagicDefense = 4.f;
     MagicPower = 0.f;
@@ -26,13 +27,56 @@ void ABearUnit::BeginPlay()
 
 void ABearUnit::AttackTarget(AUnit* Target)
 {
-    if (!Target) return;
+    if (!Target || Target->bIsDead) return;
 
-    // 今はシンプルに物理攻撃のみ
-    Super::AttackTarget(Target);
+    bIsAttacking = true;
 
-    // 将来：
-    // ・攻撃時に一瞬防御アップ
-    // ・HPが減るほど攻撃アップ
-    // などのパッシブをここに足していける
+    // この攻撃で狙っている敵を保存
+    PendingTarget = Target;
+
+    // ★ ここではダメージを与えない。アニメ再生だけ
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (AttackMontage)
+            {
+                // 連打防止はお好みで
+                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
+                {
+                    AnimInstance->Montage_Play(AttackMontage);
+                }
+            }
+        }
+    }
+}
+
+bool ABearUnit::CanUseSkill() const
+{
+    return false;
+}
+
+
+void ABearUnit::UseSkill(AUnit* Target)
+{
+}
+
+void ABearUnit::ApplyMeleeDamage(AUnit* Target)
+{
+    if (!Target || Target->bIsDead) return;
+
+    // 物理ダメージ（タンクだから控えめでもOK）
+    Target->TakePhysicalDamage(Attack);
+}
+
+void ABearUnit::HandleMeleeHitNotify()
+{
+    // ターゲットが既に死んでたら何もしない
+    if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
+    {
+        return;
+    }
+
+    // 「熊パンチが当たったフレーム」で呼ばれる想定
+    ApplyMeleeDamage(PendingTarget);
 }

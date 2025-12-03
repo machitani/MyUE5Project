@@ -1,6 +1,7 @@
 #include "NurseUnit.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Animation/AnimInstance.h"
 
 ANurseUnit::ANurseUnit()
 {
@@ -28,17 +29,53 @@ void ANurseUnit::BeginPlay()
 
 bool ANurseUnit::CanUseSkill() const
 {
-    // ひとまず毎回発動OK（あとでクールダウン制にしても良い）
-    return true;
+    // ★ 親からはもう Skill を呼ばせない
+    return false;
 }
 
 void ANurseUnit::UseSkill(AUnit* Target)
 {
-    if (!OwningBoardManager) return;
+    // 今は使わない。将来別のスキルを作りたくなったらここに
+}
 
-    // HP割合が一番低い味方を探して回復
-    AUnit* LowestAlly = nullptr;
+void ANurseUnit::AttackTarget(AUnit* Target)
+{
+    if (bIsDead) return;
+
+    bIsAttacking = true;
+
+    // ★ 一応おまけ物理攻撃を残したいならここで殴る
+    if (Target && !Target->bIsDead)
+    {
+        Target->TakePhysicalDamage(Attack);
+    }
+
+    // ★ このヒールで回復する予定の味方を決める
+    PendingHealTarget = FindLowestHpAlly();
+
+    // 誰もダメージ受けてないならアニメだけでもOK
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (HealMontage)
+            {
+                if (!AnimInstance->Montage_IsPlaying(HealMontage))
+                {
+                    AnimInstance->Montage_Play(HealMontage);
+                }
+            }
+        }
+    }
+
+    // ※ Super::AttackTarget(Target) は呼ばない！！
+    // 親から UseSkill を呼ばせる設計はやめて、Notify から回復する。
+}
+
+AUnit* ANurseUnit::FindLowestHpAlly() const
+{
     float LowestHPRatio = 1.0f;
+    AUnit* LowestAlly = nullptr;
 
     for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
     {
@@ -55,24 +92,33 @@ void ANurseUnit::UseSkill(AUnit* Target)
         }
     }
 
-    if (!LowestAlly) return;
+    return LowestAlly;
+}
+
+void ANurseUnit::ApplyHeal(AUnit* Ally)
+{
+    if (!Ally) return;
 
     const float HealAmount = MagicPower * 1.3f;
 
-    float OldHP = LowestAlly->HP;
-    LowestAlly->HP = FMath::Clamp(LowestAlly->HP + HealAmount, 0.f, LowestAlly->MaxHP);
+    float OldHP = Ally->HP;
+    Ally->HP = FMath::Clamp(Ally->HP + HealAmount, 0.f, Ally->MaxHP);
 
     UE_LOG(LogTemp, Warning,
         TEXT("Nurse %s heals %s (%.1f -> %.1f)"),
-        *GetName(), *LowestAlly->GetName(), OldHP, LowestAlly->HP);
+        *GetName(), *Ally->GetName(), OldHP, Ally->HP);
 }
 
-void ANurseUnit::AttackTarget(AUnit* Target)
+void ANurseUnit::HandleHealNotify()
 {
-    if (!Target) return;
+    // もし PendingHealTarget が死んでたり消えてたら、もう一回探す
+    if (!PendingHealTarget || !IsValid(PendingHealTarget) || PendingHealTarget->HP <= 0.f)
+    {
+        PendingHealTarget = FindLowestHpAlly();
+    }
 
-    // 基本攻撃（物理）はおまけ
-    Super::AttackTarget(Target);
-    // Super 側で CanUseSkill → UseSkill も呼ばれる設計なので、
-    // ここで特別な処理を足したいなら追記する
+    if (!PendingHealTarget) return;
+
+    ApplyHeal(PendingHealTarget);
 }
+

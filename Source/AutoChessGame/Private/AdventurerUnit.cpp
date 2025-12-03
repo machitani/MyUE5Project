@@ -1,19 +1,24 @@
+// AdventurerUnit.cpp
+
 #include "AdventurerUnit.h"
+#include "PachinkoProjectile.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Animation/AnimInstance.h"
 
 AAdventurerUnit::AAdventurerUnit()
 {
-    // 後衛DPSっぽいステータス
-    MaxHP = 120.f;
+    MaxHP = 100.f;
     HP = MaxHP;
 
-    Attack = 17.f;     // そこそこ高火力
+    Attack = 14.f;   // 弓よりちょい低めとかお好みで
     Defense = 3.f;
     MagicDefense = 2.f;
-    MagicPower = 0.f;      // 物理寄り
+    MagicPower = 0.f;
 
-    Range = 380.f;    // 前衛より長め、アーチャーよりちょい短めでもOK
+    Range = 350.f;  // 中距離イメージ
     MoveSpeed = 150.f;
-    AttackInterval = 1.0f;    // そこそこの連射速度
+    AttackInterval = 1.0f;  // 連射気味でも面白い
 
     Team = EUnitTeam::Player;
     UnitID = FName("Adventurer");
@@ -24,22 +29,83 @@ void AAdventurerUnit::BeginPlay()
     Super::BeginPlay();
 }
 
+bool AAdventurerUnit::CanUseSkill() const
+{
+    return false; // 今は通常攻撃だけ。後でスキル入れる枠
+}
+
+void AAdventurerUnit::UseSkill(AUnit* Target)
+{
+    // スキル作りたくなったらここに
+}
+
 void AAdventurerUnit::AttackTarget(AUnit* Target)
 {
-    if (!Target) return;
+    if (!Target || Target->bIsDead) return;
 
-    // ターゲット方向を向かせる（見た目用）
-    FVector ToTarget = Target->GetActorLocation() - GetActorLocation();
-    ToTarget.Z = 0.f;
-    FRotator NewRot = ToTarget.Rotation();
-    SetActorRotation(NewRot);
+    bIsAttacking = true;
+    PendingTarget = Target;
 
-    // ★ いまは即時ヒットの簡易版（パチンコの「当たった後」だけ表現）
-    //    将来的にはここで Projectile を Spawn してもOK
-    Super::AttackTarget(Target);
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (AttackMontage)
+            {
+                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
+                {
+                    AnimInstance->Montage_Play(AttackMontage);
+                }
+            }
+        }
+    }
 
-    // --- 将来的なイメージ ---
-    // 1. パチンコ発射アニメーション再生（Montage 再生）
-    // 2. 弾（Projectile）Spawn
-    // 3. 弾が当たったタイミングでダメージ
+    // 実際の発射は AnimNotify → HandlePachinkoShootNotify で
+}
+
+void AAdventurerUnit::SpawnPachinkoShot(AUnit* Target)
+{
+    if (!PachinkoClass || !Target) return;
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector SpawnLocation = GetActorLocation() + PachinkoSpawnOffset;
+
+    FVector TargetLocation = Target->GetActorLocation();
+    TargetLocation.Z = SpawnLocation.Z;
+
+    FVector Dir = (TargetLocation - SpawnLocation);
+    Dir.Z = 0.f;
+    Dir.Normalize();
+
+    const FRotator SpawnRotation = Dir.Rotation();
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+
+    APachinkoProjectile* P = World->SpawnActor<APachinkoProjectile>(
+        PachinkoClass, SpawnLocation, SpawnRotation, Params);
+
+    if (P && P->ProjectileMovement)
+    {
+        const float PhysicalDamage = Attack * PachinkoDamageMultiplier;
+
+        P->TargetUnit = Target;
+        P->DamageAmount = PhysicalDamage;
+        P->OwnerTeam = Team;
+
+        P->ProjectileMovement->Velocity =
+            Dir * P->ProjectileMovement->InitialSpeed;
+    }
+}
+
+void AAdventurerUnit::HandlePachinkoShootNotify()
+{
+    if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
+    {
+        return;
+    }
+
+    SpawnPachinkoShot(PendingTarget);
 }

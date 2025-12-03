@@ -2,6 +2,7 @@
 
 
 #include "TankEnemy.h"
+#include "Animation/AnimInstance.h"
 
 ATankEnemy::ATankEnemy()
 {
@@ -31,10 +32,81 @@ void ATankEnemy::BeginPlay()
     Super::BeginPlay();
 }
 
+void ATankEnemy::Tick(float DeltaTime)
+{
+}
+
 void ATankEnemy::AttackTarget(AUnit* Target)
 {
-    if (!Target || Target->bIsDead) return;
+    if (bIsDead) return;
 
-    // いまは普通の物理攻撃だけ（将来ノックバックとか付けるならここ）
-    Super::AttackTarget(Target);
+    bIsAttacking = true;
+
+    // ★ タンクは攻撃しないのでダメージは与えない
+    // Target->TakePhysicalDamage(...) は呼ばない
+
+    // すでにガード中なら新しいガードを重ねないようにするのもアリ
+    if (bIsGuardActive)
+    {
+        return;
+    }
+
+    // ガードモーション再生
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (GuardMontage)
+            {
+                if (!AnimInstance->Montage_IsPlaying(GuardMontage))
+                {
+                    AnimInstance->Montage_Play(GuardMontage);
+                }
+            }
+        }
+    }
+
+}
+
+bool ATankEnemy::CanUseSkill() const
+{
+    return false;
+}
+
+void ATankEnemy::UseSkill(AUnit* Target)
+{
+}
+
+void ATankEnemy::ApplyGuardedDamage(float& DamageAmount) const
+{
+    if (bIsAttacking)
+    {
+        DamageAmount *= GuardDamageReduceRate; // 例: 半分にする
+    }
+}
+
+void ATankEnemy::HandleGuardStartNotify()
+{
+    bIsAttacking = true;
+    GuardRemainingTime = GuardDuration;
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("TankEnemy %s starts Guard (Duration=%.1f)"),
+        *GetName(), GuardDuration);
+}
+
+void ATankEnemy::TakePhysicalDamage(float DamageAmount)
+{
+    ApplyGuardedDamage(DamageAmount);
+
+    // 親の物理ダメージ処理
+    Super::TakePhysicalDamage(DamageAmount);
+}
+
+void ATankEnemy::TakeMagicDamage(float DamageAmount)
+{
+    ApplyGuardedDamage(DamageAmount);
+
+    // 親の魔法ダメージ処理
+    Super::TakeMagicDamage(DamageAmount);
 }

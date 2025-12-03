@@ -1,12 +1,11 @@
+// KnightUnit.h
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Unit.h"
 #include "KnightUnit.generated.h"
 
-/**
- * 物理タンク寄りのナイトユニット
- */
 UCLASS()
 class AUTOCHESSGAME_API AKnightUnit : public AUnit
 {
@@ -15,10 +14,28 @@ class AUTOCHESSGAME_API AKnightUnit : public AUnit
 public:
     AKnightUnit();
 
-protected:
     virtual void BeginPlay() override;
 
-public:
-    // 必要ならナイト専用処理に変える
+    // ★ 通常攻撃を「モーション再生＋Notifyでダメージ」に変える
     virtual void AttackTarget(AUnit* Target) override;
+
+    virtual bool CanUseSkill() const override;
+    virtual void UseSkill(AUnit* Target) override;
+
+protected:
+    // 攻撃モーション用モンタージュ（または単体アニメでもOK）
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    UAnimMontage* AttackMontage;
+
+    // この攻撃で狙っている相手
+    UPROPERTY()
+    AUnit* PendingTarget = nullptr;
+
+    // 近接の実ダメージ処理
+    void ApplyMeleeDamage(AUnit* Target);
+
+public:
+    // AnimNotify から呼ぶ
+    UFUNCTION(BlueprintCallable, Category = "Attack")
+    void HandleMeleeHitNotify();
 };

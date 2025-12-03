@@ -17,10 +17,28 @@ class AUTOCHESSGAME_API AChargerEnemy : public AUnit
 public:
     AChargerEnemy();
 
-protected:
+    virtual void AttackTarget(AUnit* Target) override;
+
+    virtual bool CanUseSkill() const override;
+    virtual void UseSkill(AUnit* Target) override;
+
     virtual void BeginPlay() override;
 
+protected:
+    // 斧の振りモーション用モンタージュ
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    UAnimMontage* AttackMontage;
+
+    // この攻撃で狙っている相手（プレイヤーユニット）
+    UPROPERTY()
+    AUnit* PendingTarget = nullptr;
+
+    // 実際の近接ダメージ処理
+    void ApplyMeleeDamage(AUnit* Target);
+
 public:
-    // 将来スキルとか入れるならここを専用処理に
-    virtual void AttackTarget(AUnit* Target) override;
+    // AnimNotify から呼ぶ
+    UFUNCTION(BlueprintCallable, Category = "Attack")
+    void HandleMeleeHitNotify();
+
 };
