@@ -26,6 +26,29 @@ AUnit::AUnit()
 
     bIsDragging = false;
     bCanDrag = true;
+
+    PrimaryActorTick.bCanEverTick = true;
+
+    HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarWidget"));
+    HPBarWidget->SetupAttachment(RootComponent);
+
+    // World空間で3Dオブジェクトとして出す（まずは確実に見える形）
+    HPBarWidget->SetWidgetSpace(EWidgetSpace::World);
+
+    // HPバーの表示位置（頭の上）
+    HPBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
+    HPBarWidget->SetDrawSize(FVector2D(150.f, 15.f));
+
+    // コリジョン不要
+    HPBarWidget->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // ★ここでWidgetClassをセットするか、BP上で設定する
+    // C++でやる場合（パスは自分のに合わせて変える）
+    static ConstructorHelpers::FClassFinder<UUserWidget> HPBarClass(TEXT("/Game/UI/WBP_UnitHP"));
+    if (HPBarClass.Succeeded())
+    {
+        HPBarWidget->SetWidgetClass(HPBarClass.Class);
+    }
 }
 
 void AUnit::BeginPlay()
@@ -42,7 +65,27 @@ void AUnit::BeginPlay()
 
     LastLocation = GetActorLocation();
 
-    
+    if (HPBarWidget)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Unit] %s HPBarWidget is valid"), *GetName());
+
+        if (HPBarWidget->GetWidgetClass() == nullptr)
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Unit] %s HPBarWidget has NO WidgetClass"), *GetName());
+        }
+        else
+        {
+            UUserWidget* W = HPBarWidget->GetUserWidgetObject();
+            if (W)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[Unit] %s HPBar widget created"), *GetName());
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("[Unit] %s HPBar widget NOT created"), *GetName());
+            }
+        }
+    }
 }
 
 void AUnit::Tick(float DeltaTime)
@@ -256,6 +299,7 @@ void AUnit::TakePhysicalDamage(float DamageAmount)
 
     float FinalDamage = FMath::Max(1.f, DamageAmount - Defense);
     HP -= FinalDamage;
+    //HP = FMath::Clamp(HP, 0.f, MaxHP);
 
     UE_LOG(LogTemp, Warning, TEXT("%s Takes Physical Damage: %.1f"), *GetName(), FinalDamage);
 
@@ -271,6 +315,7 @@ void AUnit::TakeMagicDamage(float DamageAmount)
 
     float FinalDamage = FMath::Max(1.f, DamageAmount - MagicDefense);
     HP -= FinalDamage;
+    //HP = FMath::Clamp(HP, 0.f, MaxHP);
 
     UE_LOG(LogTemp, Warning, TEXT("%s Takes Magic Damage: %.1f"), *GetName(), FinalDamage);
 
@@ -575,4 +620,13 @@ void AUnit::RefreshHoverInfo()
             EquipedItems
         );
     }
+}
+
+float AUnit::GetHPPercent() const
+{
+    if (MaxHP <= 0.f)
+    {
+        return 0.f;
+    }
+    return HP / MaxHP;
 }

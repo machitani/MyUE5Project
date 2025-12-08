@@ -5,6 +5,7 @@
 #include "ItemData.h"
 #include "EquiqSlotType.h"
 #include "UnitSaveData.h"
+#include "Components/WidgetComponent.h"
 #include "Unit.generated.h"
 
 class ATile;
@@ -214,6 +215,13 @@ public:
 
     UFUNCTION()
     void RefreshHoverInfo();
+
+    //HPÉoÅ[
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="UI")
+    UWidgetComponent* HPBarWidget;
+
+    UFUNCTION(BlueprintCallable,Category="UI")
+    float GetHPPercent()const;
 
 };
 
