@@ -38,31 +38,17 @@ void AKnightUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
+    // 攻撃中フラグON（AnimBPでアタックモーション再生に使う）
     bIsAttacking = true;
 
-    // この攻撃で狙っている敵を保存
+    // この攻撃で狙っている敵を保存（Notifyから使う）
     PendingTarget = Target;
 
-    // すでに攻撃モーション中なら新しい攻撃を出さないようにしてもいい
-    if (UnitMesh)
-    {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
-        {
-            if (AttackMontage)
-            {
-                // モンタージュ連打防止（任意）
-                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
-                {
-                    AnimInstance->Montage_Play(AttackMontage);
-                }
-            }
-        }
-    }
-
-    // ★ 注意：
-    // ここではもう Target->TakePhysicalDamage() は呼ばない！！
-    // ダメージは HandleMeleeHitNotify() 内だけ。
+    // ★アニメ再生はAnimBPのステートマシンに任せる
+    // ここでは Montage_Play もしないし、ダメージも出さない
+    // ダメージは HandleMeleeHitNotify() の中だけでやる
 }
+
 
 void AKnightUnit::ApplyMeleeDamage(AUnit* Target)
 {
@@ -70,6 +56,7 @@ void AKnightUnit::ApplyMeleeDamage(AUnit* Target)
 
     // 近接ダメージそのもの
     Target->TakePhysicalDamage(Attack);
+    UE_LOG(LogTemp,Warning,TEXT("ATTACK"))
 }
 
 void AKnightUnit::HandleMeleeHitNotify()

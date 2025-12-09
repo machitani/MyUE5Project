@@ -11,6 +11,7 @@
 class ATile;
 class ABoardManager;
 class UUnitHoverInfoWidget;
+class UDamagePopupWidget;
 
 UENUM(BlueprintType)
 enum class EUnitTeam : uint8
@@ -223,6 +224,14 @@ public:
     UFUNCTION(BlueprintCallable,Category="UI")
     float GetHPPercent()const;
 
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Component")
+    USceneComponent* RootScene;
+
+    // ====== ダメージポップアップ ======
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="UI")
+    TSubclassOf<UDamagePopupWidget> DamagePopupWidgetClass;
+
+    void ShowDamagePopup(float DamageAmount, bool bIsMagicDamage);
 };
 
 

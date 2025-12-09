@@ -41,31 +41,12 @@ void ATrashEnemy::UseSkill(AUnit* Target)
 void ATrashEnemy::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
-    if (bIsDead) return;
 
+    // 攻撃中フラグON（AnimBPでアタックモーション再生に使う）
     bIsAttacking = true;
 
-    // ★ この攻撃で殴るターゲットを保存
+    // この攻撃で狙っている敵を保存（Notifyから使う）
     PendingTarget = Target;
-
-    // ★ ここではダメージは入れない。攻撃モーション再生だけ
-    if (UnitMesh)
-    {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
-        {
-            if (AttackMontage)
-            {
-                // 連打防止したいならチェックつきで
-                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
-                {
-                    AnimInstance->Montage_Play(AttackMontage);
-                }
-            }
-        }
-    }
-
-    // ※ Super::AttackTarget(Target) は絶対に呼ばない！
-    //   親の「即ダメージ＋Skill」を切るため。
 }
 
 void ATrashEnemy::ApplyMeleeDamage(AUnit* Target)

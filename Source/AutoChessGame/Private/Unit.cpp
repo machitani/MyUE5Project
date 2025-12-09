@@ -1,54 +1,52 @@
 #include "Unit.h"
 #include "Tile.h"
+#include "DamagePopupWidget.h"
 #include "BoardManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "BoardManager.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 #include "UnitHoverInfoWidget.h"
+#include "UnitHPBarWidget.h"
+#include "Components/WidgetComponent.h"
 
 AUnit::AUnit()
 {
     PrimaryActorTick.bCanEverTick = true;
 
+    // ★ まず空のルートを作って、それをRootComponentにする
+    RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
+    RootComponent = RootScene;
+
+    // ☆ メッシュは RootScene の子
     UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
-    RootComponent = UnitMesh;
+    UnitMesh->SetupAttachment(RootComponent);
 
     UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     UnitMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     UnitMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-    UE_LOG(LogTemp, Warning, TEXT("[Unit] Constructor: %s  binding OnClicked"), *GetName());
-
     UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
 
-    bIsDragging = false;
-    bCanDrag = true;
-
-    PrimaryActorTick.bCanEverTick = true;
-
+    // ☆ HPバーも RootScene の子（メッシュの子じゃない）
     HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarWidget"));
     HPBarWidget->SetupAttachment(RootComponent);
 
-    // World空間で3Dオブジェクトとして出す（まずは確実に見える形）
     HPBarWidget->SetWidgetSpace(EWidgetSpace::World);
-
-    // HPバーの表示位置（頭の上）
     HPBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
-    HPBarWidget->SetDrawSize(FVector2D(150.f, 15.f));
-
-    // コリジョン不要
+    HPBarWidget->SetDrawSize(FVector2D(120.f, 15.f));
     HPBarWidget->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    // ★ここでWidgetClassをセットするか、BP上で設定する
-    // C++でやる場合（パスは自分のに合わせて変える）
-    static ConstructorHelpers::FClassFinder<UUserWidget> HPBarClass(TEXT("/Game/UI/WBP_UnitHP"));
-    if (HPBarClass.Succeeded())
-    {
-        HPBarWidget->SetWidgetClass(HPBarClass.Class);
-    }
+    HPBarWidget->SetCastShadow(false);
+    HPBarWidget->bCastInsetShadow = false;
+
+    HPBarWidget->SetUsingAbsoluteRotation(true); // お好みで
+
+    bIsDragging = false;
+    bCanDrag = true;
 }
 
 void AUnit::BeginPlay()
@@ -67,22 +65,11 @@ void AUnit::BeginPlay()
 
     if (HPBarWidget)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Unit] %s HPBarWidget is valid"), *GetName());
-
-        if (HPBarWidget->GetWidgetClass() == nullptr)
+        if (UUserWidget* UW = HPBarWidget->GetUserWidgetObject())
         {
-            UE_LOG(LogTemp, Error, TEXT("[Unit] %s HPBarWidget has NO WidgetClass"), *GetName());
-        }
-        else
-        {
-            UUserWidget* W = HPBarWidget->GetUserWidgetObject();
-            if (W)
+            if (UUnitHPBarWidget* HPBar = Cast<UUnitHPBarWidget>(UW))
             {
-                UE_LOG(LogTemp, Warning, TEXT("[Unit] %s HPBar widget created"), *GetName());
-            }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("[Unit] %s HPBar widget NOT created"), *GetName());
+                HPBar->OwnerUnit = this;
             }
         }
     }
@@ -301,7 +288,10 @@ void AUnit::TakePhysicalDamage(float DamageAmount)
     HP -= FinalDamage;
     //HP = FMath::Clamp(HP, 0.f, MaxHP);
 
-    UE_LOG(LogTemp, Warning, TEXT("%s Takes Physical Damage: %.1f"), *GetName(), FinalDamage);
+    UE_LOG(LogTemp, Warning,
+        TEXT("%s Takes Physical Damage: %.1f  HP=%.1f  Percent=%.2f"),
+        *GetName(), FinalDamage, HP, GetHPPercent());
+
 
     if (HP <= 0.f && !bIsDead)
     {
@@ -564,43 +554,31 @@ void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPres
     }
 }
 
-
-
 void AUnit::UpdateFacing(float DeltaTime)
 {
-    if (!bFaceTarget) return;
-    if (bIsDead)     return;
-    if (!CurrentTarget) return;
+    if (!bFaceTarget || bIsDead || !CurrentTarget) return;
 
     FVector MyLoc = GetActorLocation();
     FVector TargetLoc = CurrentTarget->GetActorLocation();
-
     FVector ToTarget = TargetLoc - MyLoc;
-    ToTarget.Z = 0.f;              // 2D 平面に投影
+    ToTarget.Z = 0.f;
 
-    if (ToTarget.IsNearlyZero())
-    {
-        return;
-    }
+    if (ToTarget.IsNearlyZero()) return;
 
-    // ターゲット方向の角度
     FRotator TargetRot = ToTarget.Rotation();
-
-    // （必要ならオフセットで微調整）
-    TargetRot.Yaw += FacingYawOffset;   // 普段は 0 でOK
-
+    TargetRot.Yaw += FacingYawOffset;
     TargetRot.Pitch = 0.f;
     TargetRot.Roll = 0.f;
 
-    // なめらかに向きを合わせる
+    // ☆ ここがポイント：Actor じゃなくて Mesh を回す
     FRotator NewRot = FMath::RInterpTo(
-        GetActorRotation(),
+        UnitMesh->GetComponentRotation(),
         TargetRot,
         DeltaTime,
-        RotationInterpSpeed   // 1015 くらいが分かりやすい
+        RotationInterpSpeed
     );
 
-    SetActorRotation(NewRot);
+    UnitMesh->SetWorldRotation(NewRot);
 }
 
 void AUnit::RefreshHoverInfo()
@@ -628,5 +606,30 @@ float AUnit::GetHPPercent() const
     {
         return 0.f;
     }
-    return HP / MaxHP;
+
+    // 念のため 0～1 にクランプしておく
+    const float Raw = HP / MaxHP;
+    return FMath::Clamp(Raw, 0.f, 1.f);
+}
+
+void AUnit::ShowDamagePopup(float DamageAmount, bool bIsMagicDamage)
+{
+    if (!DamagePopupWidgetClass) return;
+
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC) return;
+
+    UDamagePopupWidget* Popup = CreateWidget<UDamagePopupWidget>(PC, DamagePopupWidgetClass);
+    if (!Popup) return;
+
+    Popup->AddToViewport();
+    Popup->SetupDamage(DamageAmount, bIsMagicDamage);
+
+    // ユニットの頭上あたりに出す
+    FVector WorldLoc = GetActorLocation() + FVector(0.f, 0.f, 120.f);
+    FVector2D ScreenPos;
+    if (PC->ProjectWorldLocationToScreen(WorldLoc, ScreenPos))
+    {
+        Popup->SetPositionInViewport(ScreenPos, true);
+    }
 }
