@@ -97,16 +97,35 @@ AUnit* ANurseUnit::FindLowestHpAlly() const
 
 void ANurseUnit::ApplyHeal(AUnit* Ally)
 {
-    if (!Ally) return;
+    if (!Ally || Ally->bIsDead) return;
 
-    const float HealAmount = MagicPower * 1.3f;
+    const float HealBase = MagicPower * 1.3f;
 
-    float OldHP = Ally->HP;
-    Ally->HP = FMath::Clamp(Ally->HP + HealAmount, 0.f, Ally->MaxHP);
+    // ★ 実際に「どれだけ増えたか」をちゃんと計算する
+    const float OldHP = Ally->HP;
+    const float NewHP = FMath::Clamp(OldHP + HealBase, 0.f, Ally->MaxHP);
+    const float ActualHeal = NewHP - OldHP;
+
+    // 上限でカンストして増えなかったらポップアップも出さない
+    if (ActualHeal <= 0.f)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("Nurse %s tried to heal %s but HP is already full"),
+            *GetName(), *Ally->GetName());
+        return;
+    }
+
+    Ally->HP = NewHP;
 
     UE_LOG(LogTemp, Warning,
-        TEXT("Nurse %s heals %s (%.1f -> %.1f)"),
-        *GetName(), *Ally->GetName(), OldHP, Ally->HP);
+        TEXT("Nurse %s heals %s (%.1f -> %.1f, +%.1f)"),
+        *GetName(), *Ally->GetName(), OldHP, NewHP, ActualHeal);
+
+    // ★ ここでヒールポップアップを出す（回復された側の頭上）
+    Ally->ShowHealPopup(ActualHeal);
+
+    // HPバーやホバーUIを即時更新したかったら、ここで呼ぶのもアリ：
+    // Ally->RefreshHoverInfo();
 }
 
 void ANurseUnit::HandleHealNotify()

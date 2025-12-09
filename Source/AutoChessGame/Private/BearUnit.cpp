@@ -29,26 +29,11 @@ void ABearUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
+    // 攻撃中フラグON（AnimBPでアタックモーション再生に使う）
     bIsAttacking = true;
 
-    // この攻撃で狙っている敵を保存
+    // この攻撃で狙っている敵を保存（Notifyから使う）
     PendingTarget = Target;
-
-    // ★ ここではダメージを与えない。アニメ再生だけ
-    if (UnitMesh)
-    {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
-        {
-            if (AttackMontage)
-            {
-                // 連打防止はお好みで
-                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
-                {
-                    AnimInstance->Montage_Play(AttackMontage);
-                }
-            }
-        }
-    }
 }
 
 bool ABearUnit::CanUseSkill() const

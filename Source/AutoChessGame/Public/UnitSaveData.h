@@ -35,6 +35,12 @@ public:
     UPROPERTY(BlueprintReadWrite)
     float BaseMoveSpeed = 0.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float CritChance = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float CritMultiplier = 1.5f;
+
     // ---- ‘•”õƒAƒCƒeƒ€ ----
     UPROPERTY(BlueprintReadWrite)
     TArray<FItemData> EquippedItems;

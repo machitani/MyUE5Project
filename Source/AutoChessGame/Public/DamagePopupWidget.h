@@ -15,21 +15,41 @@ class AUTOCHESSGAME_API UDamagePopupWidget : public UUserWidget
 public:
     // ダメージ値と種別を渡してセット
     UFUNCTION(BlueprintCallable, Category = "DamagePopup")
-    void SetupDamage(float DamageAmount, bool bIsMagicDamage);
+    void SetupDamage(float DamageAmount, bool bIsMagicDamage, bool bIsCritical);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamagePopup")
+    FLinearColor CritColor = FLinearColor(1.f, 0.9f, 0.3f); // 金色っぽい
+
+
+    UFUNCTION(BlueprintCallable, Category = "DamagePopup")
+    void SetupHeal(float HealAmount);
 
 protected:
-    // UMGのTextBlockとバインド
+    virtual void NativeConstruct() override;
+
     UPROPERTY(meta = (BindWidget))
     UTextBlock* DamageText;
 
-    // カラー設定（エディタから変えられるようにしておく）
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamagePopup")
-    FLinearColor PhysicalColor = FLinearColor(1.f, 0.3f, 0.3f);  // 赤っぽい
+    FLinearColor PhysicalColor = FLinearColor(1.f, 0.3f, 0.3f);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamagePopup")
-    FLinearColor MagicColor = FLinearColor(0.3f, 0.6f, 1.f);     // 青っぽい
+    FLinearColor MagicColor = FLinearColor(0.3f, 0.6f, 1.f);
 
-    // ポップアップ用アニメーション
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamagePopup")
+    FLinearColor HealColor = FLinearColor(0.3f, 1.f, 0.3f);
+
+    // ポップアップの寿命（秒）
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamagePopup")
+    float LifeTime = 0.8f;
+
+    // （あれば）ポップアップ演出用アニメ
     UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
     UWidgetAnimation* PopupAnim;
+
+private:
+    FTimerHandle LifeTimerHandle;
+
+    UFUNCTION()
+    void HandleLifeTimeFinished();
 };

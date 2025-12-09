@@ -286,12 +286,9 @@ void AUnit::TakePhysicalDamage(float DamageAmount)
 
     float FinalDamage = FMath::Max(1.f, DamageAmount - Defense);
     HP -= FinalDamage;
-    //HP = FMath::Clamp(HP, 0.f, MaxHP);
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("%s Takes Physical Damage: %.1f  HP=%.1f  Percent=%.2f"),
-        *GetName(), FinalDamage, HP, GetHPPercent());
-
+    ShowDamagePopup(FinalDamage, /*bIsMagicDamage=*/false);
+    bLastHitWasCritical = false; // 使い終わったらリセット
 
     if (HP <= 0.f && !bIsDead)
     {
@@ -305,15 +302,21 @@ void AUnit::TakeMagicDamage(float DamageAmount)
 
     float FinalDamage = FMath::Max(1.f, DamageAmount - MagicDefense);
     HP -= FinalDamage;
-    //HP = FMath::Clamp(HP, 0.f, MaxHP);
 
-    UE_LOG(LogTemp, Warning, TEXT("%s Takes Magic Damage: %.1f"), *GetName(), FinalDamage);
+    // ★ APダメージ → 青ポップアップ
+    ShowDamagePopup(FinalDamage, /*bIsMagicDamage=*/true);
+
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("%s Takes Magic Damage: %.1f  HP=%.1f  Percent=%.2f"),
+        *GetName(), FinalDamage, HP, GetHPPercent());
 
     if (HP <= 0.f && !bIsDead)
     {
         OnDeath();
     }
 }
+
 
 
 void AUnit::OnDeath()
@@ -379,6 +382,9 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
     if (Item.EffectType == "MagicDefense")MagicDefense += Item.EffectValue;
     if (Item.EffectType == "Range")Range += Item.EffectValue;
     if (Item.EffectType == "MoveSpeed")MoveSpeed += Item.EffectValue;
+    if (Item.EffectType == "CritChance")     CritChance += Item.EffectValue;
+    if (Item.EffectType == "CritMultiplier") CritMultiplier += Item.EffectValue;
+
 }
 
 void AUnit::ReapplayAllItemEffects()
@@ -390,6 +396,8 @@ void AUnit::ReapplayAllItemEffects()
     MagicDefense = BaseMagicDefense;
     Range = BaseRange;
     MoveSpeed = BaseMoveSpeed;
+    CritChance = CritChance;
+    CritMultiplier = CritMultiplier;
 
     for (auto& Item : EquipedItems)
     {
@@ -421,6 +429,9 @@ FUnitSaveData AUnit::MakeSaveData()
     Data.BaseRange = BaseRange;
     Data.BaseMoveSpeed = BaseMoveSpeed;
 
+    Data.CritChance = CritChance;
+    Data.CritMultiplier = CritMultiplier;
+
     Data.EquippedItems = EquipedItems;
 
     if (CurrentTile && OwningBoardManager)
@@ -443,6 +454,9 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     BaseRange = Data.BaseRange;
     BaseMoveSpeed = Data.BaseMoveSpeed;
 
+    CritChance = Data.CritChance;
+    CritMultiplier = Data.CritMultiplier;
+
     EquipedItems = Data.EquippedItems;
 
     //一旦素の値を反映
@@ -453,6 +467,8 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     MagicDefense = BaseMagicDefense;
     Range = BaseRange;
     MoveSpeed = BaseMoveSpeed;
+    CritChance = CritChance;
+    CritMultiplier = CritMultiplier;
 
     for (auto& Item : EquipedItems)
     {
@@ -501,6 +517,7 @@ void AUnit::ShowUnitInfo()
             MagicDefense,
             Range,
             MoveSpeed,
+            CritChance,
             EquipedItems
         );
 
@@ -595,6 +612,7 @@ void AUnit::RefreshHoverInfo()
             MagicDefense,
             Range,
             MoveSpeed,
+            CritChance,
             EquipedItems
         );
     }
@@ -619,17 +637,73 @@ void AUnit::ShowDamagePopup(float DamageAmount, bool bIsMagicDamage)
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
     if (!PC) return;
 
-    UDamagePopupWidget* Popup = CreateWidget<UDamagePopupWidget>(PC, DamagePopupWidgetClass);
+    UDamagePopupWidget* Popup =
+        CreateWidget<UDamagePopupWidget>(PC, DamagePopupWidgetClass);
     if (!Popup) return;
 
     Popup->AddToViewport();
-    Popup->SetupDamage(DamageAmount, bIsMagicDamage);
 
-    // ユニットの頭上あたりに出す
+    // ★ ここでローカル変数を作る
+    bool bIsCritical = bLastHitWasCritical;
+
+    Popup->SetupDamage(DamageAmount, bIsMagicDamage, bIsCritical);
+
     FVector WorldLoc = GetActorLocation() + FVector(0.f, 0.f, 120.f);
     FVector2D ScreenPos;
     if (PC->ProjectWorldLocationToScreen(WorldLoc, ScreenPos))
     {
-        Popup->SetPositionInViewport(ScreenPos, true);
+        const float MaxOffsetY = 6.f;
+        float OffsetY = FMath::RandRange(-MaxOffsetY, MaxOffsetY);
+        FVector2D JitteredPos = ScreenPos + FVector2D(0.f, OffsetY);
+        Popup->SetPositionInViewport(JitteredPos, true);
     }
+
+    // 使い終わったらリセットしておく
+    bLastHitWasCritical = false;
+}
+
+void AUnit::ShowHealPopup(float HealAmount)
+{
+    if (!DamagePopupWidgetClass) return;
+
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC) return;
+
+    UDamagePopupWidget* Popup =
+        CreateWidget<UDamagePopupWidget>(PC, DamagePopupWidgetClass);
+    if (!Popup) return;
+
+    Popup->AddToViewport();
+    Popup->SetupHeal(HealAmount);   // ← さっき追加したやつ
+
+    FVector WorldLoc = GetActorLocation() + FVector(0.f, 0.f, 120.f);
+    FVector2D ScreenPos;
+    if (PC->ProjectWorldLocationToScreen(WorldLoc, ScreenPos))
+    {
+        const float MaxOffsetY = 6.f;
+        float OffsetY = FMath::RandRange(-MaxOffsetY, MaxOffsetY);
+
+        FVector2D JitteredPos = ScreenPos + FVector2D(0.f, OffsetY);
+        Popup->SetPositionInViewport(JitteredPos, true);
+
+    }
+}
+
+
+
+float AUnit::CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical)
+{
+    bOutIsCritical = false;
+
+    if (CritChance > 0.f && CritMultiplier > 1.f)
+    {
+        float Roll = FMath::FRand(); // 0.0～1.0
+        if (Roll < CritChance)
+        {
+            bOutIsCritical = true;
+            return BaseDamage * CritMultiplier;
+        }
+    }
+
+    return BaseDamage;
 }

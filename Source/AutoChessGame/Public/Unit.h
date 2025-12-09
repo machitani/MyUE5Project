@@ -68,6 +68,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float MoveSpeed = 150.f;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float CritChance = 0.f;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float CritMultiplier = 1.5f;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     EUnitTeam Team = EUnitTeam::Player;
 
@@ -232,6 +238,16 @@ public:
     TSubclassOf<UDamagePopupWidget> DamagePopupWidgetClass;
 
     void ShowDamagePopup(float DamageAmount, bool bIsMagicDamage);
+
+    void ShowHealPopup(float HealAmount);
+
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    float CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical);
+
+    // ポップアップ用に直前のヒット状態を覚えておく
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+    bool bLastHitWasCritical = false;
 };
 
 

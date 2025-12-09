@@ -3,6 +3,7 @@
 #include "ArrowProjectile.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Unit.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 AArrowProjectile::AArrowProjectile()
@@ -50,7 +51,6 @@ void AArrowProjectile::Tick(float DeltaTime)
 
     FVector MyLoc = GetActorLocation();
     FVector TargetLoc = TargetUnit->GetActorLocation();
-
     TargetLoc.Z = MyLoc.Z;
 
     const float DistSq = FVector::DistSquared(MyLoc, TargetLoc);
@@ -60,8 +60,23 @@ void AArrowProjectile::Tick(float DeltaTime)
     {
         if (TargetUnit->Team != OwnerTeam && DamageAmount > 0.f)
         {
-            // ★ 物理ダメージ
-            TargetUnit->TakePhysicalDamage(DamageAmount);
+            // ★ 発射元（ArcherUnit）を取得
+            AUnit* Attacker = Cast<AUnit>(GetOwner());
+
+            float  FinalDamage = DamageAmount;
+            bool   bIsCritical = false;
+
+            if (Attacker)
+            {
+                // ★ ここでクリティカル判定＋ダメージ計算
+                FinalDamage = Attacker->CalcPhysicalDamageWithCrit(DamageAmount, bIsCritical);
+            }
+
+            // ★ ポップアップ用に「クリティカルだったか」をターゲットに教える
+            TargetUnit->bLastHitWasCritical = bIsCritical;
+
+            // 物理ダメージを適用（ポップアップは TakePhysicalDamage の中で出る）
+            TargetUnit->TakePhysicalDamage(FinalDamage);
         }
 
         Destroy();

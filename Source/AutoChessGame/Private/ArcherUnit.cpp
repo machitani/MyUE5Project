@@ -22,6 +22,9 @@ AArcherUnit::AArcherUnit()
 
     Team = EUnitTeam::Player;
     UnitID = FName("Archer");
+
+    CritChance = 0.25f;   // 25% ‚­‚ç‚¢
+    CritMultiplier = 1.5f;
 }
 
 void AArcherUnit::BeginPlay()
@@ -54,7 +57,7 @@ void AArcherUnit::SpawnArrow(AUnit* Target)
 {
     if (!ArrowClass || !Target) return;
 
-    UE_LOG(LogTemp,Warning,TEXT("ARROW"))
+    UE_LOG(LogTemp, Warning, TEXT("ARROW"));
 
     UWorld* World = GetWorld();
     if (!World) return;

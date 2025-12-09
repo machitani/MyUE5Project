@@ -17,6 +17,9 @@ AKnightUnit::AKnightUnit()
 
     Team = EUnitTeam::Player;
     UnitID = FName("Knight");
+
+    CritChance = 0.15f; // 15% くらい（好みで調整）
+    CritMultiplier = 1.5f; 
 }
 
 void AKnightUnit::BeginPlay()
@@ -54,11 +57,18 @@ void AKnightUnit::ApplyMeleeDamage(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    // 近接ダメージそのもの
-    Target->TakePhysicalDamage(Attack);
-    UE_LOG(LogTemp,Warning,TEXT("ATTACK"))
-}
+    bool bIsCrit = false;
+    float DamageToApply = CalcPhysicalDamageWithCrit(Attack, bIsCrit);
 
+    // ターゲット側に「今回のヒットはクリティカルだった」フラグを渡す
+    Target->bLastHitWasCritical = bIsCrit;
+
+    Target->TakePhysicalDamage(DamageToApply);
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("Knight hit %s Damage=%.1f Crit=%d"),
+        *Target->GetName(), DamageToApply, bIsCrit ? 1 : 0);
+}
 void AKnightUnit::HandleMeleeHitNotify()
 {
     // 攻撃中にターゲットが死んでた / いなくなってたらスキップ

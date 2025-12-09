@@ -9,7 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/VerticalBoxSlot.h"
 
-void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE, const TArray<FItemData>& Items)
+void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT, const TArray<FItemData>& Items)
 {
     if (UnitNameText)
         UnitNameText->SetText(FText::FromName(Name));
@@ -45,6 +45,15 @@ void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, f
     if (MoveSpeedText)
     {
         MoveSpeedText->SetText(FText::FromString(FString::Printf(TEXT("SPE:%.0f"), SPE)));
+    }
+
+    if (CritText)
+    {
+        // CritChance ‚Í 0.25f ‚Ý‚½‚¢‚È‘z’è‚È‚Ì‚Å 100”{‚µ‚Ä“•\Ž¦
+        const float Percent = CRIT * 100.f;
+        CritText->SetText(
+            FText::FromString(FString::Printf(TEXT("CRIT: %.0f%%"), Percent))
+        );
     }
 
     if (ItemList)
@@ -125,6 +134,7 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
         OwnerUnit->MagicDefense,
         OwnerUnit->Range,
         OwnerUnit->MoveSpeed,
+        OwnerUnit->CritChance,
         OwnerUnit->EquipedItems  // RemoveItems Œã‚È‚Ì‚Å‘½•ª‹ó”z—ñ
     );
 }
