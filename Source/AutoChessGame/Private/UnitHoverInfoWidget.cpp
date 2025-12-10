@@ -9,7 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/VerticalBoxSlot.h"
 
-void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT, const TArray<FItemData>& Items)
+void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT,float CRITDAMAGE,float AttackInterval, const TArray<FItemData>& Items)
 {
     if (UnitNameText)
         UnitNameText->SetText(FText::FromName(Name));
@@ -54,6 +54,19 @@ void UUnitHoverInfoWidget::SetUnitInfo(const FName& Name, float HP, float ATK, f
         CritText->SetText(
             FText::FromString(FString::Printf(TEXT("CRIT: %.0f%%"), Percent))
         );
+    }
+
+    if (CritDamageText)
+    {
+        const float Percent = CRITDAMAGE * 100.f;
+        CritDamageText->SetText(
+            FText::FromString(FString::Printf(TEXT("CRITDAMAGE:%.0f%%"), Percent))
+        );
+    }
+
+    if (AttackIntervalText)
+    {
+        AttackIntervalText->SetText(FText::FromString(FString::Printf(TEXT("AS:%.2fs"), AttackInterval)));
     }
 
     if (ItemList)
@@ -135,6 +148,8 @@ void UUnitHoverInfoWidget::OnRemoveAllItemsClicked()
         OwnerUnit->Range,
         OwnerUnit->MoveSpeed,
         OwnerUnit->CritChance,
+        OwnerUnit->CritMultiplier,
+        OwnerUnit->AttackInterval,
         OwnerUnit->EquipedItems  // RemoveItems Œã‚È‚Ì‚Å‘½•ª‹ó”z—ñ
     );
 }

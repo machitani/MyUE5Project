@@ -44,7 +44,13 @@ public:
     UTextBlock* MoveSpeedText;
 
     UPROPERTY(meta=(BindWidget))
+    UTextBlock* AttackIntervalText;
+
+    UPROPERTY(meta=(BindWidget))
     UTextBlock* CritText;
+
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* CritDamageText;
 
     // --- アイテム一覧 VerticalBox ---
     UPROPERTY(meta = (BindWidget))
@@ -52,7 +58,7 @@ public:
 
 public:
     // ユニット情報を書き込む関数
-    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT, const TArray<FItemData>& Items);
+    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT,float CRITDAMAGE,float AttackInterval, const TArray<FItemData>& Items);
 
     UFUNCTION(BlueprintCallable, Category = "Unit")
     void OnRemoveAllItemsClicked();

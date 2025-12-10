@@ -20,8 +20,16 @@ AAdventurerUnit::AAdventurerUnit()
     MoveSpeed = 150.f;
     AttackInterval = 1.0f;  // 連射気味でも面白い
 
+    CritChance = 0.15f;
+    CritMultiplier = 1.5f;
+
+    AttackInterval = 1.0f;
+    BaseAttackInterval = 1.0f;
+
     Team = EUnitTeam::Player;
     UnitID = FName("Adventurer");
+
+    
 }
 
 void AAdventurerUnit::BeginPlay()
@@ -43,11 +51,70 @@ void AAdventurerUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    // 攻撃中フラグON（AnimBPでアタックモーション再生に使う）
-    bIsAttacking = true;
+    // 距離チェック
+    const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+    const float MinArrowDistance = 150.f; // 好きな距離に調整
 
-    // この攻撃で狙っている敵を保存（Notifyから使う）
+    // 近距離：矢を飛ばさず即ダメージ
+    if (Distance < MinArrowDistance)
+    {
+        bIsAttacking = true;
+        PendingTarget = Target;
+
+        // アニメーションはちゃんと再生（近距離でも弓を引くモーションは見せる）
+        if (UnitMesh)
+        {
+            if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+            {
+                if (AttackMontage)
+                {
+                    float PlayRate = 1.0f;
+                    if (AttackInterval > 0.f && BaseAttackInterval > 0.f)
+                    {
+                        PlayRate = BaseAttackInterval / AttackInterval;
+                    }
+                    AnimInstance->Montage_Play(AttackMontage, PlayRate);
+                }
+            }
+        }
+
+        // ★ ここで直接クリティカル付きの物理ダメージを与える
+        AUnit* Attacker = this;
+        float  BaseDamage = Attack * PachinkoDamageMultiplier;
+        bool   bIsCritical = false;
+
+        float FinalDamage = Attacker->CalcPhysicalDamageWithCrit(BaseDamage, bIsCritical);
+        Target->bLastHitWasCritical = bIsCritical;
+
+        Target->TakePhysicalDamage(FinalDamage);
+
+        // この攻撃では Projectile を使わない
+        return;
+    }
+
+    // --- ここから下は、今までの遠距離用ロジック（Projectile を使う） ---
+
+    bIsAttacking = true;
     PendingTarget = Target;
+
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (AttackMontage)
+            {
+                float PlayRate = 1.0f;
+
+                if (AttackInterval > 0.f && BaseAttackInterval > 0.f)
+                {
+                    PlayRate = BaseAttackInterval / AttackInterval;
+                }
+
+                AnimInstance->Montage_Play(AttackMontage, PlayRate);
+            }
+        }
+    }
+
 }
 
 void AAdventurerUnit::SpawnPachinkoShot(AUnit* Target)

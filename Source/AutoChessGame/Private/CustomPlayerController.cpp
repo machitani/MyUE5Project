@@ -148,22 +148,22 @@ void ACustomPlayerController::OnLeftMouseUp()
     if (Hit.bBlockingHit)
     {
         ATile* Tile = Cast<ATile>(Hit.GetActor());
-        if (Tile && Tile->bIsPlayerTile && !Tile->bIsOccupied)
+        if (Tile && Tile->bIsPlayerTile)
         {
-            FVector TargetLoc = Tile->GetActorLocation() + FVector(0, 0, 150.f);
-            SelectedUnit->SetActorLocation(TargetLoc);
-
-            Tile->bIsOccupied = true;
-            Tile->OccupiedUnit = SelectedUnit;
-            SelectedUnit->CurrentTile = Tile;
-
+            // ★ Tile が埋まってるかどうかの判定は MoveUnitToTile 側でやる
             if (SelectedUnit->OwningBoardManager)
             {
-                SelectedUnit->OwningBoardManager->PlayerUnits.Add(SelectedUnit);
+                SelectedUnit->OwningBoardManager->MoveUnitToTile(SelectedUnit, Tile);
+            }
+            else
+            {
+                // BoardManager が無いなら元の位置に戻す
+                SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
             }
         }
         else
         {
+            // タイル以外 or 敵タイル → 元の位置に戻す
             SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
         }
     }
@@ -172,6 +172,7 @@ void ACustomPlayerController::OnLeftMouseUp()
         SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
     }
 
+    // 位置＆タイルはもう決まってるので、EndDrag は「ドラッグ終了の後始末」だけに使う
     SelectedUnit->EndDrag();
     SelectedUnit = nullptr;
 }

@@ -61,6 +61,10 @@ void AUnit::BeginPlay()
     BaseRange = Range;
     BaseMoveSpeed = MoveSpeed;
 
+    MaxHP = BaseHP;
+
+    //BaseAttackInterval = AttackInterval;
+
     LastLocation = GetActorLocation();
 
     if (HPBarWidget)
@@ -385,6 +389,12 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
     if (Item.EffectType == "CritChance")     CritChance += Item.EffectValue;
     if (Item.EffectType == "CritMultiplier") CritMultiplier += Item.EffectValue;
 
+    if (Item.EffectType == "AttackInterval")
+    {
+        // EffectValue ‚É -0.2 ‚Æ‚©“ü‚ê‚é‚Æu0.2•b’Z‚­‚È‚év
+        AttackInterval = FMath::Max(0.1f, AttackInterval + Item.EffectValue);
+    }
+
 }
 
 void AUnit::ReapplayAllItemEffects()
@@ -398,6 +408,8 @@ void AUnit::ReapplayAllItemEffects()
     MoveSpeed = BaseMoveSpeed;
     CritChance = CritChance;
     CritMultiplier = CritMultiplier;
+
+    AttackInterval = BaseAttackInterval;
 
     for (auto& Item : EquipedItems)
     {
@@ -432,6 +444,8 @@ FUnitSaveData AUnit::MakeSaveData()
     Data.CritChance = CritChance;
     Data.CritMultiplier = CritMultiplier;
 
+    Data.BaseAttackInterval = AttackInterval;
+
     Data.EquippedItems = EquipedItems;
 
     if (CurrentTile && OwningBoardManager)
@@ -454,6 +468,10 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     BaseRange = Data.BaseRange;
     BaseMoveSpeed = Data.BaseMoveSpeed;
 
+    MaxHP = BaseHP;
+
+    BaseAttackInterval = Data.BaseAttackInterval;
+
     CritChance = Data.CritChance;
     CritMultiplier = Data.CritMultiplier;
 
@@ -469,6 +487,23 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     MoveSpeed = BaseMoveSpeed;
     CritChance = CritChance;
     CritMultiplier = CritMultiplier;
+
+    AttackInterval = BaseAttackInterval;
+
+    bIsDead = false;
+    bIsAttacking = false;
+    bIsMoving = false;
+    bIsDragging = false;
+    bCanDrag = true;
+
+    SetActorHiddenInGame(false);
+    SetActorEnableCollision(true);
+
+    if (UnitMesh)
+    {
+        UnitMesh->SetVisibility(true, true);
+        UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
 
     for (auto& Item : EquipedItems)
     {
@@ -518,6 +553,8 @@ void AUnit::ShowUnitInfo()
             Range,
             MoveSpeed,
             CritChance,
+            CritMultiplier,
+            AttackInterval,
             EquipedItems
         );
 
@@ -613,6 +650,8 @@ void AUnit::RefreshHoverInfo()
             Range,
             MoveSpeed,
             CritChance,
+            CritMultiplier,
+            AttackInterval,
             EquipedItems
         );
     }

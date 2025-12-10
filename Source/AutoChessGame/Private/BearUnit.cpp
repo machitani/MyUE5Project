@@ -16,6 +16,12 @@ ABearUnit::ABearUnit()
     MoveSpeed = 120.f;
     AttackInterval = 1.2f;
 
+    CritChance = 0.1f;
+    CritMultiplier = 1.5f;
+
+    AttackInterval = 1.0f;
+    BaseAttackInterval = 1.0f;
+
     Team = EUnitTeam::Player;
     UnitID = FName("Bear");
 }
@@ -29,11 +35,29 @@ void ABearUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    // 攻撃中フラグON（AnimBPでアタックモーション再生に使う）
     bIsAttacking = true;
-
-    // この攻撃で狙っている敵を保存（Notifyから使う）
     PendingTarget = Target;
+
+    if (UnitMesh)
+    {
+        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        {
+            if (AttackMontage)
+            {
+                float PlayRate = 1.0f;
+
+                if (AttackInterval > 0.f && BaseAttackInterval > 0.f)
+                {
+                    PlayRate = BaseAttackInterval / AttackInterval;
+                }
+
+                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
+                {
+                    AnimInstance->Montage_Play(AttackMontage, PlayRate);
+                }
+            }
+        }
+    }
 }
 
 bool ABearUnit::CanUseSkill() const
@@ -50,8 +74,12 @@ void ABearUnit::ApplyMeleeDamage(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    // 物理ダメージ（タンクだから控えめでもOK）
-    Target->TakePhysicalDamage(Attack);
+    bool bIsCrit = false;
+    float DamageToApply = CalcPhysicalDamageWithCrit(Attack, bIsCrit);
+
+    Target -> bLastHitWasCritical = bIsCrit;
+    Target->TakePhysicalDamage(DamageToApply);
+
 }
 
 void ABearUnit::HandleMeleeHitNotify()

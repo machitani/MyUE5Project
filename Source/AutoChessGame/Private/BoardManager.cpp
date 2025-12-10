@@ -264,48 +264,6 @@ void ABoardManager::BeginPlay()
     StartPreparationPhase();
 }
 
-void ABoardManager::InitializePlayerSavedUnitsIfEmpty()
-{
-    if (!PlayerManagerInstance)
-    {
-        UE_LOG(LogTemp, Error,
-            TEXT("InitializePlayerSavedUnitsIfEmpty: PlayerManagerInstance is NULL"));
-        return;
-    }
-
-    // すでにセーブデータがあれば「続きから」とみなして何もしない
-    if (PlayerManagerInstance->SavedUnits.Num() > 0)
-    {
-        UE_LOG(LogTemp, Warning,
-            TEXT("InitializePlayerSavedUnitsIfEmpty: SavedUnits already exists. Skip seeding initial units."));
-        return;
-    }
-
-    UE_LOG(LogTemp, Warning,
-        TEXT("InitializePlayerSavedUnitsIfEmpty: Seed initial Knight & Archer."));
-
-    // ★ Knight
-    {
-        FUnitSaveData KnightData;
-        KnightData.UnitID = FName("Knight");
-        KnightData.SavedTileIndex = 1;   // PlayerTiles[1] に出す前提（GenerateBoard で埋まっている）
-
-        PlayerManagerInstance->SavedUnits.Add(KnightData);
-        PlayerManagerInstance->RegisterOwnedUnit(KnightData.UnitID);
-    }
-
-    // ★ Archer
-    {
-        FUnitSaveData ArcherData;
-        ArcherData.UnitID = FName("Archer");
-        ArcherData.SavedTileIndex = 5;   // PlayerTiles[5]
-
-        PlayerManagerInstance->SavedUnits.Add(ArcherData);
-        PlayerManagerInstance->RegisterOwnedUnit(ArcherData.UnitID);
-    }
-}
-
-
 void ABoardManager::SetItemTargetUnit(AUnit* NewUnit)
 {
     if (NewUnit)
@@ -901,6 +859,21 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
         // セーブデータ適用
         NewUnit->ApplySaveData(Data);
 
+        NewUnit->bIsDead = false;
+        NewUnit->bIsAttacking = false;
+        NewUnit->bIsMoving = false;
+        NewUnit->bIsDragging = false;
+        NewUnit->bCanDrag = true;
+
+        NewUnit->SetActorHiddenInGame(false);
+        NewUnit->SetActorEnableCollision(true);
+
+        if (NewUnit->UnitMesh)
+        {
+            NewUnit->UnitMesh->SetVisibility(true, true);
+            NewUnit->UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        }
+
         // 管理系
         NewUnit->Team = EUnitTeam::Player;
         NewUnit->OwningBoardManager = this;
@@ -929,7 +902,12 @@ void ABoardManager::SpawnPlayerUnitsFromSaveData()
         {
             PlayerManagerInstance->RegisterOwnedUnit(NewUnit->UnitID);
         }
+
+        NewUnit->SetActorHiddenInGame(false);
+        if (NewUnit->UnitMesh) NewUnit->UnitMesh->SetVisibility(true, true);
+
     }
+
 }
 
 
@@ -1012,7 +990,7 @@ void ABoardManager::SpawnEnemyUnits()
             NewUnit->MagicDefense = NewUnit->BaseMagicDefense;
 
             NewUnit->BaseMagicPower *= WaveData->MagicPowerScale;
-            NewUnit->MagicPower = NewUnit->MagicPower;
+            NewUnit->MagicPower = NewUnit->BaseMagicPower;
 
             Tile->bIsOccupied = true;
             Tile->OccupiedUnit = NewUnit;

@@ -93,6 +93,9 @@ public:
 
     float TimeSinceLastAttack = 0.f;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
+    float BaseAttackInterval = 1.0f;
+
     // ====== ÉÅÉbÉVÉÖ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USkeletalMeshComponent* UnitMesh;

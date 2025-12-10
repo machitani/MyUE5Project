@@ -3,6 +3,7 @@
 #include "PachinkoProjectile.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Unit.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 APachinkoProjectile::APachinkoProjectile()
@@ -61,8 +62,20 @@ void APachinkoProjectile::Tick(float DeltaTime)
     {
         if (TargetUnit->Team != OwnerTeam && DamageAmount > 0.f)
         {
+            AUnit* Attacker = Cast<AUnit>(GetOwner());
+
+            float FinalDamage = DamageAmount;
+            bool bIsCritical = false;
+
+            if (Attacker)
+            {
+                FinalDamage = Attacker->CalcPhysicalDamageWithCrit(DamageAmount, bIsCritical);
+            }
+
+            TargetUnit->bLastHitWasCritical = bIsCritical;
+
             // パチンコは物理ダメージ扱い
-            TargetUnit->TakePhysicalDamage(DamageAmount);
+            TargetUnit->TakePhysicalDamage(FinalDamage);
         }
 
         Destroy();

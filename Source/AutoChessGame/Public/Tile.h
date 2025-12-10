@@ -41,6 +41,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
     ABoardManager* BoardManagerRef;
 
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Tile")
+    UStaticMeshComponent* HighlightMesh;
+
     /** ƒ^ƒCƒ‹‚ÌF‚ğİ’è */
     UFUNCTION(BlueprintCallable, Category = "Tile")
     void SetTileColor(const FLinearColor& NewColor);

@@ -18,6 +18,8 @@ AWizardUnit::AWizardUnit()
     MoveSpeed = 130.f;
     AttackInterval = 1.3f;
 
+    BaseAttackInterval = 1.0f;
+
     Team = EUnitTeam::Player;
     UnitID = FName("Wizard");
 }
@@ -43,28 +45,28 @@ void AWizardUnit::AttackTarget(AUnit* Target)
     if (!Target || Target->bIsDead) return;
 
     bIsAttacking = true;
-
-    // この攻撃で狙っている敵を覚えておく
     PendingTarget = Target;
 
-    // 攻撃アニメーション再生
     if (UnitMesh)
     {
         if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
         {
             if (AttackMontage)
             {
-                // 連打で再生されすぎるのを防ぐならチェック入れてもOK
+                float PlayRate = 1.0f;
+
+                if (AttackInterval > 0.f && BaseAttackInterval > 0.f)
+                {
+                    PlayRate = BaseAttackInterval / AttackInterval;
+                }
+
                 if (!AnimInstance->Montage_IsPlaying(AttackMontage))
                 {
-                    AnimInstance->Montage_Play(AttackMontage);
+                    AnimInstance->Montage_Play(AttackMontage, PlayRate);
                 }
             }
         }
     }
-
-    // ★ ここでは弾を出さない
-    // 実際の発射は AnimNotify → HandleFireballShootNotify で行う
 }
 
 void AWizardUnit::SpawnFireball(AUnit* Target)

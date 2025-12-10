@@ -5,23 +5,22 @@
 
 ATile::ATile()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
     TileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TileMesh"));
-    RootComponent = TileMesh;
+    TileMesh->SetupAttachment(RootComponent);
 
-    bIsOccupied = false;
-    OccupiedUnit = nullptr;
-    OriginalColor = FLinearColor::White;
-    BoardManagerRef = nullptr;
-    DynMat = nullptr;
+    HighlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HighlightMesh"));
+    HighlightMesh->SetupAttachment(RootComponent);
 
-    TileMesh->SetMobility(EComponentMobility::Static);
-    TileMesh->SetGenerateOverlapEvents(true);
-    TileMesh->bSelectable = true;
+    HighlightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    HighlightMesh->SetGenerateOverlapEvents(false);
 
-    // If you want to use OnClicked binding in C++:
-    // TileMesh->OnClicked.AddDynamic(this, &ATile::NotifyBoardManagerClicked);
+    // ちょっとだけ浮かせて Z ファイト防止
+    HighlightMesh->SetRelativeLocation(FVector(0.f, 0.f, 1.f));
+
+    // 最初は非表示
+    HighlightMesh->SetVisibility(false);
 }
 
 void ATile::BeginPlay()
@@ -72,17 +71,10 @@ void ATile::NotifyBoardManagerClicked()
 
 void ATile::SetTileHighlight(bool bHighlight)
 {
-    if (!DynMat)
+    if (HighlightMesh)
     {
-        DynMat = TileMesh->CreateAndSetMaterialInstanceDynamic(0);
+        HighlightMesh->SetVisibility(bHighlight);
     }
-
-    if (!DynMat) return;
-
-    if (bHighlight)
-        DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::Green); // 置ける
-    else
-        DynMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.2f, 0.4f, 1.f, 1.f));// 元の色
 }
 
 FVector ATile::GetTileCenterWorld() const

@@ -41,6 +41,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float CritMultiplier = 1.5f;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    float BaseAttackInterval = 1.0f;
+
     // ---- ‘•”õƒAƒCƒeƒ€ ----
     UPROPERTY(BlueprintReadWrite)
     TArray<FItemData> EquippedItems;
