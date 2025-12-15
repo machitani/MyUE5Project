@@ -41,6 +41,8 @@ protected:
     UPROPERTY()
     AUnit* PendingTarget = nullptr;
 
+    bool bUseProjectileThisAttack = true;
+
     void SpawnArrow(AUnit* Target);
 
 public:

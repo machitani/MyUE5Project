@@ -49,17 +49,22 @@ void AArcherUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    // 距離チェック
     const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-    const float MinArrowDistance = 150.f; // 好きな距離に調整
+    const float MinArrowDistance = 150.f;
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("[Archer] AttackTarget Dist=%.1f (MinArrowDistance=%.1f)"),
+        Distance, MinArrowDistance);
 
     // 近距離：矢を飛ばさず即ダメージ
     if (Distance < MinArrowDistance)
     {
-        bIsAttacking = true;
-        PendingTarget = Target;
+        UE_LOG(LogTemp, Warning, TEXT("[Archer] Close attack: NO projectile"));
 
-        // アニメーションはちゃんと再生（近距離でも弓を引くモーションは見せる）
+        bIsAttacking = true;
+        bUseProjectileThisAttack = false; // ★ この攻撃は矢を使わない
+        PendingTarget = nullptr;          // 念のためクリア
+
         if (UnitMesh)
         {
             if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
@@ -76,23 +81,22 @@ void AArcherUnit::AttackTarget(AUnit* Target)
             }
         }
 
-        // ★ ここで直接クリティカル付きの物理ダメージを与える
-        AUnit* Attacker = this;
         float  BaseDamage = Attack * ArrowDamageMultiplier;
         bool   bIsCritical = false;
+        float  FinalDamage = CalcPhysicalDamageWithCrit(BaseDamage, bIsCritical);
 
-        float FinalDamage = Attacker->CalcPhysicalDamageWithCrit(BaseDamage, bIsCritical);
         Target->bLastHitWasCritical = bIsCritical;
-
         Target->TakePhysicalDamage(FinalDamage);
 
-        // この攻撃では Projectile を使わない
         return;
     }
 
-    // --- ここから下は、今までの遠距離用ロジック（Projectile を使う） ---
+    UE_LOG(LogTemp, Warning, TEXT("[Archer] Far attack: USE projectile"));
 
+
+    // --- 遠距離：矢を使う ---
     bIsAttacking = true;
+    bUseProjectileThisAttack = true;   // ★ この攻撃は矢を使う
     PendingTarget = Target;
 
     if (UnitMesh)
@@ -113,8 +117,9 @@ void AArcherUnit::AttackTarget(AUnit* Target)
         }
     }
 
-    // 矢はアニメーション Notify → HandleArrowShootNotify() → SpawnArrow() で飛ぶ
+    // 矢は Notify → HandleArrowShootNotify → SpawnArrow
 }
+
 
 
 void AArcherUnit::SpawnArrow(AUnit* Target)
@@ -158,19 +163,23 @@ void AArcherUnit::SpawnArrow(AUnit* Target)
 
 void AArcherUnit::HandleArrowShootNotify()
 {
-    // ログ入れておくとデバッグしやすい
     UE_LOG(LogTemp, Warning,
-        TEXT("[Archer] Notify fired. Pending=%s"),
-        PendingTarget ? *PendingTarget->GetName() : TEXT("NULL"));
+        TEXT("[Archer] Notify fired. Pending=%s UseProj=%d"),
+        PendingTarget ? *PendingTarget->GetName() : TEXT("NULL"),
+        bUseProjectileThisAttack ? 1 : 0);
+
+    // ★ この攻撃で矢を使わないなら何もしない
+    if (!bUseProjectileThisAttack)
+    {
+        return;
+    }
 
     AUnit* Target = nullptr;
 
-    // ① 優先：AttackTarget でロックした PendingTarget
     if (PendingTarget && IsValid(PendingTarget) && !PendingTarget->bIsDead)
     {
         Target = PendingTarget;
     }
-    // ② 予備：まだ生きてる別の CurrentTarget がいればそっちに撃つ
     else if (CurrentTarget && IsValid(CurrentTarget) && !CurrentTarget->bIsDead)
     {
         Target = CurrentTarget;
@@ -178,13 +187,10 @@ void AArcherUnit::HandleArrowShootNotify()
 
     if (!Target)
     {
-        // 完全にターゲットがいない → このフレームは矢を出さない
         UE_LOG(LogTemp, Warning, TEXT("[Archer] Notify: no valid target to shoot"));
         return;
     }
 
     SpawnArrow(Target);
-
-    // 1回撃ったら PendingTarget はクリア
     PendingTarget = nullptr;
 }

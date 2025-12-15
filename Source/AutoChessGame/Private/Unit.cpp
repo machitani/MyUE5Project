@@ -380,7 +380,11 @@ void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 void AUnit::ApplyItemEffect(const FItemData& Item)
 {
     if (Item.EffectType == "Attack") Attack += Item.EffectValue;
-    if (Item.EffectType == "HP") HP += Item.EffectValue;
+    if (Item.EffectType == "HP")
+    {
+        MaxHP += Item.EffectValue;
+        HP += Item.EffectValue;
+    }
     if (Item.EffectType == "Defense")Defense += Item.EffectValue;
     if (Item.EffectType == "MagicPower")MagicPower += Item.EffectValue;
     if (Item.EffectType == "MagicDefense")MagicDefense += Item.EffectValue;
@@ -400,6 +404,7 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
 void AUnit::ReapplayAllItemEffects()
 {
     HP = BaseHP;
+    MaxHP = BaseHP;
     Attack = BaseAttack;
     Defense = BaseDefense;
     MagicPower = BaseMagicPower;
