@@ -85,6 +85,21 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     AShopManager* ShopManagerRef;
 
+    // 1D配列 index 変換
+    UFUNCTION(BlueprintPure, Category = "Board|Tiles")
+    int32 ToIndex(int32 Row, int32 Col) const;
+
+    // タイル取得
+    UFUNCTION(BlueprintPure, Category = "Board|Tiles")
+    ATile* GetEnemyTile(int32 Row, int32 Col) const;
+
+    UFUNCTION(BlueprintPure, Category = "Board|Tiles")
+    ATile* GetPlayerTile(int32 Row, int32 Col) const;
+
+    // 敵ボス用フォーメーション（遠距離Row0 / ボスRow1 / タンクRow3）
+    UFUNCTION(BlueprintCallable, Category = "Enemy|Formation")
+    void ArrangeEnemyBossFormation();
+
 
 public:
     /** ボード生成 */

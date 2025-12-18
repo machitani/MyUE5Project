@@ -281,6 +281,127 @@ void ABoardManager::SetItemTargetUnit(AUnit* NewUnit)
     ItemUnit = NewUnit;
 }
 
+int32 ABoardManager::ToIndex(int32 Row, int32 Col) const
+{
+    return Row * Columns + Col;
+}
+
+ATile* ABoardManager::GetEnemyTile(int32 Row, int32 Col) const
+{
+    const int32 Idx = ToIndex(Row, Col);
+    return EnemyTiles.IsValidIndex(Idx) ? EnemyTiles[Idx] : nullptr;
+}
+
+ATile* ABoardManager::GetPlayerTile(int32 Row, int32 Col) const
+{
+    const int32 Idx = ToIndex(Row, Col);
+    return PlayerTiles.IsValidIndex(Idx) ? PlayerTiles[Idx] : nullptr;
+}
+
+static ATile* TryFindFreeEnemyInRow(const ABoardManager* BM, int32 Row, const TArray<int32>& ColOrder)
+{
+    for (int32 Col : ColOrder)
+    {
+        ATile* T = BM->GetEnemyTile(Row, Col);
+        if (T && !T->IsOccupied()) return T;
+    }
+    return nullptr;
+}
+
+void ABoardManager::ArrangeEnemyBossFormation()
+{
+    if (EnemyUnits.Num() == 0) return;
+
+    // まず敵タイルの占有を全部クリア（並べ直しのため）
+    for (ATile* T : EnemyTiles)
+    {
+        if (T) T->ClearOccupiedUnit();
+    }
+
+    // 列の優先順（7列）
+    const TArray<int32> CenterCols = { 3,2,4,1,5,0,6 };
+    const TArray<int32> SpreadCols = { 0,6,1,5,2,4,3 };
+
+    const int32 RangedRow = 1;
+    const int32 BossRow = 2;
+    const int32 TankRow = 0;
+
+    // 1) 分類
+    AUnit* Boss = nullptr;
+    TArray<AUnit*> Tanks;
+    TArray<AUnit*> Rangeds;
+    TArray<AUnit*> Others;
+
+    for (AUnit* U : EnemyUnits)
+    {
+        if (!U) continue;
+
+        if (!Boss && U->ActorHasTag(TEXT("Boss")))
+        {
+            Boss = U;
+        }
+        else if (U->ActorHasTag(TEXT("Tank")))
+        {
+            Tanks.Add(U);
+        }
+        else if (U->ActorHasTag(TEXT("Ranged")))
+        {
+            Rangeds.Add(U);
+        }
+        else
+        {
+            Others.Add(U);
+        }
+    }
+
+    // Bossタグが無い時の保険：最初の1体をボス扱い
+    if (!Boss && EnemyUnits.Num() > 0)
+    {
+        Boss = EnemyUnits[0];
+        Others.Remove(Boss);
+    }
+
+    // 2) 遠距離：Row0（散らす）
+    for (AUnit* U : Rangeds)
+    {
+        ATile* T = TryFindFreeEnemyInRow(this, RangedRow, SpreadCols);
+        if (!T) T = TryFindFreeEnemyInRow(this, RangedRow, CenterCols);
+        if (!T) T = TryFindFreeEnemyInRow(this, BossRow, SpreadCols); // 置けなければRow1へ
+        if (T) MoveUnitToTile(U, T);
+    }
+
+    // 3) ボス：Row1 中央寄せ（Col3優先）
+    if (Boss)
+    {
+        ATile* T = TryFindFreeEnemyInRow(this, BossRow, CenterCols);
+        if (!T) T = TryFindFreeEnemyInRow(this, RangedRow, CenterCols);
+        if (!T) T = TryFindFreeEnemyInRow(this, TankRow, CenterCols);
+        if (T) MoveUnitToTile(Boss, T);
+    }
+
+    // 4) タンク：Row3 中央寄せ（前線）
+    for (AUnit* U : Tanks)
+    {
+        ATile* T = TryFindFreeEnemyInRow(this, TankRow, CenterCols);
+        if (!T) T = TryFindFreeEnemyInRow(this, TankRow - 1, CenterCols); // Row2へフォールバック
+        if (!T) T = TryFindFreeEnemyInRow(this, BossRow, CenterCols);
+        if (T) MoveUnitToTile(U, T);
+    }
+
+    // 5) その他：空きに詰める（優先：Row3→Row1→Row0）
+    const TArray<int32> RowsOrder = { 3,2,1,0 };
+    for (AUnit* U : Others)
+    {
+        ATile* Placed = nullptr;
+        for (int32 R : RowsOrder)
+        {
+            Placed = TryFindFreeEnemyInRow(this, R, CenterCols);
+            if (Placed) break;
+        }
+        if (Placed) MoveUnitToTile(U, Placed);
+    }
+}
+
 
 void ABoardManager::GenerateBoard()
 {
@@ -288,6 +409,9 @@ void ABoardManager::GenerateBoard()
 
     FVector Origin = FVector::ZeroVector;
     const float BoardGap = 0.f;
+
+    PlayerTiles.Empty();
+    EnemyTiles.Empty();
 
     // プレイヤーボード
     for (int32 Row = 0; Row < Rows; Row++)
@@ -301,6 +425,10 @@ void ABoardManager::GenerateBoard()
                 Tile->BoardManagerRef = this;
                 Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
                 Tile->bIsPlayerTile = true;
+
+                // ★ TileにInitTile追加済みなら有効化
+                // Tile->InitTile(Row, Col, true, this);
+
                 PlayerTiles.Add(Tile);
             }
         }
@@ -315,13 +443,19 @@ void ABoardManager::GenerateBoard()
             ATile* Tile = GetWorld()->SpawnActor<ATile>(TileClass, SpawnLocation, FRotator::ZeroRotator);
             if (Tile)
             {
+                Tile->BoardManagerRef = this; // ★これが抜けてた
                 Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
                 Tile->bIsPlayerTile = false;
+
+                // ★ TileにInitTile追加済みなら有効化
+                // Tile->InitTile(Row, Col, false, this);
+
                 EnemyTiles.Add(Tile);
             }
         }
     }
 }
+
 
 void ABoardManager::SpawnInitialUnits()
 {
@@ -750,15 +884,9 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
 {
     if (!Unit || !NewTile) return;
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[BoardManager] MoveUnitToTile: %s -> %s"),
-        *Unit->GetName(),
-        *NewTile->GetName());
-
     ATile* OldTile = Unit->CurrentTile;
 
-    // 他人がいるマスには置かない
-    if (NewTile->bIsOccupied && NewTile->OccupiedUnit != Unit)
+    if (NewTile->IsOccupied() && NewTile->OccupiedUnit != Unit)
     {
         Unit->SetActorLocation(Unit->OriginalLocation);
         return;
@@ -766,12 +894,10 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
 
     if (OldTile && OldTile != NewTile)
     {
-        OldTile->bIsOccupied = false;
-        OldTile->OccupiedUnit = nullptr;
+        OldTile->ClearOccupiedUnit();
     }
 
-    NewTile->bIsOccupied = true;
-    NewTile->OccupiedUnit = Unit;
+    NewTile->SetOccupiedUnit(Unit);
     Unit->CurrentTile = NewTile;
 
     FVector Center = NewTile->GetTileCenterWorld();
@@ -780,10 +906,34 @@ void ABoardManager::MoveUnitToTile(AUnit* Unit, ATile* NewTile)
     Unit->SetActorLocation(Center);
     Unit->OriginalLocation = Center;
 
+    // ★ここに追加（敵タイル配列の何番＝Row/Colかを出す）
+    int32 Idx = EnemyTiles.Find(NewTile);
+    if (Idx != INDEX_NONE)
+    {
+        int32 Row = Idx / Columns;
+        int32 Col = Idx % Columns;
+        UE_LOG(LogTemp, Warning, TEXT("[MoveEnemy] %s -> EnemyTile Row=%d Col=%d (Idx=%d)"),
+            *GetNameSafe(Unit), Row, Col, Idx);
+    }
+    else
+    {
+        // プレイヤータイル側の可能性もあるので保険
+        int32 PIdx = PlayerTiles.Find(NewTile);
+        if (PIdx != INDEX_NONE)
+        {
+            int32 Row = PIdx / Columns;
+            int32 Col = PIdx % Columns;
+            UE_LOG(LogTemp, Warning, TEXT("[MovePlayer] %s -> PlayerTile Row=%d Col=%d (Idx=%d)"),
+                *GetNameSafe(Unit), Row, Col, PIdx);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[Move] %s -> Tile not found in arrays"), *GetNameSafe(Unit));
+        }
+    }
+
     NewTile->SetTileHighlight(false);
 }
-
-
 
 
 ATile* ABoardManager::GetTileUnderLocation(const FVector& Location)
@@ -972,6 +1122,20 @@ void ABoardManager::SpawnEnemyUnits()
 
             if (!NewUnit) continue;
 
+            FString TagsStr;
+            for (const FName& T : NewUnit->Tags)
+            {
+                TagsStr += T.ToString() + TEXT(",");
+            }
+
+            UE_LOG(LogTemp, Warning, TEXT("[EnemySpawn] %s Tags=%s  Boss=%d Tank=%d Ranged=%d"),
+                *GetNameSafe(NewUnit),
+                *TagsStr,
+                NewUnit->ActorHasTag(TEXT("Boss")),
+                NewUnit->ActorHasTag(TEXT("Tank")),
+                NewUnit->ActorHasTag(TEXT("Ranged"))
+            );
+
             NewUnit->Team = EUnitTeam::Enemy;
             NewUnit->CurrentTile = Tile;
             NewUnit->OwningBoardManager = this;
@@ -992,8 +1156,9 @@ void ABoardManager::SpawnEnemyUnits()
             NewUnit->BaseMagicPower *= WaveData->MagicPowerScale;
             NewUnit->MagicPower = NewUnit->BaseMagicPower;
 
-            Tile->bIsOccupied = true;
-            Tile->OccupiedUnit = NewUnit;
+
+
+            MoveUnitToTile(NewUnit, Tile);
 
             EnemyUnits.Add(NewUnit);
         }
@@ -1002,6 +1167,10 @@ void ABoardManager::SpawnEnemyUnits()
     UE_LOG(LogTemp, Warning,
         TEXT("SpawnEnemyUnits: Stage=%d Wave=%d, Spawned %d enemies."),
         CurrentStageIndex, CurrentWaveIndex, EnemyUnits.Num());
+
+
+
+    ArrangeEnemyBossFormation();
 }
 
 int32 ABoardManager::GetDeployedPlayerUnitCount() const
