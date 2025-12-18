@@ -63,6 +63,12 @@ public:
     float BaseMoveSpeed;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float BaseCritChance;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float BaseCritMultiplier;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float Range = 200.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")

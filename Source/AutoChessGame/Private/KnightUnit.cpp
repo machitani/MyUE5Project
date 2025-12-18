@@ -13,16 +13,16 @@ AKnightUnit::AKnightUnit()
 
     Range = 160.f;  // 近接らしい短めの射程
     MoveSpeed = 120.f;
-    AttackInterval = 1.0f;  // ちょうど1秒とか好みで
 
-    BaseAttackInterval = 1.0f;
+    // ★ 単純に「1秒おきに攻撃する」だけにしておく
     AttackInterval = 1.0f;
+    BaseAttackInterval = 1.0f;   // 基準値としてだけ保持（アイテム用）
 
     Team = EUnitTeam::Player;
     UnitID = FName("Knight");
 
     CritChance = 0.15f; // 15% くらい（好みで調整）
-    CritMultiplier = 1.5f; 
+    CritMultiplier = 1.5f;
 }
 
 void AKnightUnit::BeginPlay()
@@ -53,17 +53,9 @@ void AKnightUnit::AttackTarget(AUnit* Target)
         {
             if (AttackMontage)
             {
-                float PlayRate = 1.0f;
-
-                if (AttackInterval > 0.f && BaseAttackInterval > 0.f)
-                {
-                    PlayRate = BaseAttackInterval / AttackInterval;
-                }
-
-                if (!AnimInstance->Montage_IsPlaying(AttackMontage))
-                {
-                    AnimInstance->Montage_Play(AttackMontage, PlayRate);
-                }
+                // ★ ここからアタックスピード連動の PlayRate 計算を削除
+                //    単純に等速でモンタージュ再生だけにする
+                AnimInstance->Montage_Play(AttackMontage);
             }
         }
     }
@@ -73,7 +65,7 @@ void AKnightUnit::ApplyMeleeDamage(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
-    bool bIsCrit = false;
+    bool  bIsCrit = false;
     float DamageToApply = CalcPhysicalDamageWithCrit(Attack, bIsCrit);
 
     // ターゲット側に「今回のヒットはクリティカルだった」フラグを渡す
@@ -85,6 +77,7 @@ void AKnightUnit::ApplyMeleeDamage(AUnit* Target)
         TEXT("Knight hit %s Damage=%.1f Crit=%d"),
         *Target->GetName(), DamageToApply, bIsCrit ? 1 : 0);
 }
+
 void AKnightUnit::HandleMeleeHitNotify()
 {
     // 攻撃中にターゲットが死んでた / いなくなってたらスキップ
@@ -96,4 +89,3 @@ void AKnightUnit::HandleMeleeHitNotify()
     // ここが「剣が当たる瞬間」のダメージ発生地点
     ApplyMeleeDamage(PendingTarget);
 }
-

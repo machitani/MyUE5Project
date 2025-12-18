@@ -43,8 +43,7 @@ public:
     UPROPERTY(meta=(BindWidget))
     UTextBlock* MoveSpeedText;
 
-    UPROPERTY(meta=(BindWidget))
-    UTextBlock* AttackIntervalText;
+   
 
     UPROPERTY(meta=(BindWidget))
     UTextBlock* CritText;
@@ -58,7 +57,7 @@ public:
 
 public:
     // ƒ†ƒjƒbƒgî•ñ‚ğ‘‚«‚ŞŠÖ”
-    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT,float CRITDAMAGE,float AttackInterval, const TArray<FItemData>& Items);
+    void SetUnitInfo(const FName& Name, float HP, float ATK, float DEF, float MAG, float MR,float RANGE,float SPE,float CRIT,float CRITDAMAGE, const TArray<FItemData>& Items);
 
     UFUNCTION(BlueprintCallable, Category = "Unit")
     void OnRemoveAllItemsClicked();

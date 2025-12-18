@@ -53,22 +53,36 @@ void AUnit::BeginPlay()
 {
     Super::BeginPlay();
 
-    BaseHP = HP;
+    // --- HP / MaxHP / BaseHP をきっちり揃える ---
+    if (MaxHP <= 0.f)
+    {
+        // 派生クラスで MaxHP を設定してない場合の保険
+        MaxHP = FMath::Max(HP, 1.f);
+    }
+    else
+    {
+        // 派生クラス（Knight / Archer など）で MaxHP を決めているなら
+        // それを正とする
+        HP = MaxHP;
+    }
+
+    // 「素のステータス」は全部 Base～ に退避
+    BaseHP = MaxHP;
     BaseAttack = Attack;
     BaseDefense = Defense;
     BaseMagicPower = MagicPower;
     BaseMagicDefense = MagicDefense;
     BaseRange = Range;
     BaseMoveSpeed = MoveSpeed;
-
-    MaxHP = BaseHP;
-
-    //BaseAttackInterval = AttackInterval;
-
+    BaseAttackInterval = AttackInterval;
+    
     LastLocation = GetActorLocation();
 
+    // ★ HPバーの OwnerUnit をここでセット（今までやってた処理を少し強化）
     if (HPBarWidget)
     {
+        HPBarWidget->InitWidget();  // Widget を確実に生成
+
         if (UUserWidget* UW = HPBarWidget->GetUserWidgetObject())
         {
             if (UUnitHPBarWidget* HPBar = Cast<UUnitHPBarWidget>(UW))
@@ -78,6 +92,7 @@ void AUnit::BeginPlay()
         }
     }
 }
+
 
 void AUnit::Tick(float DeltaTime)
 {
@@ -291,6 +306,10 @@ void AUnit::TakePhysicalDamage(float DamageAmount)
     float FinalDamage = FMath::Max(1.f, DamageAmount - Defense);
     HP -= FinalDamage;
 
+    UE_LOG(LogTemp, Warning,
+        TEXT("[%s] HP=%.1f / MaxHP=%.1f  Percent=%.2f"),
+        *GetName(), HP, MaxHP, GetHPPercent());
+
     ShowDamagePopup(FinalDamage, /*bIsMagicDamage=*/false);
     bLastHitWasCritical = false; // 使い終わったらリセット
 
@@ -379,31 +398,29 @@ void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 
 void AUnit::ApplyItemEffect(const FItemData& Item)
 {
-    if (Item.EffectType == "Attack") Attack += Item.EffectValue;
-    if (Item.EffectType == "HP")
+    if (Item.EffectType == "Attack")        Attack += Item.EffectValue;
+    else if (Item.EffectType == "HP")
     {
         MaxHP += Item.EffectValue;
-        HP += Item.EffectValue;
+        HP += Item.EffectValue;   // or HP = MaxHP; 好みで
     }
-    if (Item.EffectType == "Defense")Defense += Item.EffectValue;
-    if (Item.EffectType == "MagicPower")MagicPower += Item.EffectValue;
-    if (Item.EffectType == "MagicDefense")MagicDefense += Item.EffectValue;
-    if (Item.EffectType == "Range")Range += Item.EffectValue;
-    if (Item.EffectType == "MoveSpeed")MoveSpeed += Item.EffectValue;
-    if (Item.EffectType == "CritChance")     CritChance += Item.EffectValue;
-    if (Item.EffectType == "CritMultiplier") CritMultiplier += Item.EffectValue;
-
-    if (Item.EffectType == "AttackInterval")
+    else if (Item.EffectType == "Defense")      Defense += Item.EffectValue;
+    else if (Item.EffectType == "MagicPower")   MagicPower += Item.EffectValue;
+    else if (Item.EffectType == "MagicDefense") MagicDefense += Item.EffectValue;
+    else if (Item.EffectType == "Range")        Range += Item.EffectValue;
+    else if (Item.EffectType == "MoveSpeed")    MoveSpeed += Item.EffectValue;
+    else if (Item.EffectType == "CritChance")   CritChance += Item.EffectValue;
+    else if (Item.EffectType == "CritMultiplier") CritMultiplier += Item.EffectValue;
+    else if (Item.EffectType == "AttackInterval")
     {
-        // EffectValue に -0.2 とか入れると「0.2秒短くなる」
         AttackInterval = FMath::Max(0.1f, AttackInterval + Item.EffectValue);
     }
-
 }
+
 
 void AUnit::ReapplayAllItemEffects()
 {
-    HP = BaseHP;
+    // 1) まず素の状態にリセット
     MaxHP = BaseHP;
     Attack = BaseAttack;
     Defense = BaseDefense;
@@ -413,13 +430,19 @@ void AUnit::ReapplayAllItemEffects()
     MoveSpeed = BaseMoveSpeed;
     CritChance = CritChance;
     CritMultiplier = CritMultiplier;
-
     AttackInterval = BaseAttackInterval;
 
-    for (auto& Item : EquipedItems)
+    // HP はとりあえず最大まで回復
+    HP = MaxHP;
+
+    // 2) そこに装備アイテムの効果を全部のせる
+    for (const FItemData& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
     }
+
+    // 念のため 0～MaxHP に収めておく
+    HP = FMath::Clamp(HP, 0.f, MaxHP);
 }
 
 void AUnit::RemoveItems()
@@ -473,28 +496,35 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     BaseRange = Data.BaseRange;
     BaseMoveSpeed = Data.BaseMoveSpeed;
 
-    MaxHP = BaseHP;
-
     BaseAttackInterval = Data.BaseAttackInterval;
-
-    CritChance = Data.CritChance;
-    CritMultiplier = Data.CritMultiplier;
+    BaseCritChance = Data.CritChance;
+    BaseCritMultiplier = Data.CritMultiplier;
 
     EquipedItems = Data.EquippedItems;
 
-    //一旦素の値を反映
-    HP = BaseHP;
+    // 素ステに戻す
+    MaxHP = BaseHP;
     Attack = BaseAttack;
     Defense = BaseDefense;
     MagicPower = BaseMagicPower;
     MagicDefense = BaseMagicDefense;
     Range = BaseRange;
     MoveSpeed = BaseMoveSpeed;
-    CritChance = CritChance;
-    CritMultiplier = CritMultiplier;
-
+    CritChance = BaseCritChance;
+    CritMultiplier = BaseCritMultiplier;
     AttackInterval = BaseAttackInterval;
 
+    HP = MaxHP;
+
+    // アイテム再適用（1回だけ）
+    for (const FItemData& Item : EquipedItems)
+    {
+        ApplyItemEffect(Item);
+    }
+
+    HP = FMath::Clamp(HP, 0.f, MaxHP);
+
+    // 状態系
     bIsDead = false;
     bIsAttacking = false;
     bIsMoving = false;
@@ -508,11 +538,6 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
     {
         UnitMesh->SetVisibility(true, true);
         UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    }
-
-    for (auto& Item : EquipedItems)
-    {
-        ApplyItemEffect(Item);
     }
 }
 
@@ -559,7 +584,6 @@ void AUnit::ShowUnitInfo()
             MoveSpeed,
             CritChance,
             CritMultiplier,
-            AttackInterval,
             EquipedItems
         );
 
@@ -656,7 +680,6 @@ void AUnit::RefreshHoverInfo()
             MoveSpeed,
             CritChance,
             CritMultiplier,
-            AttackInterval,
             EquipedItems
         );
     }

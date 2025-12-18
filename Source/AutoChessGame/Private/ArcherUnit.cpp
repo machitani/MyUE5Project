@@ -16,15 +16,16 @@ AArcherUnit::AArcherUnit()
     MagicDefense = 1.f;
     MagicPower = 0.f;
 
-    Range = 400.f;  // Wizard よりちょい長めでもいい
+    Range = 400.f;    // Wizard よりちょい長めでもいい
     MoveSpeed = 140.f;
+
     AttackInterval = 1.1f;
     BaseAttackInterval = 1.0f;
 
     Team = EUnitTeam::Player;
     UnitID = FName("Archer");
 
-    CritChance = 0.25f;   // 25% くらい
+    CritChance = 0.25f;   // 25%
     CritMultiplier = 1.5f;
 }
 
@@ -35,7 +36,8 @@ void AArcherUnit::BeginPlay()
 
 bool AArcherUnit::CanUseSkill() const
 {
-    return false; // まずは通常攻撃だけ
+    // 今は通常攻撃だけ
+    return false;
 }
 
 void AArcherUnit::UseSkill(AUnit* Target)
@@ -43,28 +45,21 @@ void AArcherUnit::UseSkill(AUnit* Target)
     // 後でスキルを作りたくなったらここに
 }
 
-// ArcherUnit.cpp
-
 void AArcherUnit::AttackTarget(AUnit* Target)
 {
     if (!Target || Target->bIsDead) return;
 
+    // 距離チェック
     const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-    const float MinArrowDistance = 150.f;
+    const float MinArrowDistance = 150.f; // 好きな距離に調整
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[Archer] AttackTarget Dist=%.1f (MinArrowDistance=%.1f)"),
-        Distance, MinArrowDistance);
-
-    // 近距離：矢を飛ばさず即ダメージ
+    // ===== 近距離：矢を飛ばさず即ダメージ =====
     if (Distance < MinArrowDistance)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Archer] Close attack: NO projectile"));
-
         bIsAttacking = true;
-        bUseProjectileThisAttack = false; // ★ この攻撃は矢を使わない
-        PendingTarget = nullptr;          // 念のためクリア
+        PendingTarget = Target;  // ※ Adventurer と同じ書き方
 
+        // アニメーション再生（近距離でも弓を引くモーションは見せる）
         if (UnitMesh)
         {
             if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
@@ -81,22 +76,23 @@ void AArcherUnit::AttackTarget(AUnit* Target)
             }
         }
 
+        // ★ ここで直接クリティカル付きの物理ダメージを与える
+        AUnit* Attacker = this;
         float  BaseDamage = Attack * ArrowDamageMultiplier;
         bool   bIsCritical = false;
-        float  FinalDamage = CalcPhysicalDamageWithCrit(BaseDamage, bIsCritical);
 
+        float FinalDamage = Attacker->CalcPhysicalDamageWithCrit(BaseDamage, bIsCritical);
         Target->bLastHitWasCritical = bIsCritical;
+
         Target->TakePhysicalDamage(FinalDamage);
 
+        // この攻撃では Projectile は使わない
         return;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("[Archer] Far attack: USE projectile"));
+    // ===== 遠距離：Projectile（矢）を使う =====
 
-
-    // --- 遠距離：矢を使う ---
     bIsAttacking = true;
-    bUseProjectileThisAttack = true;   // ★ この攻撃は矢を使う
     PendingTarget = Target;
 
     if (UnitMesh)
@@ -117,16 +113,12 @@ void AArcherUnit::AttackTarget(AUnit* Target)
         }
     }
 
-    // 矢は Notify → HandleArrowShootNotify → SpawnArrow
+    // 矢はアニメーション Notify → HandleArrowShootNotify() → SpawnArrow() で飛ぶ
 }
-
-
 
 void AArcherUnit::SpawnArrow(AUnit* Target)
 {
     if (!ArrowClass || !Target) return;
-
-    UE_LOG(LogTemp, Warning, TEXT("ARROW"));
 
     UWorld* World = GetWorld();
     if (!World) return;
@@ -163,34 +155,11 @@ void AArcherUnit::SpawnArrow(AUnit* Target)
 
 void AArcherUnit::HandleArrowShootNotify()
 {
-    UE_LOG(LogTemp, Warning,
-        TEXT("[Archer] Notify fired. Pending=%s UseProj=%d"),
-        PendingTarget ? *PendingTarget->GetName() : TEXT("NULL"),
-        bUseProjectileThisAttack ? 1 : 0);
-
-    // ★ この攻撃で矢を使わないなら何もしない
-    if (!bUseProjectileThisAttack)
+    // Adventurer の HandlePachinkoShootNotify と同じノリ
+    if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
     {
         return;
     }
 
-    AUnit* Target = nullptr;
-
-    if (PendingTarget && IsValid(PendingTarget) && !PendingTarget->bIsDead)
-    {
-        Target = PendingTarget;
-    }
-    else if (CurrentTarget && IsValid(CurrentTarget) && !CurrentTarget->bIsDead)
-    {
-        Target = CurrentTarget;
-    }
-
-    if (!Target)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("[Archer] Notify: no valid target to shoot"));
-        return;
-    }
-
-    SpawnArrow(Target);
-    PendingTarget = nullptr;
+    SpawnArrow(PendingTarget);
 }
