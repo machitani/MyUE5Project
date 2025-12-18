@@ -5,7 +5,8 @@
 
 ATile::ATile()
 {
-    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    RootComponent = RootScene;
 
     TileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TileMesh"));
     TileMesh->SetupAttachment(RootComponent);
@@ -16,11 +17,18 @@ ATile::ATile()
     HighlightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     HighlightMesh->SetGenerateOverlapEvents(false);
 
-    // ちょっとだけ浮かせて Z ファイト防止
     HighlightMesh->SetRelativeLocation(FVector(0.f, 0.f, 1.f));
-
-    // 最初は非表示
     HighlightMesh->SetVisibility(false);
+
+    // ★クリック拾えるように（任意だけどおすすめ）
+    if (TileMesh)
+    {
+        TileMesh->SetGenerateOverlapEvents(false);
+        TileMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        TileMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+        TileMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+        TileMesh->OnClicked.AddDynamic(this, &ATile::OnTileMeshClicked);
+    }
 }
 
 void ATile::BeginPlay()
@@ -42,6 +50,26 @@ void ATile::BeginPlay()
 void ATile::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+}
+
+void ATile::InitTile(int32 InRow, int32 InCol, bool bInIsPlayerTile, ABoardManager* InBoardManager)
+{
+    Row = InRow;
+    Col = InCol;
+    bIsPlayerTile = bInIsPlayerTile;
+    BoardManagerRef = InBoardManager;
+}
+
+void ATile::SetOccupiedUnit(AUnit* Unit)
+{
+    OccupiedUnit = Unit;
+    bIsOccupied = (Unit != nullptr);
+}
+
+void ATile::ClearOccupiedUnit()
+{
+    OccupiedUnit = nullptr;
+    bIsOccupied = false;
 }
 
 void ATile::SetTileColor(const FLinearColor& NewColor)
@@ -96,4 +124,9 @@ float ATile::GetTileSnapRadius() const
         return FMath::Max(B.BoxExtent.X, B.BoxExtent.Y);
     }
     return 100.f; // 保険
+}
+
+void ATile::OnTileMeshClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+    NotifyBoardManagerClicked();
 }

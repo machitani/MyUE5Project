@@ -14,15 +14,15 @@ class AUTOCHESSGAME_API UUnitHPBarWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    // BP側の ProgressBar と自動バインドする
-    UPROPERTY(meta = (BindWidget))
-    UProgressBar* HPBar;
+    UPROPERTY(meta = (BindWidget), BlueprintReadOnly)
+    class UProgressBar* HPBar;
 
-    // このバーが参照するユニット
-    UPROPERTY(BlueprintReadWrite, Category = "Unit")
-    AUnit* OwnerUnit;
+    // ユニットへの参照
+    UPROPERTY(BlueprintReadWrite)
+    class AUnit* OwnerUnit;
 
-protected:
-    //virtual void NativeConstruct() override;
-    virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+    virtual void NativeTick(
+        const FGeometry& MyGeometry,
+        float InDeltaTime
+    ) override;
 };
