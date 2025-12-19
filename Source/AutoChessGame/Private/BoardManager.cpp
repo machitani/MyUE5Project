@@ -322,7 +322,7 @@ void ABoardManager::ArrangeEnemyBossFormation()
     const TArray<int32> CenterCols = { 3,2,4,1,5,0,6 };
     const TArray<int32> SpreadCols = { 0,6,1,5,2,4,3 };
 
-    const int32 RangedRow = 1;
+    const int32 RangedRow = 3;
     const int32 BossRow = 2;
     const int32 TankRow = 0;
 
