@@ -1,5 +1,5 @@
 #include "TitlePlayerController.h"
-#include "TitleMenuWidget.h"
+#include "Blueprint/UserWidget.h"
 
 void ATitlePlayerController::BeginPlay()
 {
@@ -7,15 +7,17 @@ void ATitlePlayerController::BeginPlay()
 
     bShowMouseCursor = true;
 
-    TitleMenu = CreateWidget<UTitleMenuWidget>(this, UTitleMenuWidget::StaticClass());
-    UE_LOG(LogTemp, Warning, TEXT("[TitlePC] CreateWidget=%s"), TitleMenu ? *TitleMenu->GetName() : TEXT("NULL"));
-
-    if (TitleMenu)
+    if (!TitleWidgetClass)
     {
-        TitleMenu->AddToViewport(100);
-        UE_LOG(LogTemp, Warning, TEXT("[TitlePC] AddedToViewport"));
+        UE_LOG(LogTemp, Warning, TEXT("[TitlePC] TitleWidgetClass is NULL"));
+        return;
+    }
 
-        // ★フォーカス先を指定しない（非フォーカスWidgetに当ててエラーになるのを回避）
+    TitleWidgetInstance = CreateWidget<UUserWidget>(this, TitleWidgetClass);
+    if (TitleWidgetInstance)
+    {
+        TitleWidgetInstance->AddToViewport(100);
+
         FInputModeUIOnly Mode;
         Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
         SetInputMode(Mode);

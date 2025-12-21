@@ -238,6 +238,19 @@ public:
     void HandleGameClear();
     void HandleDefeat();
 
+    UPROPERTY(EditAnywhere, Category = "Stage")
+    UDataTable* Stage1WaveTable;
+
+    UPROPERTY(EditAnywhere, Category = "Stage")
+    UDataTable* Stage2WaveTable;
+
+    UPROPERTY(EditAnywhere, Category = "Stage")
+    UDataTable* Stage3WaveTable;
+
+    void StartStage(int32 Stage);
+
+    void LoadEnemyWavesFromTable(UDataTable* Table);
+
     protected:
         virtual void BeginPlay() override;
 

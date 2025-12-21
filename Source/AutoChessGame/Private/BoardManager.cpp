@@ -10,6 +10,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "TMAGameInstance.h"
+#include "EnemyWaveData.h"
 
 
 ABoardManager::ABoardManager()
@@ -72,32 +74,22 @@ TArray<FName> ABoardManager::GenerateRewardUnitCandidates(int32 Num)const
 
 FEnemyWaveData* ABoardManager::GetCurrentWaveData()
 {
-    if (EnemyWaves.Num() == 0)
-    {
-        return nullptr;
-    }
+    if (EnemyWaves.Num() == 0) return nullptr;
 
     FEnemyWaveData* Found = EnemyWaves.FindByPredicate(
         [this](const FEnemyWaveData& Data)
         {
-            return Data.StageIndex == CurrentStageIndex
-                && Data.WaveIndex == CurrentWaveIndex;
+            return Data.WaveIndex == CurrentWaveIndex; // ★ StageIndex 条件を外す
         }
     );
 
-    if (Found)
-    {
-        return Found;
-    }
+    if (Found) return Found;
 
-    // ★ 対応するWaveが無い → 全Waveクリア → ゲームクリア
-    UE_LOG(LogTemp, Warning,
-        TEXT("GetCurrentWaveData: No data for Stage=%d Wave=%d. GameClear!"),
-        CurrentStageIndex, CurrentWaveIndex);
-
+    UE_LOG(LogTemp, Warning, TEXT("GetCurrentWaveData: No data for Wave=%d"), CurrentWaveIndex);
     bIsGameClear = true;
     return nullptr;
 }
+
 void ABoardManager::ReviveAllEnemiesOnDefeat()
 {
     for (AUnit* Unit : EnemyUnits)
@@ -190,79 +182,111 @@ void ABoardManager::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 1) まずボード生成
+    // 0) ステージ選択を最初に読む
+    int32 Stage = 1;
+    if (UTMAGameInstance* GI = Cast<UTMAGameInstance>(UGameplayStatics::GetGameInstance(GetWorld())))
+    {
+        Stage = GI->SelectedStageIndex;
+    }
+    UE_LOG(LogTemp, Warning, TEXT("[Board] SelectedStageIndex=%d"), Stage);
+
+    // 1) ステージ初期化（Waveデータをここで確定させる）
+    StartStage(Stage);
+
+    // 2) まずボード生成
     GenerateBoard();
 
-    // 2) PlayerManager を取得（BoardManagerRef を渡す）
+    // 3) PlayerManager取得
     {
         TArray<AActor*> Found;
         UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerManager::StaticClass(), Found);
+        PlayerManagerInstance = Found.Num() > 0 ? Cast<APlayerManager>(Found[0]) : nullptr;
 
-        if (Found.Num() > 0)
+        if (PlayerManagerInstance)
         {
-            PlayerManagerInstance = Cast<APlayerManager>(Found[0]);
-            UE_LOG(LogTemp, Warning, TEXT("PlayerManager found: %s"), *GetNameSafe(PlayerManagerInstance));
-
             PlayerManagerInstance->BoardManagerRef = this;
         }
         else
         {
-            PlayerManagerInstance = nullptr;
             UE_LOG(LogTemp, Error, TEXT("No PlayerManager found in level!"));
         }
     }
 
-    // ★ 3) 初期プレイヤーユニットをスポーン（前と同じ感じ）
-    SpawnInitialUnits();   // ← ここで Knight / Archer を出す
+    // 4) 初期プレイヤーユニット
+    SpawnInitialUnits();
 
-    // ★ 4) EnemyWaves から敵ユニットをスポーン
-    SpawnEnemyUnits();     // ← 1ラウンド目の敵も Wave データから出す
+    // 5) 敵スポーン（StartStageでEnemyWavesが構築済みの前提）
+    SpawnEnemyUnits();
 
-    // 5) HUD作成
+    // 6) HUD
     if (HUDClass && !HUDInstance)
     {
         HUDInstance = CreateWidget<UUserWidget>(GetWorld(), HUDClass);
-        if (HUDInstance)
-        {
-            HUDInstance->AddToViewport();
-        }
+        if (HUDInstance) HUDInstance->AddToViewport();
     }
-
     if (PlayerHUDClass && !PlayerHUDInstance)
     {
         PlayerHUDInstance = CreateWidget<UPlayerHUD>(GetWorld(), PlayerHUDClass);
-        if (PlayerHUDInstance)
-        {
-            PlayerHUDInstance->AddToViewport();
-        }
+        if (PlayerHUDInstance) PlayerHUDInstance->AddToViewport();
     }
 
-    // 6) ShopManager を取得して PlayerManager を渡す
+    // 7) ShopManager取得
     {
         TArray<AActor*> FoundShop;
         UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShopManager::StaticClass(), FoundShop);
 
-        if (FoundShop.Num() > 0)
+        ShopManagerRef = FoundShop.Num() > 0 ? Cast<AShopManager>(FoundShop[0]) : nullptr;
+        if (ShopManagerRef && PlayerManagerInstance)
         {
-            ShopManagerRef = Cast<AShopManager>(FoundShop[0]);
-            UE_LOG(LogTemp, Warning, TEXT("ShopManager found: %s"), *GetNameSafe(ShopManagerRef));
-
-            if (ShopManagerRef && PlayerManagerInstance)
-            {
-                ShopManagerRef->PlayerManagerRef = PlayerManagerInstance;
-                UE_LOG(LogTemp, Warning, TEXT("ShopManagerRef->PlayerManagerRef set."));
-            }
-        }
-        else
-        {
-            ShopManagerRef = nullptr;
-            UE_LOG(LogTemp, Error, TEXT("No ShopManager found in level!"));
+            ShopManagerRef->PlayerManagerRef = PlayerManagerInstance;
         }
     }
 
-    // 7) 準備フェーズスタート
+    // 8) 準備フェーズ
     StartPreparationPhase();
 }
+
+void ABoardManager::StartStage(int32 Stage)
+{
+    CurrentStageIndex = Stage;
+    CurrentWaveIndex = 1;
+    CurrentRound = 1;            // もし使ってるなら
+    bIsGameClear = false;
+    bIsGameOver = false;
+
+    UDataTable* UseTable = Stage1WaveTable;
+    if (Stage == 2) UseTable = Stage2WaveTable;
+    if (Stage == 3) UseTable = Stage3WaveTable;
+
+    //EnemyWaveTable = UseTable; // 参照として残してもOK
+
+    LoadEnemyWavesFromTable(UseTable);
+}
+
+void ABoardManager::LoadEnemyWavesFromTable(UDataTable* Table)
+{
+    EnemyWaves.Empty();
+
+    if (!Table)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Board] LoadEnemyWavesFromTable: Table is NULL"));
+        return;
+    }
+
+    TArray<FEnemyWaveData*> WaveRows;
+    Table->GetAllRows(TEXT("LoadEnemyWavesFromTable"), WaveRows);
+
+    for (FEnemyWaveData* Row : WaveRows)
+    {
+        if (Row)
+        {
+            EnemyWaves.Add(*Row);
+        }
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("[Board] EnemyWaves loaded: %d rows"), EnemyWaves.Num());
+}
+
 
 void ABoardManager::SetItemTargetUnit(AUnit* NewUnit)
 {

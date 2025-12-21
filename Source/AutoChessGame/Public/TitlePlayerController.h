@@ -14,17 +14,11 @@ class AUTOCHESSGAME_API ATitlePlayerController : public APlayerController
 	GENERATED_BODY()
 public:
     virtual void BeginPlay() override;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> TitleWidgetClass;
 
-    // エディタでWBP_Titleを設定する（推奨）
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-    TSubclassOf<UUserWidget> TitleWidgetClass;
+	UPROPERTY()
+	UUserWidget* TitleWidgetInstance = nullptr;
 
-    UPROPERTY()
-    UTitleMenuWidget* TitleMenu = nullptr;
-
-
-private:
-    UPROPERTY()
-    UUserWidget* TitleWidgetInstance = nullptr;
 
 };
