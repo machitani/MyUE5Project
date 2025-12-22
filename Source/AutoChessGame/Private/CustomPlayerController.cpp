@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Components/TextBlock.h"
 
 ACustomPlayerController::ACustomPlayerController()
 {
@@ -373,6 +374,17 @@ void ACustomPlayerController::ShowEndMenu(bool bGameClear)
     // ゲーム止める（EndはPauseでOK）
     SetPause(true);
 
+    if (EndMenuInstance)
+    {
+        if (UTextBlock* Title = Cast<UTextBlock>(EndMenuInstance->GetWidgetFromName(TEXT("TitleText"))))
+        {
+            Title->SetText(FText::FromString(bGameClear ? TEXT("GAME CLEAR") : TEXT("GAME OVER")));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[EndMenu] TitleText not found. Check widget name in WBP_EndMenu."));
+        }
+    }
     // bGameClear をWBPに渡したいなら、WBP側で GetOwningPlayer→Cast→何か参照でもOK
 }
 
