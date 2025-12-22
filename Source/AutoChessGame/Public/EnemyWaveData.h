@@ -1,58 +1,50 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"      // ★これが必要
 #include "EnemyWaveData.generated.h"
 
 class AUnit;
 
-// ★ 1種類の敵の「クラス＋何体出すか」
 USTRUCT(BlueprintType)
 struct FEnemySpawnEntry
 {
-    GENERATED_BODY();
+    GENERATED_BODY()
 
-    // 出したい敵クラス
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSubclassOf<AUnit> EnemyClass;
 
-    // その敵を何体出すか
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Count = 1;
 };
 
-// ★ Wave 全体の情報
 USTRUCT(BlueprintType)
-struct FEnemyWaveData
+struct FEnemyWaveData : public FTableRowBase   // ★これが重要
 {
-    GENERATED_BODY();
+    GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
-    int32 StageIndex = 1;
-
-    // 何 Wave 目か（1,2,3…）
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 WaveIndex = 1;
 
-    // ★ この Wave で出す敵たち（複数種類OK）
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    // ステージ別DTにするなら、StageIndexは無くてもOK
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 StageIndex = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FEnemySpawnEntry> Enemies;
 
-    // 全体にかける倍率
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float HPScale = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float AttackScale = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float DefenseScale = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MagicDefenseScale = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MagicPowerScale = 1.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
-    float CritScale = 0.f;
 };

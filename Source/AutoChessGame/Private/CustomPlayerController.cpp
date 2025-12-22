@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 ACustomPlayerController::ACustomPlayerController()
@@ -32,6 +33,7 @@ void ACustomPlayerController::SetupInputComponent()
         InputComponent->BindAction("LeftClick", IE_Pressed, this, &ACustomPlayerController::OnLeftMouseDown);
         InputComponent->BindAction("LeftClick", IE_Released, this, &ACustomPlayerController::OnLeftMouseUp);
         InputComponent->BindAction("RightClick", IE_Pressed, this, &ACustomPlayerController::OnRightClick);
+        InputComponent->BindAction("Pause", IE_Pressed, this, &ACustomPlayerController::TogglePauseMenu);
     }
     UE_LOG(LogTemp, Warning, TEXT("[PC] SetupInputComponent done"));
 }
@@ -113,6 +115,20 @@ void ACustomPlayerController::BeginPlay()
         // マウス操作用（ボードゲームならマウスカーソル出しておくと便利）
         bShowMouseCursor = true;
         DefaultMouseCursor = EMouseCursor::Default;
+    }
+
+   
+
+    const FString LevelName = UGameplayStatics::GetCurrentLevelName(this, true);
+    UE_LOG(LogTemp, Warning, TEXT("[PC] Level=%s"), *LevelName);
+
+    if (LevelName == TEXT("L_Title"))
+    {
+        EnterTitleMode();
+    }
+    else
+    {
+        EnterGameMode();
     }
 }
 
@@ -221,6 +237,47 @@ void ACustomPlayerController::OnLeftClick()
     
 }
 
+void ACustomPlayerController::EnterTitleMode()
+{
+    // タイトルUI生成
+    if (TitleWidgetClass && !TitleWidgetInstance)
+    {
+        TitleWidgetInstance = CreateWidget<UUserWidget>(this, TitleWidgetClass);
+        if (TitleWidgetInstance)
+        {
+            TitleWidgetInstance->AddToViewport(100);
+        }
+    }
+
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+}
+
+void ACustomPlayerController::EnterGameMode()
+{
+    // タイトルUIが残ってたら消す（L_Title→L_Game の事故対策）
+    if (TitleWidgetInstance)
+    {
+        TitleWidgetInstance->RemoveFromParent();
+        TitleWidgetInstance = nullptr;
+    }
+
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    // ドラッグやクリックでワールド入力を通す
+    FInputModeGameAndUI Mode;
+    Mode.SetHideCursorDuringCapture(false);
+    // Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); // 好みで
+    SetInputMode(Mode);
+}
+
 
 void ACustomPlayerController::CloseAllUnitInfoWidgets()
 {
@@ -231,3 +288,107 @@ void ACustomPlayerController::CloseAllUnitInfoWidgets()
     }
 }
 
+void ACustomPlayerController::TogglePauseMenu()
+{
+    // すでに出てるなら閉じる（=Resume）
+    if (PauseMenuInstance && PauseMenuInstance->IsInViewport())
+    {
+        ResumeGame();
+        return;
+    }
+
+    // 生成
+    if (!PauseMenuClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[PC] PauseMenuClass is NULL"));
+        return;
+    }
+
+    PauseMenuInstance = CreateWidget<UUserWidget>(this, PauseMenuClass);
+    if (!PauseMenuInstance) return;
+
+    PauseMenuInstance->AddToViewport(200);
+
+    // Pause
+    SetPause(true);
+
+    // 入力：UI操作できるように
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+}
+
+void ACustomPlayerController::ResumeGame()
+{
+    if (PauseMenuInstance)
+    {
+        PauseMenuInstance->RemoveFromParent();
+        PauseMenuInstance = nullptr;
+    }
+
+    SetPause(false);
+
+    // 入力：ゲームに戻す（ドラッグできる状態）
+    FInputModeGameAndUI Mode;
+    Mode.SetHideCursorDuringCapture(false);
+    SetInputMode(Mode);
+
+    bShowMouseCursor = true; // ドラッグ前提ならtrueのままでOK
+}
+
+void ACustomPlayerController::ReturnToTitle()
+{
+    // 先に戻す（重要：Pauseしたまま移動すると詰むことがある）
+    ResumeGame();
+
+    UGameplayStatics::OpenLevel(this, FName(TEXT("L_Title")));
+}
+
+void ACustomPlayerController::ShowEndMenu(bool bGameClear)
+{
+    if (!EndMenuClass) return;
+
+    if (!EndMenuInstance)
+    {
+        EndMenuInstance = CreateWidget<UUserWidget>(this, EndMenuClass);
+    }
+    if (EndMenuInstance && !EndMenuInstance->IsInViewport())
+    {
+        EndMenuInstance->AddToViewport(300);
+    }
+
+    // 入力をUIへ
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+
+    // ゲーム止める（EndはPauseでOK）
+    SetPause(true);
+
+    // bGameClear をWBPに渡したいなら、WBP側で GetOwningPlayer→Cast→何か参照でもOK
+}
+
+void ACustomPlayerController::HideEndMenu()
+{
+    if (EndMenuInstance)
+    {
+        EndMenuInstance->RemoveFromParent();
+        EndMenuInstance = nullptr;
+    }
+
+    SetPause(false);
+
+    FInputModeGameAndUI Mode;
+    Mode.SetHideCursorDuringCapture(false);
+    SetInputMode(Mode);
+
+    bShowMouseCursor = true;
+}

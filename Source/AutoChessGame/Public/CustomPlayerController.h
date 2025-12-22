@@ -16,7 +16,40 @@ class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 public:
     ACustomPlayerController();
 
-   
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+    TSubclassOf<UUserWidget> TitleWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> PauseMenuClass;
+
+    UPROPERTY()
+    UUserWidget* PauseMenuInstance = nullptr;
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void TogglePauseMenu();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ResumeGame();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ReturnToTitle();
+
+    UPROPERTY()
+    UUserWidget* TitleWidgetInstance = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> EndMenuClass;
+
+    UPROPERTY()
+    UUserWidget* EndMenuInstance = nullptr;
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ShowEndMenu(bool bGameClear);
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void HideEndMenu();
+
+
 protected:
     virtual void SetupInputComponent() override;
     virtual void Tick(float DeltaSeconds) override;
@@ -30,6 +63,13 @@ private:
     void OnLeftMouseUp();
     void OnRightClick();
     void OnLeftClick();
+    UFUNCTION(BlueprintCallable,Category="UI")
+    void EnterTitleMode();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void EnterGameMode();
+
+   
 
     void CloseAllUnitInfoWidgets();
 

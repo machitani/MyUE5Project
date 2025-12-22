@@ -6,12 +6,14 @@
 #include "ShopManager.h"
 #include "PlayerHUD.h"
 #include "Engine/World.h"
+#include "Engine/DataTable.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "TMAGameInstance.h"
 #include "EnemyWaveData.h"
+#include "CustomPlayerController.h"
 
 
 ABoardManager::ABoardManager()
@@ -79,13 +81,13 @@ FEnemyWaveData* ABoardManager::GetCurrentWaveData()
     FEnemyWaveData* Found = EnemyWaves.FindByPredicate(
         [this](const FEnemyWaveData& Data)
         {
-            return Data.WaveIndex == CurrentWaveIndex; // ★ StageIndex 条件を外す
+            return Data.WaveIndex == CurrentWaveIndex; // ★これだけ
         }
     );
 
     if (Found) return Found;
 
-    UE_LOG(LogTemp, Warning, TEXT("GetCurrentWaveData: No data for Wave=%d"), CurrentWaveIndex);
+    UE_LOG(LogTemp, Warning, TEXT("GetCurrentWaveData: No data for Wave=%d. GameClear!"), CurrentWaveIndex);
     bIsGameClear = true;
     return nullptr;
 }
@@ -121,14 +123,14 @@ void ABoardManager::HandleGameOver()
     bIsGameOver = true;
     CurrentPhase = EGamePhase::Result;
 
-    UE_LOG(LogTemp, Warning, TEXT("=== GAME OVER ==="));
+    GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
 
-    if (HUDInstance)
+    for (AUnit* U : PlayerUnits) if (U) U->bCanDrag = false;
+
+    if (ACustomPlayerController* PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
     {
-        if (UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText"))))
-        {
-            ResultText->SetText(FText::FromString(TEXT("Result: GAME OVER")));
-        }
+        PC->ShowEndMenu(false);
     }
 }
 
@@ -137,14 +139,14 @@ void ABoardManager::HandleGameClear()
     bIsGameClear = true;
     CurrentPhase = EGamePhase::Result;
 
-    UE_LOG(LogTemp, Warning, TEXT("=== GAME CLEAR! ==="));
+    GetWorld()->GetTimerManager().ClearTimer(RoundTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(PhaseTimerHandle);
 
-    if (HUDInstance)
+    for (AUnit* U : PlayerUnits) if (U) U->bCanDrag = false;
+
+    if (ACustomPlayerController* PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
     {
-        if (UTextBlock* ResultText = Cast<UTextBlock>(HUDInstance->GetWidgetFromName(TEXT("ResultText"))))
-        {
-            ResultText->SetText(FText::FromString(TEXT("Result: GAME CLEAR")));
-        }
+        PC->ShowEndMenu(true);
     }
 }
 
@@ -250,15 +252,18 @@ void ABoardManager::StartStage(int32 Stage)
 {
     CurrentStageIndex = Stage;
     CurrentWaveIndex = 1;
-    CurrentRound = 1;            // もし使ってるなら
-    bIsGameClear = false;
-    bIsGameOver = false;
+    CurrentRound = 1;
 
     UDataTable* UseTable = Stage1WaveTable;
     if (Stage == 2) UseTable = Stage2WaveTable;
     if (Stage == 3) UseTable = Stage3WaveTable;
 
-    //EnemyWaveTable = UseTable; // 参照として残してもOK
+    // 保険：未設定ならStage1に戻す
+    if (!UseTable)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Board] Stage%dWaveTable is NULL. Fallback to Stage1WaveTable."), Stage);
+        UseTable = Stage1WaveTable;
+    }
 
     LoadEnemyWavesFromTable(UseTable);
 }
@@ -276,17 +281,16 @@ void ABoardManager::LoadEnemyWavesFromTable(UDataTable* Table)
     TArray<FEnemyWaveData*> WaveRows;
     Table->GetAllRows(TEXT("LoadEnemyWavesFromTable"), WaveRows);
 
-    for (FEnemyWaveData* Row : WaveRows)
+    for (FEnemyWaveData* RowData : WaveRows)
     {
-        if (Row)
+        if (RowData)
         {
-            EnemyWaves.Add(*Row);
+            EnemyWaves.Add(*RowData); // 構造体コピー
         }
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[Board] EnemyWaves loaded: %d rows"), EnemyWaves.Num());
 }
-
 
 void ABoardManager::SetItemTargetUnit(AUnit* NewUnit)
 {
