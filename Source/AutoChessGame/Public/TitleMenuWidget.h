@@ -6,31 +6,42 @@
 
 class UWidgetSwitcher;
 class UButton; 
+class UWidgetAnimation;
+
+DECLARE_MULTICAST_DELEGATE(FOnTitleFlipHalf);
+DECLARE_MULTICAST_DELEGATE(FOnTitleFlipFinished);
 
 UCLASS()
 class AUTOCHESSGAME_API UTitleMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+public:
+    // ルート側が拾う用（StageSelectを出すタイミング）
+    FOnTitleFlipHalf OnFlipHalf;
+    FOnTitleFlipFinished OnFlipFinished;
+
 protected:
-    virtual TSharedRef<SWidget> RebuildWidget() override;
     virtual void NativeConstruct() override;
 
-private:
-    UPROPERTY() UWidgetSwitcher* Switcher = nullptr;
+    UFUNCTION()
+    void HandlePlayClicked();
 
-    UPROPERTY() UButton* StartButton = nullptr;
-    UPROPERTY() UButton* BackButton = nullptr;
-    UPROPERTY() UButton* Stage1Button = nullptr;
-    UPROPERTY() UButton* Stage2Button = nullptr;
-    UPROPERTY() UButton* Stage3Button = nullptr;
+    UFUNCTION()
+    void HandleFlipAnimFinished();
 
-    UFUNCTION() void OnStartClicked();
-    UFUNCTION() void OnBackClicked();
-    UFUNCTION() void OnStage1Clicked();
-    UFUNCTION() void OnStage2Clicked();
-    UFUNCTION() void OnStage3Clicked();
+    void BroadcastFlipHalf();
 
-    void GoToStage(int32 StageIndex);
+protected:
+    // BP側にあるPlayボタン（名前一致させる）
+    UPROPERTY(meta = (BindWidget))
+    UButton* PlayButton = nullptr;
+
+    // BPのアニメ（名前一致させる：FlipAnim とか）
+    UPROPERTY(Transient, meta = (BindWidgetAnim))
+    UWidgetAnimation* FlipAnim = nullptr;
+
+    FTimerHandle FlipHalfTimer;
+
 
 };
