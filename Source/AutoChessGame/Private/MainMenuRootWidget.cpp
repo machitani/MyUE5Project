@@ -1,48 +1,75 @@
 #include "MainMenuRootWidget.h"
 #include "TitleMenuWidget.h"
+#include "StageSelectWidget.h"
 
 void UMainMenuRootWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    // 下：StageSelect（最初は隠す）
-    if (StageSelectWidgetClass)
+    UE_LOG(LogTemp, Warning, TEXT("[Root] NativeConstruct"));
+
+    if (!TitleWidget)
     {
-        StageSelectWidget = CreateWidget<UUserWidget>(GetWorld(), StageSelectWidgetClass);
-        if (StageSelectWidget)
-        {
-            StageSelectWidget->AddToViewport(0);
-            StageSelectWidget->SetVisibility(ESlateVisibility::Hidden);
-        }
+        UE_LOG(LogTemp, Error, TEXT("[Root] TitleWidget is NULL (BindWidget failed)"));
+        return;
+    }
+    if (!StageSelectWidget)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Root] StageSelectWidget is NULL (BindWidget failed)"));
+        return;
     }
 
-    // 上：Title（めくる対象）
-    if (TitleWidgetClass)
-    {
-        TitleWidget = CreateWidget<UTitleMenuWidget>(GetWorld(), TitleWidgetClass);
-        if (TitleWidget)
-        {
-            TitleWidget->AddToViewport(1);
+    // 初期状態：StageSelect隠す、Title見せる
+    TitleWidget->SetVisibility(ESlateVisibility::Visible);
+    StageSelectWidget->SetVisibility(ESlateVisibility::Hidden);
 
-            TitleWidget->OnFlipHalf.AddUObject(this, &UMainMenuRootWidget::ShowStageSelect);
-            TitleWidget->OnFlipFinished.AddUObject(this, &UMainMenuRootWidget::FinishFlip);
-        }
-    }
+    // イベント接続
+    TitleWidget->OnFlipHalf.AddDynamic(this, &UMainMenuRootWidget::HandleFlipHalf);
+    TitleWidget->OnFlipFinished.AddDynamic(this, &UMainMenuRootWidget::HandleFlipFinished);
+
+    StageSelectWidget->OnBackRequested.AddDynamic(this, &UMainMenuRootWidget::BackToTitle);
+
+    UE_LOG(LogTemp, Warning, TEXT("[Root] Bound OK"));
 }
 
-void UMainMenuRootWidget::ShowStageSelect()
+void UMainMenuRootWidget::HandleFlipHalf(bool bReverse)
 {
-    if (StageSelectWidget)
+    if (!StageSelectWidget) return;
+
+    if (bReverse)
+    {
+        StageSelectWidget->SetVisibility(ESlateVisibility::Hidden);
+    }
+    else
     {
         StageSelectWidget->SetVisibility(ESlateVisibility::Visible);
     }
 }
 
-void UMainMenuRootWidget::FinishFlip()
+void UMainMenuRootWidget::HandleFlipFinished(bool bReverse)
 {
-    if (TitleWidget)
+    if (!TitleWidget || !StageSelectWidget) return;
+
+    if (bReverse)
     {
-        TitleWidget->RemoveFromParent(); // 完全に消す
-        TitleWidget = nullptr;
+        TitleWidget->SetVisibility(ESlateVisibility::Visible);
+        StageSelectWidget->SetVisibility(ESlateVisibility::Hidden);
     }
+    else
+    {
+        TitleWidget->SetVisibility(ESlateVisibility::Hidden);
+        StageSelectWidget->SetVisibility(ESlateVisibility::Visible);
+    }
+}
+
+void UMainMenuRootWidget::BackToTitle()
+{
+    UE_LOG(LogTemp, Warning, TEXT("[Root] BackToTitle called"));
+
+    if (!TitleWidget || !StageSelectWidget) return;
+
+    TitleWidget->SetVisibility(ESlateVisibility::Visible);
+    StageSelectWidget->SetVisibility(ESlateVisibility::Visible);
+
+    TitleWidget->PlayFlipReverse();
 }

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,34 +5,30 @@
 #include "MainMenuRootWidget.generated.h"
 
 class UTitleMenuWidget;
-class UUserWidget;
+class UStageSelectWidget;
 
 UCLASS()
 class AUTOCHESSGAME_API UMainMenuRootWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-protected:
+public:
     virtual void NativeConstruct() override;
 
     UFUNCTION()
-    void ShowStageSelect();
+    void BackToTitle();
 
-    UFUNCTION()
-    void FinishFlip();
-
-public:
-    // BPで指定（Title/StageのWidget BP）
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Menu")
-    TSubclassOf<UTitleMenuWidget> TitleWidgetClass;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Menu")
-    TSubclassOf<UUserWidget> StageSelectWidgetClass;
-
-protected:
-    UPROPERTY()
+private:
+    // ★Designerに置いた子を参照する（これが重要）
+    UPROPERTY(meta = (BindWidget))
     UTitleMenuWidget* TitleWidget = nullptr;
 
-    UPROPERTY()
-    UUserWidget* StageSelectWidget = nullptr;
+    UPROPERTY(meta = (BindWidget))
+    UStageSelectWidget* StageSelectWidget = nullptr;
+
+    UFUNCTION()
+    void HandleFlipHalf(bool bReverse);
+
+    UFUNCTION()
+    void HandleFlipFinished(bool bReverse);
 };

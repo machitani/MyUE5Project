@@ -1,14 +1,14 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "StageSelectWidget.generated.h"
 
-class UButton;
 class UBorder;
+class UButton;
 class UTextBlock;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBackRequested);
 
 UCLASS()
 class AUTOCHESSGAME_API UStageSelectWidget : public UUserWidget
@@ -16,48 +16,49 @@ class AUTOCHESSGAME_API UStageSelectWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
+    virtual void NativeConstruct() override;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FText StageName;
+    // Hover表示用（あなたの既存のまま）
+    UFUNCTION(BlueprintCallable)
+    void ShowStageInfo(int32 StageIndex);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 Waves = 0;
+    UFUNCTION(BlueprintCallable)
+    void HideStageInfo();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 DifficulutyStars = 1;
+    UFUNCTION(BlueprintCallable)
+    void SelectStage(int32 StageIndex);
 
-	UPROPERTY(BlueprintReadOnly)
-	int32 SelectedStageIndex = 1;
+    UFUNCTION(BlueprintCallable)
+    void OnStartClicked();
 
-	UFUNCTION(BlueprintCallable)
-	void SelectStage(int32 StageIndex);
-
-	UFUNCTION(BlueprintCallable)
-	void OnStartClicked();
-
-	UFUNCTION(BlueprintCallable, Category = "StageSelect")
-	void ShowStageInfo(int32 StageIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "StageSelect")
-	void HideStageInfo();
+    // 戻る要求（Rootが受け取る）
+    UPROPERTY(BlueprintAssignable, Category = "StageSelect")
+    FOnBackRequested OnBackRequested;
 
 protected:
-	UPROPERTY(meta=(BindWidget))
-	UBorder* Border_StageInfo;
+    // --- BindWidget ---
+    UPROPERTY(meta = (BindWidget))
+    UBorder* Border_StageInfo = nullptr;
 
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Text_StageName;
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* Text_StageName = nullptr;
 
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Text_Waves;
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* Text_Waves = nullptr;
 
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Text_Difficulty;
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* Text_Difficulty = nullptr;
 
-	virtual void NativeConstruct() override;
+    UPROPERTY(meta = (BindWidget))
+    UButton* BackButton = nullptr;
 
 private:
-	void ApplyStage1();
-	void ApplyStage2();
-	void ApplyStage3();
+    UFUNCTION()
+    void HandleBackClicked();
+
+    void ApplyStage1();
+    void ApplyStage2();
+    void ApplyStage3();
+
+    int32 SelectedStageIndex = 1;
 };
