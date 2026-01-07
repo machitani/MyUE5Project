@@ -12,6 +12,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/DragDropOperation.h"
 #include "EngineUtils.h"
+#include "Components/VerticalBoxSlot.h"
 
 #include "ItemHoverInfoWidget.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -92,10 +93,6 @@ void UShopWidget::RefreshItemBench()
 {
     if (!ShopManager || !ItemBenchBox || !ItemBenchSlotClass) return;
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[ShopWidget] RefreshItemBench: BenchItems=%d"),
-        ShopManager->BenchItems.Num());
-
     ItemBenchBox->ClearChildren();
     ItemBenchSlots.Empty();
 
@@ -107,7 +104,13 @@ void UShopWidget::RefreshItemBench()
 
         NewBenchSlot->SetBenchItem(Item);
 
-        ItemBenchBox->AddChild(NewBenchSlot);
+        // š ‚±‚±I
+        if (UVerticalBoxSlot* VSlot = ItemBenchBox->AddChildToVerticalBox(NewBenchSlot))
+        {
+            VSlot->SetPadding(FMargin(0.f, 10.f, 0.f, 10.f)); // ã‰ºŠÔŠu
+            VSlot->SetHorizontalAlignment(HAlign_Fill);
+        }
+
         ItemBenchSlots.Add(NewBenchSlot);
     }
 }
