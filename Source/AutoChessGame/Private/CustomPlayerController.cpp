@@ -10,7 +10,10 @@
 #include "Camera/CameraComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Engine/EngineTypes.h"
 #include "Components/TextBlock.h"
+#include "Engine/GameViewportClient.h"
+
 
 ACustomPlayerController::ACustomPlayerController()
 {
@@ -126,10 +129,131 @@ void ACustomPlayerController::BeginPlay()
     if (LevelName == TEXT("L_Title"))
     {
         EnterTitleMode();
+        return;
     }
     else
     {
         EnterGameMode();
+    }
+
+    if (OverlayClass)
+    {
+        OverlayWidget = CreateWidget<UUserWidget>(this, OverlayClass);
+        if (OverlayWidget)
+        {
+            OverlayWidget->AddToViewport(999);
+        }
+    }
+    LockInputForIntro(true);
+
+    CallOverlayEventByName(TEXT("PlayGameStart"));
+}
+
+void ACustomPlayerController::RequestBattleStartUI(ABoardManager* BoardManager)
+{
+    PendingBoardManager = BoardManager;
+
+    if (!OverlayWidget && OverlayClass)
+    {
+        OverlayWidget = CreateWidget<UUserWidget>(this, OverlayClass);
+        if (OverlayWidget)
+        {
+            OverlayWidget->AddToViewport(999);
+        }
+    }
+
+    // ★バトル開始演出中：操作は止めるが、カーソルは出す
+    SetIgnoreMoveInput(true);
+    SetIgnoreLookInput(true);
+
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+
+    CallOverlayEventByName(TEXT("PlayBattleStart"));
+}
+
+void ACustomPlayerController::OnGameStartUIFinished()
+{
+    UE_LOG(LogTemp, Warning, TEXT("[Intro] OnGameStartUIFinished called"));
+
+    // Introで止めた入力を戻す
+    SetIgnoreMoveInput(false);
+    SetIgnoreLookInput(false);
+
+    // Viewportのキャプチャを解除（←ここが効く）
+    if (UGameViewportClient* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+    {
+        Viewport->SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
+        Viewport->SetMouseLockMode(EMouseLockMode::DoNotLock);
+    }
+
+    // InputMode をゲーム＋UIに戻す
+    FInputModeGameAndUI Mode;
+    Mode.SetHideCursorDuringCapture(false);
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+
+    // マウスを確実にON（最後にもう一回）
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+    bShowMouseCursor = true;
+
+    // Overlay消す
+    if (OverlayWidget)
+    {
+        OverlayWidget->RemoveFromParent();
+        OverlayWidget = nullptr;
+    }
+}
+
+void ACustomPlayerController::OnBattleStartUIFinished()
+{
+    LockInputForIntro(false);
+
+    if (OverlayWidget)
+    {
+        OverlayWidget->RemoveFromParent();
+        OverlayWidget = nullptr;
+    }
+
+    if (PendingBoardManager.IsValid())
+    {
+        PendingBoardManager->StartBattlePhase(); // BoardManager側のフラグで2回目に本開始
+    }
+    PendingBoardManager.Reset();
+}
+
+void ACustomPlayerController::LockInputForIntro(bool bLock)
+{
+    SetIgnoreMoveInput(bLock);
+    SetIgnoreLookInput(bLock);
+
+    if (bLock)
+    {
+        bShowMouseCursor = false;
+        FInputModeGameOnly Mode;
+        SetInputMode(Mode);
+    }
+    else
+    {
+        bShowMouseCursor = true; // あなたのゲームがマウス操作なら true 推奨
+        FInputModeGameOnly Mode;
+        SetInputMode(Mode);
+    }
+}
+
+void ACustomPlayerController::CallOverlayEventByName(FName EventName)
+{
+    if (!OverlayWidget) return;
+
+    if (UFunction* Func = OverlayWidget->FindFunction(EventName))
+    {
+        OverlayWidget->ProcessEvent(Func, nullptr);
     }
 }
 

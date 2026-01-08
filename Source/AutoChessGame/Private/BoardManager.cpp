@@ -560,6 +560,8 @@ void ABoardManager::StartPreparationPhase()
     CurrentPhase = EGamePhase::Preparation;
     bRoundEnded = false;
 
+    bBattleRequested = false;
+
     OpenShop();
 
     UE_LOG(LogTemp, Warning,
@@ -589,6 +591,23 @@ void ABoardManager::StartPreparationPhase()
 void ABoardManager::StartBattlePhase()
 {
     if (CurrentPhase != EGamePhase::Preparation) return;
+
+    if (!bBattleRequested)
+    {
+        bBattleRequested = true;
+
+        if (ACustomPlayerController* PC =
+            Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+        {
+            PC->RequestBattleStartUI(this);
+            return; // ★UI終わるまで待つ（終わったらPCがもう一回 StartBattlePhase() を呼ぶ）
+        }
+
+        // PC取れない場合はフォールバックでそのまま開始してOK
+    }
+
+    // ★ ここに来たら「UIは終わった」扱いなのでフラグ戻す
+    bBattleRequested = false;
 
     CurrentPhase = EGamePhase::Battle;
     bRoundEnded = false;

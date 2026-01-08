@@ -8,6 +8,9 @@
 #include "UnitEquiqSlot.h"
 #include "CustomPlayerController.generated.h"
 
+class UUserWidget;
+class ABoradManager;
+
 UCLASS()
 class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
 {
@@ -18,6 +21,18 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
     TSubclassOf<UUserWidget> TitleWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly,Category="UI")
+    TSubclassOf<UUserWidget>OverlayClass;
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void RequestBattleStartUI(ABoardManager* BoardManager);
+
+    UFUNCTION(BlueprintCallable,Category="UI")
+    void OnGameStartUIFinished();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void OnBattleStartUIFinished();
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UUserWidget> PauseMenuClass;
@@ -75,5 +90,11 @@ private:
 
     ATile* LastHighlightedTile;
 
-    
+    UPROPERTY()
+    UUserWidget* OverlayWidget = nullptr;
+
+    TWeakObjectPtr<ABoardManager> PendingBoardManager;
+
+    void LockInputForIntro(bool bLock);
+    void CallOverlayEventByName(FName EventName);
 };
