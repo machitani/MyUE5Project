@@ -539,6 +539,10 @@ void ACustomPlayerController::HideEndMenu()
 
 void ACustomPlayerController::ShowLevelUpRewardUI(APlayerManager* PM, const TArray<FName>& Candidates)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] ShowLevelUpRewardUI called. bIsLevelUpChoosing=%d Candidates=%d"),
+        bIsLevelUpChoosing ? 1 : 0, Candidates.Num());
+
+
     if (bIsLevelUpChoosing) return;
     bIsLevelUpChoosing = true;
 
@@ -556,12 +560,16 @@ void ACustomPlayerController::ShowLevelUpRewardUI(APlayerManager* PM, const TArr
         ? CreateWidget<ULevelUpRewardWidget>(this, LevelUpRewardClass)
         : nullptr;
 
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] LevelUpRewardClass=%s"), *GetNameSafe(LevelUpRewardClass));
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] OverlayWidget=%s"), *GetNameSafe(OverlayWidget));
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] Before AddToViewport W=%s"), *GetNameSafe(W));
+
     if (!W) { bIsLevelUpChoosing = false; return; }
 
     LevelUpRewardWidget = W;
     W->OwnerPlayerManager = PM;
     W->SetupChoices(Candidates);
-    W->AddToViewport(500);
+    W->AddToViewport(9999);
 
     // “ü—Í‚ðUI‚Ö
     SetIgnoreMoveInput(true);

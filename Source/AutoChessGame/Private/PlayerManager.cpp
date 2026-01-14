@@ -77,21 +77,18 @@ void APlayerManager::OnRewardSelected(FName SelectedUnitID)
 {
     UE_LOG(LogTemp, Warning, TEXT("Reward Selected: %s"), *SelectedUnitID.ToString());
 
-    // ★ 所持ユニットとして登録（重複チェック込み）
     RegisterOwnedUnit(SelectedUnitID);
 
-    // BoardManager に「このユニットを出して」とお願い
     if (BoardManagerRef)
     {
-        AUnit* Spawned = BoardManagerRef->SpawnRewardUnit(SelectedUnitID);
-        if (!Spawned)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("OnRewardSelected: Failed to spawn unit on board."));
-        }
+        BoardManagerRef->SpawnRewardUnit(SelectedUnitID);
     }
-    else
+
+    // ★これを最後に追加
+    if (ACustomPlayerController* CPC =
+        Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
     {
-        UE_LOG(LogTemp, Error, TEXT("OnRewardSelected: BoardManagerRef is null!"));
+        CPC->EndLevelUpRewardUI();
     }
 }
 
