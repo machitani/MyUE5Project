@@ -10,6 +10,8 @@
 
 class UUserWidget;
 class ABoradManager;
+class APlayerManager;
+class ULevelUpRewardWidget;
 
 UCLASS()
 class AUTOCHESSGAME_API ACustomPlayerController : public APlayerController
@@ -64,6 +66,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI")
     void HideEndMenu();
 
+    UPROPERTY(EditAnywhere,Category="UI")
+    TSubclassOf<UUserWidget>LevelUpRewardClass;
+
+    UFUNCTION(BlueprintCallable,Category="UI")
+    void ShowLevelUpRewardUI(APlayerManager* PM,const TArray<FName>&Candidates);
+
+    UFUNCTION(BlueprintCallable,Category="UI")
+    void OnLevelUpRewardPicked(FName UnitID);
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void EndLevelUpRewardUI();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void PlayLevelUpUI();
 
 protected:
     virtual void SetupInputComponent() override;
@@ -97,4 +113,9 @@ private:
 
     void LockInputForIntro(bool bLock);
     void CallOverlayEventByName(FName EventName);
+
+    UPROPERTY()
+    UUserWidget* LevelUpRewardWidget = nullptr;
+
+    bool bIsLevelUpChoosing = false;
 };

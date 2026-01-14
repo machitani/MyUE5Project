@@ -65,4 +65,5 @@ public:
 	UPROPERTY(BlueprintReadWrite,Category="Ref")
 	ABoardManager* BoardManagerRef = nullptr;
 
+
 	};

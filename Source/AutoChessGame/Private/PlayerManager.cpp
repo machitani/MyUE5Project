@@ -6,6 +6,7 @@
 #include "Unit.h"
 #include "BoardManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "CustomPlayerController.h"
 
 
 
@@ -55,37 +56,21 @@ void APlayerManager::OnLevelUp()
 {
     UE_LOG(LogTemp, Warning, TEXT("LEVEL UP! Level: %d"), PlayerLevel);
 
-    // UIクラス未設定なら何もしない
-    if (!LevelUpRewardWidgetClass) return;
+    if (!BoardManagerRef) return;
 
-    APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-    if (!PC) return;
-
-    ULevelUpRewardWidget* RewardWidget =
-        CreateWidget<ULevelUpRewardWidget>(PC, LevelUpRewardWidgetClass);
-
-    if (!RewardWidget) return;
-
-    RewardWidget->OwnerPlayerManager = this;
-
-    TArray<FName> Candidates;
-
-    if (BoardManagerRef)
-    {
-        // 例: 3体の候補をランダム取得
-        Candidates = BoardManagerRef->GenerateRewardUnitCandidates(3);
-    }
-
-    // 候補が1つも無い場合（全ユニット取り切った等）は何もしない or メッセージ表示
+    TArray<FName> Candidates = BoardManagerRef->GenerateRewardUnitCandidates(3);
     if (Candidates.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("OnLevelUp: No reward candidates (all units owned?)"));
+        UE_LOG(LogTemp, Warning, TEXT("OnLevelUp: No reward candidates"));
         return;
     }
 
-    RewardWidget->SetupChoices(Candidates);
-    RewardWidget->AddToViewport();
-
+    if (ACustomPlayerController* CPC =
+        Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+    {
+        CPC->PlayLevelUpUI();
+        CPC->ShowLevelUpRewardUI(this, Candidates); // ★新しく作る関数（下）
+    }
 }
 
 void APlayerManager::OnRewardSelected(FName SelectedUnitID)

@@ -13,6 +13,8 @@
 #include "Engine/EngineTypes.h"
 #include "Components/TextBlock.h"
 #include "Engine/GameViewportClient.h"
+#include "PlayerManager.h"
+#include "LevelUpRewardWidget.h"
 
 
 ACustomPlayerController::ACustomPlayerController()
@@ -151,6 +153,8 @@ void ACustomPlayerController::BeginPlay()
 
 void ACustomPlayerController::RequestBattleStartUI(ABoardManager* BoardManager)
 {
+    if (bIsLevelUpChoosing)return;
+
     PendingBoardManager = BoardManager;
 
     if (!OverlayWidget && OverlayClass)
@@ -209,24 +213,28 @@ void ACustomPlayerController::OnGameStartUIFinished()
         OverlayWidget->RemoveFromParent();
         OverlayWidget = nullptr;
     }
+
+    EnterGameMode();
 }
 
 void ACustomPlayerController::OnBattleStartUIFinished()
 {
-    LockInputForIntro(false);
-
     if (OverlayWidget)
     {
         OverlayWidget->RemoveFromParent();
         OverlayWidget = nullptr;
     }
 
+    // ★入力をゲームへ戻す（ここが安定）
+    EnterGameMode();
+
     if (PendingBoardManager.IsValid())
     {
-        PendingBoardManager->StartBattlePhase(); // BoardManager側のフラグで2回目に本開始
+        PendingBoardManager->StartBattlePhase();
     }
     PendingBoardManager.Reset();
 }
+
 
 void ACustomPlayerController::LockInputForIntro(bool bLock)
 {
@@ -528,3 +536,94 @@ void ACustomPlayerController::HideEndMenu()
 
     bShowMouseCursor = true;
 }
+
+void ACustomPlayerController::ShowLevelUpRewardUI(APlayerManager* PM, const TArray<FName>& Candidates)
+{
+    if (bIsLevelUpChoosing) return;
+    bIsLevelUpChoosing = true;
+
+    if (!PM || Candidates.Num() == 0) { bIsLevelUpChoosing = false; return; }
+
+    // 既に出てたら消す
+    if (LevelUpRewardWidget)
+    {
+        LevelUpRewardWidget->RemoveFromParent();
+        LevelUpRewardWidget = nullptr;
+    }
+
+    // ★LevelUpRewardClass は「あなたが作ってある LevelUpReward（ULevelUpRewardWidget）BP」を指定
+    ULevelUpRewardWidget* W = LevelUpRewardClass
+        ? CreateWidget<ULevelUpRewardWidget>(this, LevelUpRewardClass)
+        : nullptr;
+
+    if (!W) { bIsLevelUpChoosing = false; return; }
+
+    LevelUpRewardWidget = W;
+    W->OwnerPlayerManager = PM;
+    W->SetupChoices(Candidates);
+    W->AddToViewport(500);
+
+    // 入力をUIへ
+    SetIgnoreMoveInput(true);
+    SetIgnoreLookInput(true);
+
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+}
+
+void ACustomPlayerController::OnLevelUpRewardPicked(FName UnitID)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] Picked: %s"), *UnitID.ToString());
+
+    // BoardManagerへ反映（あなたは SpawnRewardUnit が既にある）
+    if (ABoardManager* BM = Cast<ABoardManager>(UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass())))
+    {
+        BM->SpawnRewardUnit(UnitID);
+    }
+
+    // UI閉じる
+    if (LevelUpRewardWidget)
+    {
+        LevelUpRewardWidget->RemoveFromParent();
+        LevelUpRewardWidget = nullptr;
+    }
+
+    // 入力をゲームへ戻す（あなたの関数が安定）
+    EnterGameMode();
+
+    bIsLevelUpChoosing = false;
+}
+
+void ACustomPlayerController::EndLevelUpRewardUI()
+{
+    if (LevelUpRewardWidget)
+    {
+        LevelUpRewardWidget->RemoveFromParent();
+        LevelUpRewardWidget = nullptr;
+    }
+
+    EnterGameMode();
+    bIsLevelUpChoosing = false;
+}
+
+void ACustomPlayerController::PlayLevelUpUI()
+{
+    // Overlayが無ければ作る（GameStartで消してても大丈夫）
+    if (!OverlayWidget && OverlayClass)
+    {
+        OverlayWidget = CreateWidget<UUserWidget>(this, OverlayClass);
+        if (OverlayWidget)
+        {
+            OverlayWidget->AddToViewport(999);
+        }
+    }
+
+    // WBP_Overlay 側に Custom Event 「PlayLevelUp」を作っておく
+    CallOverlayEventByName(TEXT("PlayLevelUp"));
+}
+
