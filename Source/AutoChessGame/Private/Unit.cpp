@@ -756,6 +756,25 @@ void AUnit::ShowHealPopup(float HealAmount)
     }
 }
 
+void AUnit::ShowBuffPopup(const FString& Text)
+{
+    if (!DamagePopupWidgetClass) return;
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC) return;
+
+    UDamagePopupWidget* Popup = CreateWidget<UDamagePopupWidget>(PC, DamagePopupWidgetClass);
+    if (!Popup) return;
+
+    Popup->AddToViewport();
+    Popup->SetupBuff(Text);
+
+    FVector WorldLoc = GetActorLocation() + FVector(0.f, 0.f, 120.f);
+    FVector2D ScreenPos;
+    if (PC->ProjectWorldLocationToScreen(WorldLoc, ScreenPos))
+    {
+        Popup->SetPositionInViewport(ScreenPos, true);
+    }
+}
 
 
 float AUnit::CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical)

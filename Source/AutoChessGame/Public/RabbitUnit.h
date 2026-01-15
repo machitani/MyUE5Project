@@ -53,4 +53,6 @@ private:
 
     // バフ解除タイマー（再付与で延長できるように保持）
     TMap<TWeakObjectPtr<AUnit>, FTimerHandle> BuffTimerHandles;
+
+    AUnit* FindClosestAlly()const;
 };

@@ -60,6 +60,15 @@ void UDamagePopupWidget::SetupHeal(float HealAmount)
     }
 }
 
+void UDamagePopupWidget::SetupBuff(const FString& BuffText)
+{
+    if (!DamageText) return;
+
+    DamageText->SetText(FText::FromString(BuffText));
+    DamageText->SetColorAndOpacity(BuffColor);
+}
+
+
 void UDamagePopupWidget::HandleLifeTimeFinished()
 {
     // ビューポートから外して自分を消す

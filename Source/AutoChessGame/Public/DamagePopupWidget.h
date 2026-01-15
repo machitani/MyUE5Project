@@ -24,6 +24,15 @@ public:
     UFUNCTION(BlueprintCallable, Category = "DamagePopup")
     void SetupHeal(float HealAmount);
 
+
+    UFUNCTION(BlueprintCallable)
+    void SetupBuff(const FString& BuffText);
+
+    // í«â¡ÇÃêF
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Popup")
+    FLinearColor BuffColor = FLinearColor(1.f, 0.78f, 0.2f, 1.f); // â©ûÚ
+
+
 protected:
     virtual void NativeConstruct() override;
 

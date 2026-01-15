@@ -74,10 +74,14 @@ void ATile::ClearOccupiedUnit()
 
 void ATile::SetTileColor(const FLinearColor& NewColor)
 {
-    if (DynMat)
+    if (!TileMesh)return;
+
+    if (!DynMat)
     {
-        DynMat->SetVectorParameterValue(FName("BaseColor"), NewColor);
+        DynMat = TileMesh->CreateAndSetMaterialInstanceDynamic(0);
+        if (!DynMat)return;
     }
+    DynMat->SetVectorParameterValue(FName("BaseColor"), NewColor);
 }
 
 void ATile::ResetTileColor()

@@ -250,6 +250,8 @@ public:
 
     void ShowHealPopup(float HealAmount);
 
+    void ShowBuffPopup(const FString& Text);
+
 
     UFUNCTION(BlueprintCallable, Category = "Combat")
     float CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical);

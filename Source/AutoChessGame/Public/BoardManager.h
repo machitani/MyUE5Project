@@ -62,6 +62,9 @@ public:
     UPROPERTY(EditAnywhere,Category="Unit|References")
     TSubclassOf<AUnit>PlayerAdventurerClass;
 
+    UPROPERTY(EditAnywhere, Category = "Unit|References")
+    TSubclassOf<AUnit>PlayerRabbitClass;
+
     UPROPERTY(EditAnywhere, Category = "Units|References")
     TSubclassOf<AUnit> EnemyUnitClass;
 
@@ -232,6 +235,10 @@ public:
     UFUNCTION()
     void ReviveAllEnemiesOnDefeat();
 
+
+    FLinearColor GetStageTileColor()const;
+
+    void ApplyTileColors();
 
     //ÉnÉìÉhÉâä÷êî
     void HandleGameOver();

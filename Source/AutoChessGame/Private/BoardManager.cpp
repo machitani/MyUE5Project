@@ -118,6 +118,35 @@ void ABoardManager::ReviveAllEnemiesOnDefeat()
     }
 }
 
+FLinearColor ABoardManager::GetStageTileColor() const
+{
+    switch (CurrentStageIndex)
+    {
+    case 1: return FLinearColor(0.25f, 0.55f, 1.0f, 1.0f); // 青（調整してOK）
+    case 2: return FLinearColor(0.35f, 0.75f, 0.25f, 1.0f); // 緑
+    case 3: return FLinearColor(1.0f, 0.30f, 0.25f, 1.0f); // 赤
+    default: return FLinearColor::White;
+    }
+}
+
+void ABoardManager::ApplyTileColors()
+{
+    const FLinearColor Base = GetStageTileColor();
+
+    // Base(Linear)HSV扱いの色にして調整
+    FLinearColor HSV = Base.LinearRGBToHSV();
+
+    HSV.B = FMath::Clamp(HSV.B * 0.55f, 0.0f, 1.0f);  // 明るさを下げる（0.450.7で調整）
+    HSV.G = FMath::Clamp(HSV.G * 1.20f, 0.0f, 1.0f);  // 彩度を少し上げる（1.01.4）
+    HSV.A = 1.0f;
+
+    const FLinearColor Strong = HSV.HSVToLinearRGB();
+
+    for (ATile* Tile : PlayerTiles) if (Tile) Tile->SetTileColor(Strong);
+    for (ATile* Tile : EnemyTiles)  if (Tile) Tile->SetTileColor(Strong);
+    
+}
+
 void ABoardManager::HandleGameOver()
 {
     bIsGameOver = true;
@@ -451,13 +480,14 @@ void ABoardManager::GenerateBoard()
             if (Tile)
             {
                 Tile->BoardManagerRef = this;
-                Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+                //Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
                 Tile->bIsPlayerTile = true;
 
                 // ★ TileにInitTile追加済みなら有効化
                 // Tile->InitTile(Row, Col, true, this);
 
                 PlayerTiles.Add(Tile);
+
             }
         }
     }
@@ -472,7 +502,7 @@ void ABoardManager::GenerateBoard()
             if (Tile)
             {
                 Tile->BoardManagerRef = this; // ★これが抜けてた
-                Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+                //Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
                 Tile->bIsPlayerTile = false;
 
                 // ★ TileにInitTile追加済みなら有効化
@@ -482,6 +512,7 @@ void ABoardManager::GenerateBoard()
             }
         }
     }
+    ApplyTileColors();
 }
 
 
@@ -801,15 +832,20 @@ void ABoardManager::ResetBoardForNextRound()
         if (!Tile) continue;
         Tile->bIsOccupied = false;
         Tile->OccupiedUnit = nullptr;
-        Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+        //Tile->SetTileColor(FLinearColor(0.2f, 0.4f, 1.f, 1.f));
+        //ApplyTileColors();
+
     }
     for (ATile* Tile : EnemyTiles)
     {
         if (!Tile) continue;
         Tile->bIsOccupied = false;
         Tile->OccupiedUnit = nullptr;
-        Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+        //Tile->SetTileColor(FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+       // ApplyTileColors();
     }
+
+    ApplyTileColors();
 
     // === ここから Wave 関連 ===
 
@@ -1264,6 +1300,10 @@ TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
     else if (UnitID == FName("Adventurer"))
     {
         return PlayerAdventurerClass;
+    }
+    else if (UnitID == FName("Rabbit"))
+    {
+        return PlayerRabbitClass;
     }
 
     // どれにも当てはまらない場合の保険（適当にKnight返すなど）

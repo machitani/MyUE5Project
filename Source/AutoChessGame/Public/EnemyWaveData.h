@@ -47,4 +47,7 @@ struct FEnemyWaveData : public FTableRowBase   // ÅöÇ±ÇÍÇ™èdóv
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MagicPowerScale = 1.0f;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    FLinearColor TileColor = FLinearColor(0.2f, 0.4f, 1.f, 1.f);
 };

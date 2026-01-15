@@ -1,22 +1,21 @@
 #include "RabbitUnit.h"
+#include "EngineUtils.h"              // TActorIterator
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
 
 ARabbitUnit::ARabbitUnit()
 {
-    // サポート寄りの例ステータス
     MaxHP = 85.f;
     HP = MaxHP;
 
-    Attack = 0.f;      // 自分の攻撃は未定なら 0 でOK（今は使わない）
+    Attack = 0.f;
     Defense = 3.f;
     MagicDefense = 4.f;
     MagicPower = 0.f;
 
     MoveSpeed = 140.f;
 
-    // 支援の発動間隔（AIが AttackInterval を参照してるなら流用できる）
     AttackInterval = 1.3f;
     BaseAttackInterval = 1.3f;
 
@@ -34,35 +33,74 @@ void ARabbitUnit::BeginPlay()
     Super::BeginPlay();
 }
 
+// ★ 一番近い味方を探す（ナースの FindLowestHpAlly と同じ立ち位置）
+AUnit* ARabbitUnit::FindClosestAlly() const
+{
+    AUnit* ClosestAlly = nullptr;
+    float ClosestDist = FLT_MAX;
+
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    {
+        AUnit* Ally = *It;
+        if (!Ally) continue;
+        if (Ally == this) continue;
+        if (Ally->Team != Team) continue;
+        if (Ally->bIsDead || Ally->HP <= 0.f) continue;
+
+        const float Dist = FVector::Dist(GetActorLocation(), Ally->GetActorLocation());
+        if (Dist < ClosestDist)
+        {
+            ClosestDist = Dist;
+            ClosestAlly = Ally;
+        }
+    }
+
+    return ClosestAlly;
+}
+
 void ARabbitUnit::AttackTarget(AUnit* Target)
 {
-    if (!Target || Target->bIsDead) return;
+    if (bIsDead) return;
+
+    bIsAttacking = true;
+
+    // ★ ナース式：引数Target（敵）は使わず、自分で支援対象を決める
+    PendingSupportTarget = FindClosestAlly();
+
+    // 味方がいなければ何もしない（アニメだけしたいならここを変える）
+    if (!PendingSupportTarget) return;
 
     // 射程チェック（支援射程）
-    const float Dist = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+    const float Dist = FVector::Dist(GetActorLocation(), PendingSupportTarget->GetActorLocation());
     if (Dist > SupportRange) return;
 
-    bIsAttacking = true; // ABP用：支援中も「攻撃中」と同じ扱いでOK
-    PendingSupportTarget = Target;
-
+    // ★ ナースと同じ：モンタージュ連打防止
     if (UnitMesh)
     {
         if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
         {
             if (SupportMontage)
             {
-                AnimInstance->Montage_Play(SupportMontage);
+                if (!AnimInstance->Montage_IsPlaying(SupportMontage))
+                {
+                    AnimInstance->Montage_Play(SupportMontage);
+                }
             }
         }
     }
+
+    // ※ Super::AttackTarget(Target) は呼ばない（支援はNotifyで発動）
 }
 
 void ARabbitUnit::HandleSupportNotify()
 {
-    if (!PendingSupportTarget || !IsValid(PendingSupportTarget) || PendingSupportTarget->bIsDead)
+    // Pending が死んでたり無効なら、ナースと同じく再探索
+    if (!PendingSupportTarget || !IsValid(PendingSupportTarget) || PendingSupportTarget->bIsDead || PendingSupportTarget->HP <= 0.f)
     {
-        return;
+        PendingSupportTarget = FindClosestAlly();
     }
+
+    if (!PendingSupportTarget) return;
 
     ApplyAttackBuff(PendingSupportTarget);
 }
@@ -79,9 +117,7 @@ void ARabbitUnit::ApplyAttackBuff(AUnit* Target)
         SavedAttack.Add(Key, Target->Attack);
     }
 
-    // 既にバフ中なら「延長だけ」したい場合：
-    // → Attackは既に上がってるはずなので、再計算で二重掛けにならないように
-    //    いったん SavedAttack を基準に固定する
+    // SavedAttack基準で固定（重ね掛けで増えない、延長だけ）
     Target->Attack = SavedAttack[Key] * AttackMultiplier;
 
     // タイマーを張り直して延長
@@ -99,6 +135,8 @@ void ARabbitUnit::ApplyAttackBuff(AUnit* Target)
 
     UE_LOG(LogTemp, Warning, TEXT("Rabbit Buff -> %s ATK x%.2f (%.1fs)"),
         *Target->GetName(), AttackMultiplier, BuffDuration);
+
+    Target->ShowBuffPopup(TEXT("ATK UP"));
 }
 
 void ARabbitUnit::RemoveAttackBuff(AUnit* Target)
