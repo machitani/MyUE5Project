@@ -6,6 +6,7 @@
 
 class UButton;
 class UTextBlock;
+class UImage;
 class APlayerManager;
 
 /**
@@ -36,6 +37,10 @@ public:
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* ChoiceName3;
+
+    UPROPERTY(meta=(BindWidget))
+    UImage* RewardUnitIcon;
+
 
     // このUIを呼び出したプレイヤーマネージャ
     UPROPERTY()

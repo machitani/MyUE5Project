@@ -65,6 +65,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Unit|References")
     TSubclassOf<AUnit>PlayerRabbitClass;
 
+    UPROPERTY(EditAnywhere,Category="Unit|References")
+    TSubclassOf<AUnit>PlayerBlockKnightClass;
+
     UPROPERTY(EditAnywhere, Category = "Units|References")
     TSubclassOf<AUnit> EnemyUnitClass;
 
