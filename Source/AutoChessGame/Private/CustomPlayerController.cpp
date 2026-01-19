@@ -40,6 +40,8 @@ void ACustomPlayerController::SetupInputComponent()
         InputComponent->BindAction("LeftClick", IE_Released, this, &ACustomPlayerController::OnLeftMouseUp);
         InputComponent->BindAction("RightClick", IE_Pressed, this, &ACustomPlayerController::OnRightClick);
         InputComponent->BindAction("Pause", IE_Pressed, this, &ACustomPlayerController::TogglePauseMenu);
+    
+        InputComponent->BindAxis("MouseWheelAxis", this, &ACustomPlayerController::OnZoomAxis);
     }
     UE_LOG(LogTemp, Warning, TEXT("[PC] SetupInputComponent done"));
 }
@@ -47,6 +49,8 @@ void ACustomPlayerController::SetupInputComponent()
 void ACustomPlayerController::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    UpdateCameraZoom(DeltaSeconds);
 
     if (bIsDragging && SelectedUnit)
     {
@@ -94,36 +98,59 @@ void ACustomPlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
-    ACameraActor* FixedCamera = nullptr;
-
-    TArray<AActor*> Cameras;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACameraActor::StaticClass(), Cameras);
-
-    if (Cameras.Num() > 0)
+    // まずレベルに置いた CameraActor を探す（1個目を使用）
+    if (!BoradCameraActor)
     {
-        FixedCamera = Cast<ACameraActor>(Cameras[0]); // 1個目を使う（1個しか置かない前提）
+        TArray<AActor*> Cameras;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACameraActor::StaticClass(), Cameras);
+        if (Cameras.Num() > 0)
+        {
+            BoradCameraActor = Cameras[0];
+        }
     }
 
-    if (FixedCamera)
+    if (ACameraActor* CamActor = Cast<ACameraActor>(BoradCameraActor))
     {
-
-        if (UCameraComponent* Cam = FixedCamera->GetCameraComponent())
+        if (UCameraComponent* Cam = CamActor->GetCameraComponent())
         {
-            Cam->AspectRatio = 16.0f / 9.0f;      // 1.77778...
-            Cam->bConstrainAspectRatio = true;    // アスペクト比を固定
+            Cam->AspectRatio = 16.0f / 9.0f;
+            Cam->bConstrainAspectRatio = true;
         }
 
         FViewTargetTransitionParams Params;
-        Params.BlendTime = 0.0f; // フェード無しで即切り替え
+        Params.BlendTime = 0.0f;
+        SetViewTarget(CamActor, Params);
 
-        SetViewTarget(FixedCamera, Params);
-
-        // マウス操作用（ボードゲームならマウスカーソル出しておくと便利）
         bShowMouseCursor = true;
         DefaultMouseCursor = EMouseCursor::Default;
+
+        // ===== ズーム初期化 =====
+        // Pivotは BoardManager の位置が理想（見つからなければカメラ前方に仮置き）
+        if (ABoardManager* BM = Cast<ABoardManager>(UGameplayStatics::GetActorOfClass(this, ABoardManager::StaticClass())))
+        {
+            Pivot = BM->GetActorLocation();
+        }
+        else
+        {
+            Pivot = CamActor->GetActorLocation() + CamActor->GetActorForwardVector() * 2000.f;
+        }
+
+        const FVector CamLoc = CamActor->GetActorLocation();
+        CameraDir = (CamLoc - Pivot).GetSafeNormal();
+
+        TargetDistance = FVector::Distance(CamLoc, Pivot);
+        TargetDistance = FMath::Clamp(TargetDistance, MinDistance, MaxDistance);
+    
+        InitialPivot = Pivot;
+        InitialCameraDir = CameraDir;
+        InitialDistance = TargetDistance;
+
+        TargetDistance = MaxDistance;
+
+        CamActor->SetActorLocation(Pivot + CameraDir * TargetDistance);
     }
 
-   
+    // ===== 以下、あなたの元の処理はそのまま =====
 
     const FString LevelName = UGameplayStatics::GetCurrentLevelName(this, true);
     UE_LOG(LogTemp, Warning, TEXT("[PC] Level=%s"), *LevelName);
@@ -635,3 +662,48 @@ void ACustomPlayerController::PlayLevelUpUI()
     CallOverlayEventByName(TEXT("PlayLevelUp"));
 }
 
+void ACustomPlayerController::OnZoomAxis(float AxisValue)
+{
+    if (IsPaused() || bIsLevelUpChoosing) return;
+    if (FMath::IsNearlyZero(AxisValue)) return;
+    if (!BoradCameraActor) return;
+
+    const bool bZoomIn = (AxisValue > 0.f);   // 環境で逆なら < にする
+    const bool bZoomOut = (AxisValue < 0.f);
+
+    if (bZoomIn)
+    {
+        FHitResult Hit;
+        if (GetHitResultUnderCursor(ECC_Visibility, false, Hit) && Hit.bBlockingHit)
+        {
+            Pivot = Hit.ImpactPoint;
+            CameraDir = (BoradCameraActor->GetActorLocation() - Pivot).GetSafeNormal();
+        }
+    }
+    else if (bZoomOut)
+    {
+        // ★戻す時は初期位置基準に戻す
+        Pivot = InitialPivot;
+        CameraDir = InitialCameraDir;
+        // 必要なら距離も初期に寄せたい場合はここで
+        // TargetDistance = FMath::Max(TargetDistance, InitialDistance);
+    }
+
+    TargetDistance = FMath::Clamp(
+        TargetDistance - AxisValue * ZoomStep,
+        MinDistance,
+        MaxDistance
+    );
+}
+
+void ACustomPlayerController::UpdateCameraZoom(float DeltaSeconds)
+{
+    if (!BoradCameraActor) return;
+
+    AActor* CamActor = BoradCameraActor;
+    const FVector CurrentLoc = CamActor->GetActorLocation();
+    const FVector DesiredLoc = Pivot + CameraDir * TargetDistance;
+
+    const FVector NewLoc = FMath::VInterpTo(CurrentLoc, DesiredLoc, DeltaSeconds, ZoomInterSpeed);
+    CamActor->SetActorLocation(NewLoc);
+}

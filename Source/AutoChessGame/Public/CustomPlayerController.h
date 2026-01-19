@@ -81,6 +81,36 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI")
     void PlayLevelUpUI();
 
+    UPROPERTY(EditAnywhere,Category="Camera|Zoom")
+    AActor* BoradCameraActor = nullptr;
+
+    UPROPERTY(EditAnywhere,Category="Camera|Zoom")
+    float ZoomStep = 200.f;
+
+    UPROPERTY(EditAnywhere,Category="Camera|Zoom")
+    float MinDistance = 400.f;
+
+    UPROPERTY(EditAnywhere, Category = "Camera|Zoom")
+    float MaxDistance = 1000.f;
+
+    UPROPERTY(EditAnywhere,Category="Camera|Zoom")
+    float ZoomInterSpeed = 10.f;
+
+    UPROPERTY(EditAnywhere,Category="Camera|Zoom")
+    float TargetDistance = 1200.f;
+
+    FVector Pivot = FVector::ZeroVector;
+    FVector CameraDir = FVector::ZeroVector;
+
+    FVector InitialPivot = FVector::ZeroVector;
+    FVector InitialCameraDir = FVector::ZeroVector;
+    float InitialDistance = 0.f;
+
+    void OnZoomAxis(float AxisValue);
+
+    void UpdateCameraZoom(float DeltaSeceonds);
+
+
 protected:
     virtual void SetupInputComponent() override;
     virtual void Tick(float DeltaSeconds) override;
