@@ -1,44 +1,66 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Unit.h"
+#include "EnemyAssaultProjectile.h"
+#include "TimerManager.h"
 #include "SniperEnemy.generated.h"
 
-/**
- * 
- */
+class UAnimMontage;
+class AEnemySniperProjectile; // スナイパー弾（後で作る/既にあるならそれ）
+class USkeletalMeshComponent;
+
+
 UCLASS()
 class AUTOCHESSGAME_API ASniperEnemy : public AUnit
 {
     GENERATED_BODY()
-
 public:
     ASniperEnemy();
+
+    virtual void AttackTarget(AUnit* Target) override;
+
+    // AnimNotifyから呼ぶ
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void HandleSniperShootNotify();
+
+    FTimerHandle AttackLockHandle;
+
+    UFUNCTION()
+    void EndAttackLock();
+
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Combat|Sniper")
+    float FireDelay = 0.0f;
+
+    FTimerHandle FireDelayHandle;
+
+    UFUNCTION()
+    void FireDelayed();
 
 protected:
     virtual void BeginPlay() override;
 
+    // 弾をスポーン
+    void SpawnSniperBullet(AUnit* Target);
+
+    // ===== 設定（BPで差す） =====
 public:
-    // スキル判定/実行（BossEnemyと同じ形）
-    virtual bool CanUseSkill() const;
-    virtual void UseSkill(AUnit* Target);
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Sniper")
+    TSubclassOf<AEnemyAssaultProjectile> SniperBulletClass;
 
-    // 通常攻撃（必要なら上書き）
-    virtual void AttackTarget(AUnit* Target) override;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Sniper")
+    float BulletDamageMultiplier = 2.2f;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Sniper")
+    FVector MuzzleOffset = FVector(60.f, 0.f, 60.f);
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anim")
+    TObjectPtr<UAnimMontage> AttackMontage;
+
+    // ===== ランタイム =====
 protected:
-    // スキル: スナイプショット倍率
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-    float SnipeDamageMultiplier = 2.0f;
+    UPROPERTY()
+    TObjectPtr<AUnit> PendingTarget = nullptr;
 
-    // スキル: 追加射程（通常射程よりさらに遠くから撃てる用）
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-    float SnipeExtraRange = 400.f;
-
-    // スキル: 命中後のノックバック（欲しければ）
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-    float SnipeKnockbackStrength = 0.f;
-	
+  
 };
