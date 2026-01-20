@@ -133,6 +133,9 @@ public:
     UFUNCTION(BlueprintCallable,Category="Item")
     void RemoveItems();
 
+    UFUNCTION(BlueprintCallable)
+    bool TryEquipItem(E_EquiqSlotType SlotType, const FItemData& Item);
+
     // ====== Hover ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSubclassOf<UUnitHoverInfoWidget> HoverWidgetClass;

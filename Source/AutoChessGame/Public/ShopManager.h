@@ -62,6 +62,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     APlayerManager* PlayerManagerRef;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    int32 MaxBenchItems = 6;
+
     EItemRarity GetRandomRarityForLevel(int32 PlayerLevel)const;
 
     bool GetRandomItemByRarity(EItemRarity Rarity, FItemData& OutItem)const;

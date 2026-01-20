@@ -136,12 +136,18 @@ void AShopManager::OnRoundChanged()
 
 void AShopManager::AddItemToBench(const FItemData& Item)
 {
+    if (BenchItems.Num() >= MaxBenchItems)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Bench is full (%d). Can't add item."), MaxBenchItems);
+        return; // 追加しない
+    }
+
     BenchItems.Add(Item);
-    
-        if (ShopWidget)
-        {
-            ShopWidget->RefreshItemBench();
-        }
+
+    if (ShopWidget)
+    {
+        ShopWidget->RefreshItemBench();
+    }
 }
 
 EItemRarity AShopManager::GetRandomRarityForLevel(int32 PlayerLevel) const
@@ -318,6 +324,13 @@ bool AShopManager::TryBuyItem(FName RowName)
     FItemData* Item = ItemTable->FindRow<FItemData>(RowName, TEXT("Shop Buy"));
     if (!Item) return false;
 
+    // ★ 先にベンチ上限チェック
+    if (BenchItems.Num() >= MaxBenchItems)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Bench is full (%d). Can't buy."), MaxBenchItems);
+        return false;
+    }
+
     if (PlayerGold < Item->Price)
     {
         UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Not enough gold"));
@@ -325,21 +338,23 @@ bool AShopManager::TryBuyItem(FName RowName)
     }
 
     PlayerGold -= Item->Price;
-    BenchItems.Add(*Item);
 
-    // MarkItemSold(RowName);  // ← ここをコメントアウト or 削除
+    // ★ RowNameも保持したいならコピーしてセット（安全）
+    FItemData Copy = *Item;
+    // Copy.RowName = RowName;  // ItemTable側にRowNameが入ってないなら有効化
+
+    BenchItems.Add(Copy);
 
     if (ShopWidget)
     {
         ShopWidget->UpdateGold(PlayerGold);
         ShopWidget->RefreshItemBench();
-        ShopWidget->RefreshSlots();   // ゴールド変化に合わせて色更新
+        ShopWidget->RefreshSlots();
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[ShopManager] Buy %s"), *Item->Name.ToString());
     return true;
 }
-
 
 bool AShopManager::IsItemSoldOut(FName RowName) const
 {

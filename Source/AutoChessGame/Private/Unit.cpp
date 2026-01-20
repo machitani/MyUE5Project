@@ -392,8 +392,17 @@ void AUnit::OnDeathFinished()
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
+    if (EquipedItems.Num() >= 3)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Unit] EquipItem blocked: already 3 items on %s"), *GetName());
+        //ShowBuffPopup(TEXT("‘•”õ‚ÍÅ‘å3‚Â‚Ü‚Å"));
+        return;
+    }
+
    EquipedItems.Add(Item);
     ApplyItemEffect(Item);
+
+    RefreshHoverInfo();
 }
 
 void AUnit::ApplyItemEffect(const FItemData& Item)
@@ -455,6 +464,20 @@ void AUnit::RemoveItems()
 
     UE_LOG(LogTemp, Warning,
         TEXT("[Unit] RemoveAllItems called on %s"), *GetName());
+}
+
+bool AUnit::TryEquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
+{
+    if (EquipedItems.Num() >= 3)
+    {
+        //ShowBuffPopup(TEXT("‘•”õ‚ÍÅ‘å3‚Â‚Ü‚Å"));
+        return false;
+    }
+
+    EquipedItems.Add(Item);
+    ApplyItemEffect(Item);
+    RefreshHoverInfo();
+    return true;
 }
 
 FUnitSaveData AUnit::MakeSaveData()

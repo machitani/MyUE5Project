@@ -2,6 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "UnitVisualData.h"
+#include "Engine/DataTable.h"
+#include "Components/Image.h"
 #include "LevelUpRewardWidget.generated.h"
 
 class UButton;
@@ -39,8 +42,25 @@ public:
     UTextBlock* ChoiceName3;
 
     UPROPERTY(meta=(BindWidget))
-    UImage* RewardUnitIcon;
+    UImage* ChoiceIcon1;
 
+    UPROPERTY(meta=(BindWidget))
+    UImage* ChoiceIcon2;
+
+    UPROPERTY(meta=(BindWidget))
+    UImage* ChoiceIcon3;
+
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* RoleText1;
+
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* RoleText2;
+
+    UPROPERTY(meta=(BindWidget))
+    UTextBlock* RoleText3;
+
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Reward")
+    UDataTable* UnitVisualTable = nullptr;
 
     // このUIを呼び出したプレイヤーマネージャ
     UPROPERTY()
@@ -54,6 +74,14 @@ public:
 
     // 外から候補をセットする用
     void SetupChoices(const TArray<FName>& InUnitIDs);
+
+    void SetImageBrush(UImage* Img, UTexture2D* Tex);
+
+    void ApplyChoiceToUI(
+        int32 Index,
+        UTextBlock* NameText,
+        UImage* IconImage,
+        UTextBlock* RoleText);
 
 protected:
     UFUNCTION()

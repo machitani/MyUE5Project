@@ -19,17 +19,29 @@ void ULevelUpRewardWidget::NativeOnInitialized()
 
 void ULevelUpRewardWidget::SetupChoices(const TArray<FName>& InUnitIDs)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUpReward] SetupChoices called. Num=%d"), InUnitIDs.Num());
+    for (auto& ID : InUnitIDs)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[LevelUpReward] Candidate: %s"), *ID.ToString());
+    }
+
     CandidateUnitIDs = InUnitIDs;
+    ApplyChoiceToUI(0, ChoiceName1, ChoiceIcon1, RoleText1);
+    ApplyChoiceToUI(1, ChoiceName2, ChoiceIcon2, RoleText2);
+    ApplyChoiceToUI(2, ChoiceName3, ChoiceIcon3, RoleText3);
+}
 
-    // 名前表示（とりあえずUnitIDそのまま出す）
-    if (ChoiceName1 && CandidateUnitIDs.Num() > 0)
-        ChoiceName1->SetText(FText::FromName(CandidateUnitIDs[0]));
+void ULevelUpRewardWidget::SetImageBrush(UImage* Img, UTexture2D* Tex)
+{
+    if (!Img) return;
 
-    if (ChoiceName2 && CandidateUnitIDs.Num() > 1)
-        ChoiceName2->SetText(FText::FromName(CandidateUnitIDs[1]));
+    if (!Tex)
+    {
+        Img->SetBrushFromTexture(nullptr);
+        return;
+    }
 
-    if (ChoiceName3 && CandidateUnitIDs.Num() > 2)
-        ChoiceName3->SetText(FText::FromName(CandidateUnitIDs[2]));
+    Img->SetBrushFromTexture(Tex, true);
 }
 
 void ULevelUpRewardWidget::OnClickChoice1()
@@ -59,4 +71,43 @@ void ULevelUpRewardWidget::HandleChoice(int32 Index)
 
     // UIを閉じる
     RemoveFromParent();
+}
+
+
+
+void ULevelUpRewardWidget::ApplyChoiceToUI(
+    int32 Index,
+    UTextBlock* NameText,
+    UImage* IconImage,
+    UTextBlock* RoleText)
+{
+    if (!CandidateUnitIDs.IsValidIndex(Index)) return;
+
+    const FName UnitID = CandidateUnitIDs[Index];
+
+    // まず名前は UnitID のままでも表示
+    if (NameText)
+        NameText->SetText(FText::FromName(UnitID));
+
+    // DataTable が無ければここまで
+    if (!UnitVisualTable) return;
+
+    static const FString Ctx(TEXT("LevelUpReward"));
+    if (const FUnitVisualData* Row = UnitVisualTable->FindRow<FUnitVisualData>(UnitID, Ctx))
+    {
+        // 表示名
+        if (NameText && !Row->DisplayName.IsEmpty())
+            NameText->SetText(Row->DisplayName);
+
+        // アイコン
+        SetImageBrush(IconImage, Row->Icon);
+
+        // ロール
+        if (RoleText)
+            RoleText->SetText(Row->RoleText);
+    }
+    UE_LOG(LogTemp, Warning, TEXT("[LevelUpReward] UnitVisualTable=%s"),
+        UnitVisualTable ? *UnitVisualTable->GetName() : TEXT("NULL"));
+
+
 }

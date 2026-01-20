@@ -92,40 +92,39 @@ void UItemBenchSlot::HandleClicked()
     if (!BM->ItemUnit)
     {
         UE_LOG(LogTemp, Warning,
-            TEXT("[BenchSlot] No ItemUnit selected (right-click a unit first)"));
+            TEXT("[BenchSlot] No ItemUnit selected (click a unit first)"));
         return;
     }
 
     AUnit* TargetUnit = BM->ItemUnit;
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[BenchSlot] Equip %s to %s"),
-        *ItemData.Name.ToString(),
-        *TargetUnit->GetName());
+    // --- ShopManager 取得（削除に必要） ---
+    AShopManager* ShopManager = Cast<AShopManager>(
+        UGameplayStatics::GetActorOfClass(World, AShopManager::StaticClass()));
+    if (!ShopManager)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] ShopManager not found"));
+        return;
+    }
 
-    // --- ① 先にユニットへ装備 ---
-    TargetUnit->EquipItem(E_EquiqSlotType::Weapon, ItemData);
-    TargetUnit->ReapplayAllItemEffects();
+    // ★ 先に「装備できるか」判定（成功したら装備＆ベンチ削除）
+    const bool bEquipped = TargetUnit->TryEquipItem(E_EquiqSlotType::Weapon, ItemData);
+    if (!bEquipped)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[BenchSlot] Equip failed (limit), keep item on bench"));
+        return; // ★ ここで終了：ベンチは減らさない
+    }
+
+    // ★ 成功した時だけベンチから削除
+    const bool bRemoved = ShopManager->RemoveItemFromBenchByRowName(ItemData.RowName);
+    UE_LOG(LogTemp, Warning,
+        TEXT("[BenchSlot] RemoveItemFromBenchByRowName(%s) -> %s"),
+        *ItemData.RowName.ToString(),
+        bRemoved ? TEXT("true") : TEXT("false"));
 
     TargetUnit->RefreshHoverInfo();
 
-    // --- ② そのあとベンチから削除 ---
-    AShopManager* ShopManager = Cast<AShopManager>(
-        UGameplayStatics::GetActorOfClass(World, AShopManager::StaticClass()));
-    if (ShopManager)
-    {
-        bool bRemoved = ShopManager->RemoveItemFromBenchByRowName(ItemData.RowName);
-        UE_LOG(LogTemp, Warning,
-            TEXT("[BenchSlot] RemoveItemFromBenchByRowName(%s) -> %s"),
-            *ItemData.RowName.ToString(),
-            bRemoved ? TEXT("true") : TEXT("false"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("[BenchSlot] ShopManager not found"));
-    }
-
-    
+    // ※ ReapplayAllItemEffects は基本いらない（TryEquipItem内で反映してる）
+    // TargetUnit->ReapplayAllItemEffects();
 }
-
 
