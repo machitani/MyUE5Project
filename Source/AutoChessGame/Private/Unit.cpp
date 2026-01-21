@@ -10,6 +10,7 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "TimerManager.h"
 #include "UnitHoverInfoWidget.h"
 #include "UnitHPBarWidget.h"
 #include "Components/WidgetComponent.h"
@@ -338,6 +339,36 @@ void AUnit::TakeMagicDamage(float DamageAmount)
     {
         OnDeath();
     }
+}
+
+void AUnit::ApplyPoison(float Duration, float DamagePerTick, float TickInterval)
+{
+    if (bIsDead) return;
+    if (!GetWorld()) return;
+
+    bIsPoisoned = true;
+    PoisonDamagePerTick = DamagePerTick;
+    PoisonTickInterval = TickInterval;
+
+    // Tickタイマー（上書き・更新）
+    GetWorld()->GetTimerManager().ClearTimer(PoisonTickHandle);
+    GetWorld()->GetTimerManager().SetTimer(
+        PoisonTickHandle,
+        this,
+        &AUnit::HandlePoisonTick,
+        PoisonTickInterval,
+        true
+    );
+
+    // 終了タイマー（延長）
+    GetWorld()->GetTimerManager().ClearTimer(PoisonEndHandle);
+    GetWorld()->GetTimerManager().SetTimer(
+        PoisonEndHandle,
+        this,
+        &AUnit::HandlePoisonEnd,
+        Duration,
+        false
+    );
 }
 
 
@@ -815,4 +846,25 @@ float AUnit::CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical)
     }
 
     return BaseDamage;
+}
+
+void AUnit::HandlePoisonTick()
+{
+    if (!bIsPoisoned) return;
+    if (bIsDead) { HandlePoisonEnd(); return; }
+
+    // ★ 毒は魔法ダメ扱いにするのが自然
+    // TakeMagicDamage が無いプロジェクトなら TakePhysicalDamage に置き換えてOK
+    TakeMagicDamage(PoisonDamagePerTick);
+}
+
+void AUnit::HandlePoisonEnd()
+{
+    bIsPoisoned = false;
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(PoisonTickHandle);
+        World->GetTimerManager().ClearTimer(PoisonEndHandle);
+    }
 }

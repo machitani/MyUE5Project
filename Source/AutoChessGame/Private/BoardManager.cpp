@@ -1309,6 +1309,10 @@ TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
     {
         return PlayerBlockKnightClass;
     }
+    else if (UnitID == FName("Duck"))
+    {
+        return PlayerDuckClass;
+    }
 
     // ‚Ç‚ê‚É‚à“–‚Ä‚Í‚Ü‚ç‚È‚¢ê‡‚Ì•ÛŒ¯i“K“–‚ÉKnight•Ô‚·‚È‚Çj
     return PlayerWizardClass;

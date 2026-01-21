@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "ItemData.h"
 #include "EquiqSlotType.h"
 #include "UnitSaveData.h"
@@ -173,6 +174,7 @@ public:
     // ====== ダメージ処理 ======
     virtual void TakePhysicalDamage(float DamageAmount);
     virtual void TakeMagicDamage(float DamageAmount);
+    void ApplyPoison(float Duration, float DamagePerTick, float TickInterval);
 
     // ====== スキルシステム ======
     virtual bool CanUseSkill() const { return false; }
@@ -262,6 +264,20 @@ public:
     // ポップアップ用に直前のヒット状態を覚えておく
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
     bool bLastHitWasCritical = false;
+
+    protected:
+        bool bIsPoisoned = false;
+        float PoisonDamagePerTick = 0.f;
+        float PoisonTickInterval = 1.f;
+
+        FTimerHandle PoisonTickHandle;
+        FTimerHandle PoisonEndHandle;
+
+        UFUNCTION()
+        void HandlePoisonTick();
+
+        UFUNCTION()
+        void HandlePoisonEnd();
 };
 
 
