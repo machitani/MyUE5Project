@@ -47,18 +47,18 @@ void AKnightUnit::AttackTarget(AUnit* Target)
     bIsAttacking = true;
     PendingTarget = Target;
 
-    if (UnitMesh)
-    {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
-        {
-            if (AttackMontage)
-            {
-                // ★ ここからアタックスピード連動の PlayRate 計算を削除
-                //    単純に等速でモンタージュ再生だけにする
-                AnimInstance->Montage_Play(AttackMontage);
-            }
-        }
-    }
+    //if (UnitMesh)
+    //{
+    //    if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+    //    {
+    //        if (AttackMontage)
+    //        {
+    //            // ★ ここからアタックスピード連動の PlayRate 計算を削除
+    //            //    単純に等速でモンタージュ再生だけにする
+    //            AnimInstance->Montage_Play(AttackMontage);
+    //        }
+    //    }
+    //}
 }
 
 void AKnightUnit::ApplyMeleeDamage(AUnit* Target)

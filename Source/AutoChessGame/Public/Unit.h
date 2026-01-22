@@ -158,6 +158,9 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
     bool bIsDead = false;
 
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="State")
+    bool bIsPoisoned = false;
+
     // ====== Drag ======
     bool bIsDragging;
     bool bCanDrag;
@@ -168,7 +171,7 @@ public:
     void EndDrag();
 
     // ====== 移動・攻撃 ======
-    void CheckForTarget(float DeltaTime);
+    virtual void CheckForTarget(float DeltaTime);
     virtual void AttackTarget(AUnit* Target);
 
     // ====== ダメージ処理 ======
@@ -266,10 +269,10 @@ public:
     bool bLastHitWasCritical = false;
 
     protected:
-        bool bIsPoisoned = false;
+        //bool bIsPoisoned = false;
         float PoisonDamagePerTick = 0.f;
         float PoisonTickInterval = 1.f;
-
+        
         FTimerHandle PoisonTickHandle;
         FTimerHandle PoisonEndHandle;
 

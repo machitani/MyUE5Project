@@ -25,6 +25,7 @@ public:
     virtual void UseSkill(AUnit* Target) override;
 
     virtual void AttackTarget(AUnit* Target) override;
+    virtual void CheckForTarget(float DeltaTime)override;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
     UAnimMontage* AttackMontage = nullptr;
@@ -38,7 +39,7 @@ private:
 
 private:
     // Knightと同じ流れ
-    bool bIsAttacking = false;
+    //bool bIsAttacking = false;
     TWeakObjectPtr<AUnit> PendingTarget;
 
     // ★ 毒パラメータ（調整用）

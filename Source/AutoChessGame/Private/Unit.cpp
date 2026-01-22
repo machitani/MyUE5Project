@@ -852,7 +852,7 @@ void AUnit::HandlePoisonTick()
 {
     if (!bIsPoisoned) return;
     if (bIsDead) { HandlePoisonEnd(); return; }
-
+    
     // ★ 毒は魔法ダメ扱いにするのが自然
     // TakeMagicDamage が無いプロジェクトなら TakePhysicalDamage に置き換えてOK
     TakeMagicDamage(PoisonDamagePerTick);

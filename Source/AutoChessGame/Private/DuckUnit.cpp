@@ -1,5 +1,6 @@
 // DuckUnit.cpp
 
+#include "EngineUtils.h"
 #include "DuckUnit.h"
 #include "Animation/AnimInstance.h"
 
@@ -48,34 +49,119 @@ void ADuckUnit::UseSkill(AUnit* Target)
 
 void ADuckUnit::AttackTarget(AUnit* Target)
 {
-    UE_LOG(LogTemp, Warning, TEXT("[Duck] AttackTarget ENTER Target=%s Dead=%d"),
-        Target ? *Target->GetName() : TEXT("NULL"),
-        Target ? (Target->bIsDead ? 1 : 0) : -1);
-
-
+   
     if (!Target || Target->bIsDead) return;
 
+    
+    
     bIsAttacking = true;
+
     PendingTarget = Target;
 
-    // ① まずは確実に当てる（動作確認用）
-    ApplyDuckHit(Target);
+    //// ① まずは確実に当てる（動作確認用）
+    //ApplyDuckHit(Target);
 
-    // ② アニメはあとから（今は再生できたらラッキーくらい）
-    if (UnitMesh)
+    //// ② アニメはあとから（今は再生できたらラッキーくらい）
+    //if (UnitMesh)
+    //{
+    //    UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance();
+    //    UE_LOG(LogTemp, Warning, TEXT("[Duck] AnimInstance=%s Montage=%s"),
+    //        AnimInstance ? *AnimInstance->GetName() : TEXT("NULL"),
+    //        AttackMontage ? *AttackMontage->GetName() : TEXT("NULL"));
+
+    //    if (AnimInstance && AttackMontage)
+    //    {
+    //        const float Len = AnimInstance->Montage_Play(AttackMontage, 1.0f);
+    //        UE_LOG(LogTemp, Warning, TEXT("[Duck] Montage_Play Len=%.3f"), Len);
+    //    }
+    //}
+
+}
+
+void ADuckUnit::CheckForTarget(float DeltaTime)
+{
+
+    if (CurrentTarget && CurrentTarget->bIsPoisoned)
     {
-        UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance();
-        UE_LOG(LogTemp, Warning, TEXT("[Duck] AnimInstance=%s Montage=%s"),
-            AnimInstance ? *AnimInstance->GetName() : TEXT("NULL"),
-            AttackMontage ? *AttackMontage->GetName() : TEXT("NULL"));
+        CurrentTarget = nullptr;
+    }
+    if (bIsDead) return;
 
-        if (AnimInstance && AttackMontage)
+    // 既存ターゲットが死んだら解除
+    if (CurrentTarget)
+    {
+        if (CurrentTarget->bIsDead || CurrentTarget->HP <= 0.f)
         {
-            const float Len = AnimInstance->Montage_Play(AttackMontage, 1.0f);
-            UE_LOG(LogTemp, Warning, TEXT("[Duck] Montage_Play Len=%.3f"), Len);
+            CurrentTarget = nullptr;
+            bIsAttacking = false;
         }
     }
 
+    // ターゲットがいなければ探す（★毒なし優先）
+    if (!CurrentTarget)
+    {
+        AUnit* ClosestNonPoison = nullptr;
+        float ClosestNonPoisonDist = FLT_MAX;
+
+        AUnit* ClosestAny = nullptr;
+        float ClosestAnyDist = FLT_MAX;
+
+        for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+        {
+            AUnit* Other = *It;
+            if (Other == this) continue;
+            if (Other->Team == Team) continue;
+            if (Other->bIsDead || Other->HP <= 0.f) continue;
+
+            const float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
+
+            // 保険：全体の最寄り
+            if (Dist < ClosestAnyDist)
+            {
+                ClosestAnyDist = Dist;
+                ClosestAny = Other;
+            }
+
+            // ★毒じゃない敵を優先
+            if (!Other->bIsPoisoned && Dist < ClosestNonPoisonDist)
+            {
+                ClosestNonPoisonDist = Dist;
+                ClosestNonPoison = Other;
+            }
+        }
+
+        CurrentTarget = ClosestNonPoison ? ClosestNonPoison : ClosestAny;
+    }
+
+    if (!CurrentTarget) return;
+
+    // 射程内なら攻撃、射程外なら移動（AUnitと同じ）
+    const float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
+
+    if (DistToTarget <= Range)
+    {
+        UpdateFacing(DeltaTime);
+
+        TimeSinceLastAttack += DeltaTime;
+        if (TimeSinceLastAttack >= AttackInterval)
+        {
+            TimeSinceLastAttack = 0.f;
+            AttackTarget(CurrentTarget);
+        }
+    }
+    else
+    {
+        bIsAttacking = false;
+
+        FVector NewLoc = FMath::VInterpConstantTo(
+            GetActorLocation(),
+            CurrentTarget->GetActorLocation(),
+            DeltaTime,
+            MoveSpeed
+        );
+        NewLoc.Z = GetActorLocation().Z;
+        SetActorLocation(NewLoc);
+    }
 }
 
 void ADuckUnit::ApplyDuckHit(AUnit* Target)
@@ -103,11 +189,27 @@ void ADuckUnit::ApplyDuckHit(AUnit* Target)
         PoisonTickInterval,
         PoisonDamagePerTick
     );
-}
 
+    bIsAttacking = false;
+    CurrentTarget = nullptr;      // 次のTickで再探索させる
+    PendingTarget.Reset();        // すでにWeakならこれ
+    UE_LOG(LogTemp, Warning, TEXT("[Duck] After ApplyPoison: Target=%s Poisoned=%d"),
+        *Target->GetName(), Target->bIsPoisoned ? 1 : 0);
+
+
+}
 void ADuckUnit::HandleMeleeHitNotify()
 {
     UE_LOG(LogTemp, Warning, TEXT("[Duck] HandleMeleeHitNotify fired"));
+
+    // ★ 追加：状態を全部ログに出す
+    UE_LOG(LogTemp, Warning, TEXT("[Duck] PendingValid=%d Pending=%s  CurrentTarget=%s"),
+        PendingTarget.IsValid() ? 1 : 0,
+        PendingTarget.IsValid() ? *PendingTarget->GetName() : TEXT("NULL"),
+        CurrentTarget ? *CurrentTarget->GetName() : TEXT("NULL"));
+
     if (!PendingTarget.IsValid() || PendingTarget->bIsDead) return;
+
     ApplyDuckHit(PendingTarget.Get());
 }
+
