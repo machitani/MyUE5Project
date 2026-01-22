@@ -8,20 +8,20 @@
 
 AAdventurerUnit::AAdventurerUnit()
 {
-    MaxHP = 100.f;
+    MaxHP = 85.f;
     HP = MaxHP;
 
     Attack = 14.f;   // 弓よりちょい低めとかお好みで
-    Defense = 3.f;
+    Defense = 2.f;
     MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 350.f;  // 中距離イメージ
-    MoveSpeed = 150.f;
+    Range = 520.f;  // 中距離イメージ
+    MoveSpeed = 135.f;
     AttackInterval = 1.0f;  // 連射気味でも面白い
 
-    CritChance = 0.15f;
-    CritMultiplier = 1.5f;
+    CritChance = 0.18f;
+    CritMultiplier = 1.55f;
 
     AttackInterval = 1.0f;
     BaseAttackInterval = 1.0f;

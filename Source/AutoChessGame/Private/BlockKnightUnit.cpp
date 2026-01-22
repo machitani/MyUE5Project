@@ -7,15 +7,15 @@
 ABlockKnightUnit::ABlockKnightUnit()
 {
     // 例：前衛っぽいステータスに（好きに調整してOK）
-    MaxHP = 110.f;
+    MaxHP = 130.f;
     HP = MaxHP;
 
     Attack = 12.f;
-    Defense = 6.f;
+    Defense = 4.f;
     MagicDefense = 3.f;
     MagicPower = 0.f;
 
-    MoveSpeed = 140.f;
+    MoveSpeed = 115.f;
 
     AttackInterval = 1.2f;
     BaseAttackInterval = 1.2f;

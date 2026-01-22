@@ -12,12 +12,20 @@
 #include "EngineUtils.h"
 #include "TimerManager.h"
 #include "UnitHoverInfoWidget.h"
+#include "NinjaUnit.h"
 #include "UnitHPBarWidget.h"
 #include "Components/WidgetComponent.h"
 
 AUnit::AUnit()
 {
     PrimaryActorTick.bCanEverTick = true;
+
+    TargetSwitchCooldown = 1.0f;   // まずは1秒
+    TargetLockUntilTime = 0.0f;
+    TimeSinceLastAttack = 0.0f;   // これも忘れず（未初期化だと攻撃間隔が壊れる）
+
+    CurrentTarget = nullptr;
+    bIsAttacking = false;
 
     // ★ まず空のルートを作って、それをRootComponentにする
     RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
@@ -216,45 +224,45 @@ void AUnit::CheckForTarget(float DeltaTime)
 {
     if (bIsDead) return;
 
-    // --- 1. 既存ターゲットのチェック ---
+    const float Now = GetWorld()->GetTimeSeconds();
+
+    // 1) 既存ターゲットの妥当性チェック
+    bool bNeedNewTarget = false;
+
     if (CurrentTarget)
     {
-        // 死んでたらターゲット解除
         if (CurrentTarget->bIsDead || CurrentTarget->HP <= 0.f)
         {
-            CurrentTarget = nullptr;
-            bIsAttacking = false;
+            bNeedNewTarget = true;
         }
-    }
-
-    // --- 2. ターゲットがいなければ探す ---
-    if (!CurrentTarget)
-    {
-        AUnit* ClosestEnemy = nullptr;
-        float ClosestDist = FLT_MAX;
-
-        for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+        else
         {
-            AUnit* Other = *It;
-            if (Other == this) continue;
-            if (Other->Team == Team) continue;
-            if (Other->bIsDead || Other->HP <= 0.f) continue;
-
-            float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
-            if (Dist < ClosestDist)
-            {
-                ClosestDist = Dist;
-                ClosestEnemy = Other;
-            }
+            // 遠すぎる/追えないなら切替（数値は好みで）
+            const float Dist = FVector::Dist2D(GetActorLocation(), CurrentTarget->GetActorLocation());
+            if (Dist > 3500.f) bNeedNewTarget = true;
         }
-
-        CurrentTarget = ClosestEnemy;
+    }
+    else
+    {
+        bNeedNewTarget = true;
     }
 
-    // 敵いなければ何もしない
+    // ★ スイッチCD中は切り替えない（死んだ時だけ例外にしてもOK）
+    if (!bNeedNewTarget && Now < TargetLockUntilTime)
+    {
+        // 何もしない（今のターゲット維持）
+    }
+    else if (bNeedNewTarget)
+    {
+        // 2) 新ターゲットを選ぶ（ここを最寄り以外にできる）
+        CurrentTarget = ChooseTarget();  // ←後述
+        TargetLockUntilTime = Now + TargetSwitchCooldown;
+        bIsAttacking = false;
+    }
+
     if (!CurrentTarget) return;
 
-    // --- 3. 射程内なら攻撃、射程外なら移動 ---
+    // 3) 射程内なら攻撃、外なら移動（あなたの既存のまま）
     const float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
 
     if (DistToTarget <= Range)
@@ -278,7 +286,7 @@ void AUnit::CheckForTarget(float DeltaTime)
             DeltaTime,
             MoveSpeed
         );
-        NewLoc.Z = GetActorLocation().Z; // 高さは固定
+        NewLoc.Z = GetActorLocation().Z;
         SetActorLocation(NewLoc);
     }
 }
@@ -290,8 +298,9 @@ void AUnit::AttackTarget(AUnit* Target)
 
     bIsAttacking = true;
 
+    PendingTarget = Target;
     // 物理攻撃（基本攻撃）
-    Target->TakePhysicalDamage(Attack);
+    //Target->TakePhysicalDamage(Attack);
 
     // スキルが使えるなら発動
     if (CanUseSkill())
@@ -419,6 +428,28 @@ void AUnit::OnDeath()
 void AUnit::OnDeathFinished()
 {
     Destroy();
+}
+
+AUnit* AUnit::ChooseTarget() const
+{
+    AUnit* ClosestEnemy = nullptr;
+    float ClosestDist = FLT_MAX;
+
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    {
+        AUnit* Other = *It;
+        if (Other == this) continue;
+        if (Other->Team == Team) continue;
+        if (Other->bIsDead || Other->HP <= 0.f) continue;
+
+        const float Dist = FVector::Dist2D(GetActorLocation(), Other->GetActorLocation());
+        if (Dist < ClosestDist)
+        {
+            ClosestDist = Dist;
+            ClosestEnemy = Other;
+        }
+    }
+    return ClosestEnemy;
 }
 
 void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)

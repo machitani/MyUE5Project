@@ -4,20 +4,20 @@
 ABearUnit::ABearUnit()
 {
     // タンク寄りステータス
-    MaxHP = 220.f;
+    MaxHP = 170.f;
     HP = MaxHP;
 
     Attack = 12.f;
-    Defense = 10.f;     // 物理にかなり強い
+    Defense = 5.f;     // 物理にかなり強い
     MagicDefense = 4.f;
     MagicPower = 0.f;
 
-    Range = 200.f;
-    MoveSpeed = 120.f;
+    Range = 160.f;
+    MoveSpeed = 105.f;
     AttackInterval = 1.2f;
 
-    CritChance = 0.1f;
-    CritMultiplier = 1.5f;
+    CritChance = 0.02f;
+    CritMultiplier = 1.45f;
 
     AttackInterval = 1.0f;
     BaseAttackInterval = 1.0f;

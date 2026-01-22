@@ -31,6 +31,8 @@ void APlayerManager::AddExp(int32 Amount)
     const int32 MaxPlayerLevel = 7;
     const int32 MaxUnitsHardCap = 8;
 
+    int32 LevelsGained = 0;
+
     while (CurrentExp >= ExpToNextLevel && PlayerLevel < MaxPlayerLevel)
     {
         CurrentExp -= ExpToNextLevel;
@@ -43,7 +45,16 @@ void APlayerManager::AddExp(int32 Amount)
             MaxUnitCount++;
         }
 
-        OnLevelUp();
+        LevelsGained++;
+    }
+
+    if (LevelsGained > 0)
+    {
+        PendingLevelUpRewards += LevelsGained;
+        UE_LOG(LogTemp, Warning, TEXT("LEVEL UP! Level=%d Gained=%d PendingRewards=%d"),
+            PlayerLevel, LevelsGained, PendingLevelUpRewards);
+
+        TryOpenNextLevelUpReward();
     }
 
     if (PlayerLevel >= MaxPlayerLevel)
@@ -83,6 +94,7 @@ void APlayerManager::OnRewardSelected(FName SelectedUnitID)
     {
         BoardManagerRef->SpawnRewardUnit(SelectedUnitID);
     }
+    PendingLevelUpRewards = FMath::Max(0, PendingLevelUpRewards - 1);
 
     // š‚±‚ê‚ðÅŒã‚É’Ç‰Á
     if (ACustomPlayerController* CPC =
@@ -90,6 +102,7 @@ void APlayerManager::OnRewardSelected(FName SelectedUnitID)
     {
         CPC->EndLevelUpRewardUI();
     }
+    TryOpenNextLevelUpReward();
 }
 
 void APlayerManager::RegisterOwnedUnit(FName UnitID)
@@ -100,5 +113,38 @@ void APlayerManager::RegisterOwnedUnit(FName UnitID)
     {
         OwnedUnitIDs.Add(UnitID);
     }
+}
+
+void APlayerManager::TryOpenNextLevelUpReward()
+{
+    if (!BoardManagerRef) return;
+    if (PendingLevelUpRewards <= 0) return;
+
+    ACustomPlayerController* CPC =
+        Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+    if (!CPC) return;
+
+    // ‚·‚Å‚ÉUI’†‚È‚çŽŸ‰ñ‚É‰ñ‚·
+    if (CPC->IsLevelUpLockingInput()) return;
+
+    TArray<FName> Candidates = BoardManagerRef->GenerateRewardUnitCandidates(3);
+    if (Candidates.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("TryOpenNextLevelUpReward: No candidates"));
+        return;
+    }
+
+    CPC->PlayLevelUpUI();
+    CPC->ShowLevelUpRewardUI(this, Candidates);
+}
+
+bool APlayerManager::IsLevelMax() const
+{
+    return PlayerLevel >= GetMaxPlayerLevel();
+}
+
+int32 APlayerManager::GetMaxPlayerLevel() const
+{
+    return 7;
 }
 

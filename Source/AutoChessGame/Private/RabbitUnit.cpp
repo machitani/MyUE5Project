@@ -6,12 +6,12 @@
 
 ARabbitUnit::ARabbitUnit()
 {
-    MaxHP = 85.f;
+    MaxHP = 95.f;
     HP = MaxHP;
 
     Attack = 0.f;
-    Defense = 3.f;
-    MagicDefense = 4.f;
+    Defense = 2.f;
+    MagicDefense = 3.f;
     MagicPower = 0.f;
 
     MoveSpeed = 140.f;

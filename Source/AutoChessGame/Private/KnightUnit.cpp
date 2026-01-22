@@ -7,7 +7,7 @@ AKnightUnit::AKnightUnit()
     HP = MaxHP;
 
     Attack = 18.f;
-    Defense = 6.f;
+    Defense = 4.f;
     MagicDefense = 3.f;
     MagicPower = 0.f;
 

@@ -9,14 +9,17 @@ AAssaultEnemy::AAssaultEnemy()
     MaxHP = 70.f;
     HP = MaxHP;
 
-    Attack = 16.f;   // 物理火力
-    Defense = 2.f;
-    MagicDefense = 1.f;
+    Attack = 11.f;   // 物理火力
+    Defense = 1.f;
+    MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 450.f;  // プレイヤー遠距離よりちょい長くしても面白い
-    MoveSpeed = 120.f;
-    AttackInterval = 0.8f;  // 連射気味アサルト
+    Range = 520.f;  // プレイヤー遠距離よりちょい長くしても面白い
+    MoveSpeed = 130.f;
+    AttackInterval = 0.6f;  // 連射気味アサルト
+
+    CritChance = 0.05;
+    CritMultiplier = 1.5;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("AssaultEnemy");

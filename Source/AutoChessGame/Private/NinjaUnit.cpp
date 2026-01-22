@@ -5,16 +5,16 @@
 
 ANinjaUnit::ANinjaUnit()
 {
-    MaxHP = 85.f;
+    MaxHP = 95.f;
     HP = MaxHP;
 
-    Attack = 14.f;           // 単発はナイトより低め
+    Attack = 20.f;           // 単発はナイトより低め
     Defense = 3.f;
-    MagicDefense = 3.f;
+    MagicDefense = 2.f;
     MagicPower = 0.f;
 
     Range = 150.f;
-    MoveSpeed = 150.f;
+    MoveSpeed = 170.f;
 
     AttackInterval = 0.85f;  // 少し速め
     BaseAttackInterval = AttackInterval;
@@ -22,8 +22,8 @@ ANinjaUnit::ANinjaUnit()
     Team = EUnitTeam::Player;
     UnitID = FName("Ninja");
 
-    CritChance = 0.25f;      // クリ高め
-    CritMultiplier = 1.6f;
+    CritChance = 0.16f;      // クリ高め
+    CritMultiplier = 1.7f;
 
     SkillCooldown = 6.0f;
     SkillTimer = 0.0f;
@@ -162,4 +162,9 @@ AUnit* ANinjaUnit::FindAssassinTarget() const
     }
 
     return Best;
+}
+
+AUnit* ANinjaUnit::ChooseTarget() const
+{
+    return FindAssassinTarget();
 }

@@ -30,6 +30,12 @@ ACustomPlayerController::ACustomPlayerController()
     PrimaryActorTick.bCanEverTick = true;
 }
 
+FORCEINLINE bool ACustomPlayerController::IsLevelUpLockingInput() const
+{
+    return bIsLevelUpChoosing || bIsLevelUpAnimating;
+}
+
+
 void ACustomPlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
@@ -294,6 +300,8 @@ void ACustomPlayerController::CallOverlayEventByName(FName EventName)
 
 void ACustomPlayerController::OnLeftMouseDown()
 {
+    if (IsLevelUpLockingInput()) return;
+
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
@@ -313,33 +321,37 @@ void ACustomPlayerController::OnLeftMouseDown()
 
 void ACustomPlayerController::OnLeftMouseUp()
 {
-    if (!bIsDragging || !SelectedUnit)
+    if (IsLevelUpLockingInput()) return;
+
+    // ★ そもそも掴んでない/消えた/無効なら何もしない
+    if (!IsValid(SelectedUnit))
+    {
+        bIsDragging = false;
+        SelectedUnit = nullptr;
         return;
+    }
 
     bIsDragging = false;
 
     FHitResult Hit;
-    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+    const bool bHit = GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
-    if (Hit.bBlockingHit)
+    if (bHit && Hit.bBlockingHit)
     {
         ATile* Tile = Cast<ATile>(Hit.GetActor());
-        if (Tile && Tile->bIsPlayerTile)
+        if (IsValid(Tile) && Tile->bIsPlayerTile)
         {
-            // ★ Tile が埋まってるかどうかの判定は MoveUnitToTile 側でやる
-            if (SelectedUnit->OwningBoardManager)
+            if (IsValid(SelectedUnit->OwningBoardManager))
             {
                 SelectedUnit->OwningBoardManager->MoveUnitToTile(SelectedUnit, Tile);
             }
             else
             {
-                // BoardManager が無いなら元の位置に戻す
                 SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
             }
         }
         else
         {
-            // タイル以外 or 敵タイル → 元の位置に戻す
             SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
         }
     }
@@ -348,7 +360,7 @@ void ACustomPlayerController::OnLeftMouseUp()
         SelectedUnit->SetActorLocation(SelectedUnit->OriginalLocation);
     }
 
-    // 位置＆タイルはもう決まってるので、EndDrag は「ドラッグ終了の後始末」だけに使う
+    // ★ EndDrag 内でDestroyとか触るなら、順序も安全寄りに
     SelectedUnit->EndDrag();
     SelectedUnit = nullptr;
 }
@@ -566,12 +578,13 @@ void ACustomPlayerController::HideEndMenu()
 
 void ACustomPlayerController::ShowLevelUpRewardUI(APlayerManager* PM, const TArray<FName>& Candidates)
 {
-    UE_LOG(LogTemp, Warning, TEXT("[LevelUp] ShowLevelUpRewardUI called. bIsLevelUpChoosing=%d Candidates=%d"),
-        bIsLevelUpChoosing ? 1 : 0, Candidates.Num());
-
+    bIsLevelUpAnimating = false;      // ★保険：演出終わった扱いにする
+    bEnableClickEvents = true;        // ★リワード選択できるように戻す
+    bEnableMouseOverEvents = true;
 
     if (bIsLevelUpChoosing) return;
     bIsLevelUpChoosing = true;
+    
 
     if (!PM || Candidates.Num() == 0) { bIsLevelUpChoosing = false; return; }
 
@@ -648,19 +661,32 @@ void ACustomPlayerController::EndLevelUpRewardUI()
 
 void ACustomPlayerController::PlayLevelUpUI()
 {
-    // Overlayが無ければ作る（GameStartで消してても大丈夫）
+    if (bIsLevelUpChoosing || bIsLevelUpAnimating) return;
+
+    bIsLevelUpAnimating = true;
+
     if (!OverlayWidget && OverlayClass)
     {
         OverlayWidget = CreateWidget<UUserWidget>(this, OverlayClass);
-        if (OverlayWidget)
-        {
-            OverlayWidget->AddToViewport(999);
-        }
+        if (OverlayWidget) OverlayWidget->AddToViewport(999);
     }
 
-    // WBP_Overlay 側に Custom Event 「PlayLevelUp」を作っておく
+    // ★ 演出中：ワールドクリックを完全停止
+    SetIgnoreMoveInput(true);
+    SetIgnoreLookInput(true);
+
+    bShowMouseCursor = true;
+
+    bEnableClickEvents = false;       // ★ここをfalseのまま
+    bEnableMouseOverEvents = false;   // ★ホバーも止めるならfalse
+
+    FInputModeUIOnly Mode;
+    Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode);
+
     CallOverlayEventByName(TEXT("PlayLevelUp"));
 }
+
 
 void ACustomPlayerController::OnZoomAxis(float AxisValue)
 {

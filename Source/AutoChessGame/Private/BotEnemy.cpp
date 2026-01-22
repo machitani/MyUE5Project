@@ -9,17 +9,20 @@
 
 ABotEnemy::ABotEnemy()
 {
-    MaxHP = 180.f;
+    MaxHP = 75.f;
     HP = MaxHP;
 
-    Attack = 18.f;
-    Defense = 8.f;
-    MagicDefense = 3.f;
+    Attack = 17.f;
+    Defense = 2.f;
+    MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 200.f;   // ãﬂê⁄
-    MoveSpeed = 140.f;
-    AttackInterval = 1.1f;
+    Range = 3000.f;   // ãﬂê⁄
+    MoveSpeed = 120.f;
+    AttackInterval = 1.3f;
+
+    CritChance = 0.06;
+    CritChance = 1.5;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("BotEnemy");

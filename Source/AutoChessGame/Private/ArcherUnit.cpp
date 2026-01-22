@@ -11,13 +11,13 @@ AArcherUnit::AArcherUnit()
     MaxHP = 80.f;
     HP = MaxHP;
 
-    Attack = 18.f;    // ï®óùçÇÇﬂ
+    Attack = 16.f;    // ï®óùçÇÇﬂ
     Defense = 2.f;
-    MagicDefense = 1.f;
+    MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 400.f;    // Wizard ÇÊÇËÇøÇÂÇ¢í∑ÇﬂÇ≈Ç‡Ç¢Ç¢
-    MoveSpeed = 140.f;
+    Range = 4650.f;    // Wizard ÇÊÇËÇøÇÂÇ¢í∑ÇﬂÇ≈Ç‡Ç¢Ç¢
+    MoveSpeed = 125.f;
 
     AttackInterval = 1.1f;
     BaseAttackInterval = 1.0f;
@@ -25,8 +25,8 @@ AArcherUnit::AArcherUnit()
     Team = EUnitTeam::Player;
     UnitID = FName("Archer");
 
-    CritChance = 0.25f;   // 25%
-    CritMultiplier = 1.5f;
+    CritChance = 0.12f;   // 25%
+    CritMultiplier = 1.6f;
 }
 
 void AArcherUnit::BeginPlay()

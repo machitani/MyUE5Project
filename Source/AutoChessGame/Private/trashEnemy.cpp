@@ -6,17 +6,20 @@
 ATrashEnemy::ATrashEnemy()
 {
     // ★ ザコ敵っぽいステータス
-    MaxHP = 60.f;
+    MaxHP = 80.f;
     HP = MaxHP;
 
-    Attack = 10.f;  // そこそこ殴ってくる
-    Defense = 1.f;
-    MagicDefense = 1.f;
+    Attack = 15.f;  // そこそこ殴ってくる
+    Defense = 2.f;
+    MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 150.f; // 完全近接
+    Range = 160.f; // 完全近接
     MoveSpeed = 130.f;
-    AttackInterval = 1.0f;
+    AttackInterval = 1.05f;
+
+    CritChance = 0.02;
+    CritMultiplier = 1.45;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("TrashEnemy");

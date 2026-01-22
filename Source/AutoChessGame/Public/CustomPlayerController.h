@@ -109,7 +109,9 @@ public:
     void OnZoomAxis(float AxisValue);
 
     void UpdateCameraZoom(float DeltaSeceonds);
+    bool bIsLevelUpAnimating = false;
 
+    bool IsLevelUpLockingInput() const;
 
 protected:
     virtual void SetupInputComponent() override;

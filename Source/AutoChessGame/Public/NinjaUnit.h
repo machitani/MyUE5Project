@@ -33,7 +33,9 @@ public:
     // ★ アサシン用：後衛優先ターゲット
     UFUNCTION(BlueprintCallable)
     AUnit* FindAssassinTarget() const;
-    TWeakObjectPtr<AUnit> PendingTarget;
+    //TWeakObjectPtr<AUnit> PendingTarget;
+
+    virtual AUnit* ChooseTarget()const override;
 
 
 private:

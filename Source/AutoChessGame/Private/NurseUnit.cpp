@@ -6,13 +6,13 @@
 ANurseUnit::ANurseUnit()
 {
     // ステータス：そこそこ硬いヒーラー
-    MaxHP = 110.f;
+    MaxHP = 90.f;
     HP = MaxHP;
 
     Attack = 6.f;      // 攻撃は弱め
-    Defense = 3.f;
-    MagicDefense = 6.f;
-    MagicPower = 25.f;     // 回復量ベース
+    Defense = 2.f;
+    MagicDefense = 4.f;
+    MagicPower = 18.f;     // 回復量ベース
 
     Range = 300.f;    // 回復対象を探す射程
     MoveSpeed = 130.f;

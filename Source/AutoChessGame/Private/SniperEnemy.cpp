@@ -11,17 +11,20 @@
 
 ASniperEnemy::ASniperEnemy()
 {
-    MaxHP = 180.f;
+    MaxHP = 60.f;
     HP = MaxHP;
 
-    Attack = 55.f;
-    Defense = 4.f;
-    MagicDefense = 3.f;
+    Attack = 24.f;
+    Defense = 1.f;
+    MagicDefense = 1.f;
     MagicPower = 0.f;
 
     Range = 900.f;
     MoveSpeed = 110.f;
-    AttackInterval = 1.9f;
+    AttackInterval = 1.8f;
+
+    CritChance = 0.12;
+    CritMultiplier = 1.6;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("SniperEnemy");

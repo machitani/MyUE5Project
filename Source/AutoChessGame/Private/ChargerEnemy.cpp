@@ -6,17 +6,20 @@
 AChargerEnemy::AChargerEnemy()
 {
     // 前衛アタッカー寄りのステータス（好みで調整してOK）
-    MaxHP = 150.f;
+    MaxHP = 95.f;
     HP = MaxHP;
 
-    Attack = 26.f;  // Knight より高火力
-    Defense = 5.f;   // Knight より少し柔らかい
+    Attack = 22.f;  // Knight より高火力
+    Defense = 3.f;   // Knight より少し柔らかい
     MagicDefense = 2.f;
     MagicPower = 0.f;
 
-    Range = 200.f; // 近接
-    MoveSpeed = 180.f; // Knight より少し速め
-    AttackInterval = 1.1f; // 同じくらい
+    Range = 170.f; // 近接
+    MoveSpeed = 150.f; // Knight より少し速め
+    AttackInterval = 1.6f; // 同じくらい
+
+    CritChance = 0.04;
+    CritMultiplier = 1.5;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("Charger");

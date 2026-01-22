@@ -1313,6 +1313,10 @@ TSubclassOf<AUnit> ABoardManager::GetPlayerUnitClassByID(FName UnitID) const
     {
         return PlayerDuckClass;
     }
+    else if (UnitID == FName("Ninja"))
+    {
+        return PlayerNinjaClass;
+    }
 
     // ‚Ç‚ê‚É‚à“–‚Ä‚Í‚Ü‚ç‚È‚¢ê‡‚Ì•ÛŒ¯i“K“–‚ÉKnight•Ô‚·‚È‚Çj
     return PlayerWizardClass;

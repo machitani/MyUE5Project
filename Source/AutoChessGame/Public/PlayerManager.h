@@ -65,5 +65,14 @@ public:
 	UPROPERTY(BlueprintReadWrite,Category="Ref")
 	ABoardManager* BoardManagerRef = nullptr;
 
+	UPROPERTY()
+	int32 PendingLevelUpRewards = 0;
+
+	UFUNCTION()
+	void TryOpenNextLevelUpReward();
+
+public:
+	bool IsLevelMax() const;
+	int32 GetMaxPlayerLevel() const; // îCà”ÅiUIópÅj
 
 	};

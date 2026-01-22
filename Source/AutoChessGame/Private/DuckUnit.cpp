@@ -6,13 +6,13 @@
 
 ADuckUnit::ADuckUnit()
 {
-    MaxHP = 95.f;
+    MaxHP = 100.f;
     HP = MaxHP;
 
     Attack = 8.f;          // 初撃に使うならここは低めでOK
     Defense = 3.f;
     MagicDefense = 4.f;
-    MagicPower = 0.f;      // 今は未使用でもOK
+    MagicPower = 12.f;      // 今は未使用でもOK
 
     Range = 150.f;         // 近距離
     MoveSpeed = 130.f;

@@ -100,6 +100,17 @@ public:
 
     float TimeSinceLastAttack = 0.f;
 
+    TWeakObjectPtr<AUnit> PendingTarget;
+
+
+    // ターゲット切り替え抑制
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+    float TargetSwitchCooldown = 1.0f;
+
+    float TargetLockUntilTime = 0.0f;
+
+    virtual AUnit* ChooseTarget() const;
+
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
     float BaseAttackInterval = 1.0f;
 

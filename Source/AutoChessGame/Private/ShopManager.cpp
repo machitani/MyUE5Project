@@ -79,6 +79,8 @@ void AShopManager::PaidReroll(int32 ItemCount)
 
 void AShopManager::BuyExp()
 {
+
+
     //フェーズチェック
     if (!PlayerManagerRef || !PlayerManagerRef->BoardManagerRef)
     {

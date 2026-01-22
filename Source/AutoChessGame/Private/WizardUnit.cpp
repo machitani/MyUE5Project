@@ -6,16 +6,16 @@
 
 AWizardUnit::AWizardUnit()
 {
-    MaxHP = 90.f;
+    MaxHP = 85.f;
     HP = MaxHP;
 
-    Attack = 8.f;
-    Defense = 1.f;
-    MagicDefense = 4.f;
-    MagicPower = 28.f;
+    Attack = 6.f;
+    Defense = 2.f;
+    MagicDefense = 3.f;
+    MagicPower = 20.f;
 
-    Range = 320.f;
-    MoveSpeed = 130.f;
+    Range = 560.f;
+    MoveSpeed = 120.f;
     AttackInterval = 1.3f;
 
     BaseAttackInterval = 1.0f;
