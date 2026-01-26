@@ -194,6 +194,11 @@ void ABoardManager::HandleDefeat()
     PlayerManagerInstance->PlayerLife--;
     UE_LOG(LogTemp, Warning, TEXT("PlayerLife now: %d"), PlayerManagerInstance->PlayerLife);
 
+    if (ShopManagerRef)
+    {
+        ShopManagerRef->RoundDefeatGold(5);
+    }
+
     UpdateHUD();
 
     if (PlayerManagerInstance->PlayerLife <= 0)

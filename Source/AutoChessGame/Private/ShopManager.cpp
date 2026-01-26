@@ -119,8 +119,26 @@ void AShopManager::BuyExp()
 
 void AShopManager::RoundClearGold()
 {
-    PlayerGold += 5;
-    ShopWidget->UpdateGold(PlayerGold);
+    const int32 BaseReward = 5;
+    const int32 Interest = PlayerGold / 10;
+
+    PlayerGold += BaseReward + Interest;
+
+    if (ShopWidget)
+    {
+        ShopWidget->UpdateGold(PlayerGold);
+    }
+}
+
+void AShopManager::RoundDefeatGold(int32 Amount)
+{
+    PlayerGold += Amount;
+
+    if (ShopWidget)
+    {
+        ShopWidget->UpdateGold(PlayerGold);
+        ShopWidget->RefreshSlots();
+    }
 }
 
 void AShopManager::OnRoundChanged()

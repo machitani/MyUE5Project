@@ -35,6 +35,8 @@ public:
 
     void RoundClearGold();
 
+    void RoundDefeatGold(int32 Amount = 2);
+
     UFUNCTION()
     void OnRoundChanged();
 

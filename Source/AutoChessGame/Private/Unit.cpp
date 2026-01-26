@@ -499,8 +499,8 @@ void AUnit::ReapplayAllItemEffects()
     MagicDefense = BaseMagicDefense;
     Range = BaseRange;
     MoveSpeed = BaseMoveSpeed;
-    CritChance = CritChance;
-    CritMultiplier = CritMultiplier;
+    CritChance = BaseCritChance;
+    CritMultiplier = BaseCritMultiplier;
     AttackInterval = BaseAttackInterval;
 
     // HP ÇÕÇ∆ÇËÇ†Ç¶Ç∏ç≈ëÂÇ‹Ç≈âÒïú
