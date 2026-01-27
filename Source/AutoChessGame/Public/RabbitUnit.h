@@ -14,6 +14,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual AUnit* ChooseTarget()const override;
 
 public:
     // Knight‚Æ“¯‚¶“üŒûií“¬AI‚ª‚±‚±‚ğŒÄ‚Ô‘z’èj

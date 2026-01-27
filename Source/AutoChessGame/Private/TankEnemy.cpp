@@ -34,6 +34,7 @@ void ATankEnemy::BeginPlay()
 
 void ATankEnemy::Tick(float DeltaTime)
 {
+    Super::Tick(DeltaTime);
 }
 
 void ATankEnemy::AttackTarget(AUnit* Target)
@@ -79,7 +80,7 @@ void ATankEnemy::UseSkill(AUnit* Target)
 
 void ATankEnemy::ApplyGuardedDamage(float& DamageAmount) const
 {
-    if (bIsAttacking)
+    if (bIsGuardActive)
     {
         DamageAmount *= GuardDamageReduceRate; // 例: 半分にする
     }
@@ -87,12 +88,25 @@ void ATankEnemy::ApplyGuardedDamage(float& DamageAmount) const
 
 void ATankEnemy::HandleGuardStartNotify()
 {
-    bIsAttacking = true;
-    GuardRemainingTime = GuardDuration;
+    bIsGuardActive = true;
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("TankEnemy %s starts Guard (Duration=%.1f)"),
-        *GetName(), GuardDuration);
+    // タイマーで終わらせるなら
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(GuardEndHandle);
+        World->GetTimerManager().SetTimer(
+            GuardEndHandle,
+            this,
+            &ATankEnemy::HandleGuardEnd,
+            GuardDuration,
+            false
+        );
+    }
+}
+
+void ATankEnemy::HandleGuardEnd()
+{
+    bIsGuardActive = false;
 }
 
 void ATankEnemy::TakePhysicalDamage(float DamageAmount)

@@ -50,10 +50,14 @@ protected:
     // 実際のダメージ計算
     void ApplyGuardedDamage(float& DamageAmount) const;
 
+    FTimerHandle GuardEndHandle;
+
 public:
     // AnimNotify から呼ぶ：この瞬間からガード状態になる
     UFUNCTION(BlueprintCallable, Category = "Guard")
     void HandleGuardStartNotify();
+
+    void HandleGuardEnd();
 
     // 物理・魔法ダメージをガード反映したいなら override
     virtual void TakePhysicalDamage(float DamageAmount) override;

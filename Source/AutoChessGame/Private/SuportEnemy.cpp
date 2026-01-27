@@ -1,35 +1,29 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SuportEnemy.h"
 #include "EngineUtils.h"
+#include "Animation/AnimInstance.h"
 
 ASuportEnemy::ASuportEnemy()
 {
     MaxHP = 160.f;
     HP = MaxHP;
 
-    Attack = 12.f;   // 低め
+    Attack = 0.f;          // ★ サポ専なら殴らない（殴るなら値入れてOK）
     Defense = 5.f;
     MagicDefense = 5.f;
-    MagicPower = 10.f;   // 将来、魔法攻撃に使いたかったらココ
+    MagicPower = 10.f;
 
-    Range = 500.f;  // 中距離
+    Range = HealRadius;    // ★ 射程 = 回復射程（好みで）
     MoveSpeed = 130.f;
     AttackInterval = 1.2f;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("SupportEnemy");
 
-    // スキル設定（ヒール）
-    bHasSkill = true;
-    SkillCooldown = 5.0f;   // 5秒ごとにヒール
-    SkillTimer = 0.0f;
+    bHasSkill = false;     // ★ 親の UseSkill ルートは使わない
+    SkillCooldown = 0.f;
+    SkillTimer = 0.f;
 
-    HealAmount = 25.f;
-    HealRadius = 600.f;
-
-    // ターゲット方向を向く
+    // 向き
     bFaceTarget = true;
     FacingYawOffset = 0.f;
     RotationInterpSpeed = 10.f;
@@ -40,59 +34,99 @@ void ASuportEnemy::BeginPlay()
     Super::BeginPlay();
 }
 
-bool ASuportEnemy::CanUseSkill() const
+// ★ 味方（敵チーム内）から「一番HP割合が低い」やつを選ぶ
+AUnit* ASuportEnemy::ChooseTarget() const
 {
-    return bHasSkill && (SkillTimer >= SkillCooldown);
-}
+    AUnit* Best = nullptr;
+    float LowestRatio = 1.1f;
 
-void ASuportEnemy::UseSkill(AUnit* Target)
-{
-    if (!GetWorld()) return;
-
-    AUnit* BestAlly = nullptr;
-    float  LowestHpRatio = 1.1f;  // 1より大きい値で初期化
-
-    // 一番HP割合が低い味方を探す
     for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
     {
-        AUnit* Other = *It;
-        if (!Other) continue;
-        if (Other == this) continue;
-        if (Other->Team != Team) continue;
-        if (Other->bIsDead || Other->HP <= 0.f) continue;
-        if (Other->MaxHP <= 0.f) continue;
+        AUnit* Ally = *It;
+        if (!Ally) continue;
+        if (Ally == this) continue;
+        if (Ally->Team != Team) continue;
+        if (Ally->bIsDead || Ally->HP <= 0.f) continue;
+        if (Ally->MaxHP <= 0.f) continue;
 
-        const float Dist = FVector::Dist(GetActorLocation(), Other->GetActorLocation());
+        // 回復範囲内だけ（※Targetまで寄って回復したいなら、この距離制限は外してもOK）
+        const float Dist = FVector::Dist(GetActorLocation(), Ally->GetActorLocation());
         if (Dist > HealRadius) continue;
 
-        const float HpRatio = Other->HP / Other->MaxHP;
-        if (HpRatio >= 1.0f) continue;  // 全快は対象外
+        const float Ratio = Ally->HP / Ally->MaxHP;
+        if (Ratio >= 1.0f) continue; // 満タンは除外
 
-        if (HpRatio < LowestHpRatio)
+        if (Ratio < LowestRatio)
         {
-            LowestHpRatio = HpRatio;
-            BestAlly = Other;
+            LowestRatio = Ratio;
+            Best = Ally;
         }
     }
 
-    if (!BestAlly) return;
-
-    // 回復
-    BestAlly->HP = FMath::Min(BestAlly->HP + HealAmount, BestAlly->MaxHP);
-
-    UE_LOG(LogTemp, Warning,
-        TEXT("[SupportEnemy] Healed ally %s by %.1f (HP=%.1f / %.1f)"),
-        *BestAlly->GetName(),
-        HealAmount,
-        BestAlly->HP,
-        BestAlly->MaxHP
-    );
-
-    // クールタイムリセット
-    SkillTimer = 0.f;
+    return Best;
 }
 
 void ASuportEnemy::AttackTarget(AUnit* Target)
 {
-    Super::AttackTarget(Target);
+    if (bIsDead) return;
+
+    bIsAttacking = true;
+
+    // Target は味方の想定
+    PendingHealTarget = Target;
+
+    // 念のため保険
+    if (!PendingHealTarget || PendingHealTarget->Team != Team ||
+        PendingHealTarget->bIsDead || PendingHealTarget->HP <= 0.f)
+    {
+        PendingHealTarget = ChooseTarget();
+    }
+
+    if (!PendingHealTarget) return;
+
+    // モンタージュ再生（連打防止）
+    if (UnitMesh)
+    {
+        if (UAnimInstance* Anim = UnitMesh->GetAnimInstance())
+        {
+            
+        }
+    }
+
+    // ※ 実回復は Notify -> HandleHealNotify() で行う
+}
+
+void ASuportEnemy::HandleHealNotify()
+{
+    if (!PendingHealTarget || !IsValid(PendingHealTarget) ||
+        PendingHealTarget->bIsDead || PendingHealTarget->HP <= 0.f)
+    {
+        PendingHealTarget = ChooseTarget();
+    }
+    if (!PendingHealTarget) return;
+
+    // 射程チェック（回復射程）
+    const float Dist = FVector::Dist(GetActorLocation(), PendingHealTarget->GetActorLocation());
+    if (Dist > HealRadius) return;
+
+    ApplyHeal(PendingHealTarget);
+}
+
+void ASuportEnemy::ApplyHeal(AUnit* Ally)
+{
+    if (!Ally || Ally->bIsDead) return;
+
+    const float OldHP = Ally->HP;
+    const float NewHP = FMath::Clamp(OldHP + HealAmount, 0.f, Ally->MaxHP);
+    const float Actual = NewHP - OldHP;
+    if (Actual <= 0.f) return;
+
+    Ally->HP = NewHP;
+
+    UE_LOG(LogTemp, Warning,
+        TEXT("[SupportEnemy] Healed ally %s (+%.1f) HP=%.1f/%.1f"),
+        *Ally->GetName(), Actual, Ally->HP, Ally->MaxHP);
+
+    // もし回復ポップアップを敵側にも出したいなら（関数がpublicならOK）
+    Ally->ShowHealPopup(Actual);
 }

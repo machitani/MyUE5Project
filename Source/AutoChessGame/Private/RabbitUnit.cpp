@@ -33,6 +33,47 @@ void ARabbitUnit::BeginPlay()
     Super::BeginPlay();
 }
 
+AUnit* ARabbitUnit::ChooseTarget() const
+{
+    AUnit* BestUnbuffed = nullptr;
+    float BestUnbuffedDist = FLT_MAX;
+
+    AUnit* BestAny = nullptr;
+    float BestAnyDist = FLT_MAX;
+
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    {
+        AUnit* Ally = *It;
+        if (!Ally) continue;
+        if (Ally == this) continue;
+        if (Ally->Team != Team) continue;
+        if (Ally->bIsDead || Ally->HP <= 0.f) continue;
+
+        const float Dist = FVector::Dist(GetActorLocation(), Ally->GetActorLocation());
+
+        // まず「一番近い味方（保険）」も更新しておく
+        if (Dist < BestAnyDist)
+        {
+            BestAnyDist = Dist;
+            BestAny = Ally;
+        }
+
+        // ★ バフ中か判定（SavedAttack に入ってる = バフ中）
+        const TWeakObjectPtr<AUnit> Key(Ally);
+        const bool bIsBuffed = SavedAttack.Contains(Key);
+
+        // 未バフだけを最優先で選ぶ
+        if (!bIsBuffed && Dist < BestUnbuffedDist)
+        {
+            BestUnbuffedDist = Dist;
+            BestUnbuffed = Ally;
+        }
+    }
+
+    // 未バフがいればそれ、いなければ一番近い味方
+    return BestUnbuffed ? BestUnbuffed : BestAny;
+}
+
 // ★ 一番近い味方を探す（ナースの FindLowestHpAlly と同じ立ち位置）
 AUnit* ARabbitUnit::FindClosestAlly() const
 {
@@ -64,32 +105,31 @@ void ARabbitUnit::AttackTarget(AUnit* Target)
 
     bIsAttacking = true;
 
-    // ★ ナース式：引数Target（敵）は使わず、自分で支援対象を決める
-    PendingSupportTarget = FindClosestAlly();
+    // Target は味方の想定
+    PendingSupportTarget = Target;
 
-    // 味方がいなければ何もしない（アニメだけしたいならここを変える）
+    // 念のため保険
+    if (!PendingSupportTarget || PendingSupportTarget->Team != Team || PendingSupportTarget->bIsDead || PendingSupportTarget->HP <= 0.f)
+    {
+        PendingSupportTarget = FindClosestAlly();
+    }
     if (!PendingSupportTarget) return;
 
     // 射程チェック（支援射程）
     const float Dist = FVector::Dist(GetActorLocation(), PendingSupportTarget->GetActorLocation());
     if (Dist > SupportRange) return;
 
-    // ★ ナースと同じ：モンタージュ連打防止
+    // モンタージュ再生（連打防止）
     if (UnitMesh)
     {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        if (UAnimInstance* Anim = UnitMesh->GetAnimInstance())
         {
-            if (SupportMontage)
+            if (SupportMontage && !Anim->Montage_IsPlaying(SupportMontage))
             {
-                if (!AnimInstance->Montage_IsPlaying(SupportMontage))
-                {
-                    AnimInstance->Montage_Play(SupportMontage);
-                }
+                Anim->Montage_Play(SupportMontage);
             }
         }
     }
-
-    // ※ Super::AttackTarget(Target) は呼ばない（支援はNotifyで発動）
 }
 
 void ARabbitUnit::HandleSupportNotify()

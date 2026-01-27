@@ -34,6 +34,9 @@ protected:
     void ApplyDefenseBuff(AUnit* Target);
     void RemoveDefenseBuff(AUnit* Target);
 
+    virtual AUnit* ChooseTarget()const override;
+    virtual void AttackTarget(AUnit*target)override;
+
 protected:
     // ====== ’²®ƒpƒ‰ƒ[ƒ^ ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Support")

@@ -20,18 +20,30 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-public:
-    // サポート用のスキル判定・実行
-    virtual bool CanUseSkill() const override;
-    virtual void UseSkill(AUnit* Target) override;
+    // ★ 味方をターゲットにする
+    virtual AUnit* ChooseTarget() const override;
 
-    // 必要なら攻撃処理をカスタム
+    // ★ 攻撃 = 回復モンタージュ再生
     virtual void AttackTarget(AUnit* Target) override;
 
-    // 回復量・回復範囲
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Support")
+    // AnimNotify から呼ぶ
+    UFUNCTION()
+    void HandleHealNotify();
+
+    void ApplyHeal(AUnit* Ally);
+
+    // 回復対象
+    UPROPERTY()
+    AUnit* PendingHealTarget = nullptr;
+
+public:
+    // 調整用
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Support")
     float HealAmount = 25.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Support")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Support")
     float HealRadius = 600.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Support")
+    UAnimMontage* HealMontage = nullptr;
 };

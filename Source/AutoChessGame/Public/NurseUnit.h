@@ -38,6 +38,8 @@ protected:
     // ÀÛ‚Ì‰ñ•œˆ—
     void ApplyHeal(AUnit* Ally);
 
+    virtual AUnit* ChooseTarget()const override;
+
 public:
     // š AnimNotify ‚©‚çŒÄ‚Ô
     UFUNCTION(BlueprintCallable, Category = "Heal")

@@ -44,33 +44,28 @@ void ANurseUnit::AttackTarget(AUnit* Target)
 
     bIsAttacking = true;
 
-    // ★ 一応おまけ物理攻撃を残したいならここで殴る
-    if (Target && !Target->bIsDead)
+    // Target は味方の想定
+    PendingHealTarget = Target;
+
+    // 念のため保険（親AIが変な値渡した場合）
+    if (!PendingHealTarget || PendingHealTarget->Team != Team)
     {
-        Target->TakePhysicalDamage(Attack);
+        PendingHealTarget = FindLowestHpAlly();
     }
 
-    // ★ このヒールで回復する予定の味方を決める
-    PendingHealTarget = FindLowestHpAlly();
-
-    // 誰もダメージ受けてないならアニメだけでもOK
+    // アニメ再生
     if (UnitMesh)
     {
-        if (UAnimInstance* AnimInstance = UnitMesh->GetAnimInstance())
+        if (UAnimInstance* Anim = UnitMesh->GetAnimInstance())
         {
-            if (HealMontage)
+            if (HealMontage && !Anim->Montage_IsPlaying(HealMontage))
             {
-                if (!AnimInstance->Montage_IsPlaying(HealMontage))
-                {
-                    AnimInstance->Montage_Play(HealMontage);
-                }
+                Anim->Montage_Play(HealMontage);
             }
         }
     }
-
-    // ※ Super::AttackTarget(Target) は呼ばない！！
-    // 親から UseSkill を呼ばせる設計はやめて、Notify から回復する。
 }
+
 
 AUnit* ANurseUnit::FindLowestHpAlly() const
 {
@@ -141,3 +136,29 @@ void ANurseUnit::HandleHealNotify()
     ApplyHeal(PendingHealTarget);
 }
 
+AUnit* ANurseUnit::ChooseTarget() const
+{
+    // 回復が必要な味方を選ぶ（自分は除外）
+    AUnit* Best = nullptr;
+    float LowestRatio = 1.0f;
+
+    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    {
+        AUnit* Ally = *It;
+        if (!Ally || Ally == this) continue;
+        if (Ally->Team != Team) continue;
+        if (Ally->bIsDead || Ally->HP <= 0.f) continue;
+
+        // 満タンは回復対象にしない
+        if (Ally->HP >= Ally->MaxHP) continue;
+
+        const float Ratio = Ally->HP / FMath::Max(Ally->MaxHP, 1.0f);
+        if (Ratio < LowestRatio)
+        {
+            LowestRatio = Ratio;
+            Best = Ally;
+        }
+    }
+
+    return Best; // いないなら nullptr
+}

@@ -48,27 +48,25 @@ bool ABossEnemy::CanUseSkill() const
 void ABossEnemy::UseSkill(AUnit* Target)
 {
     if (!GetWorld() || !Target) return;
+    if (!MissileClass) return;
 
-    FVector Center = Target->GetActorLocation();
+    const FVector Center = Target->GetActorLocation();
 
-    // 周囲のプレイヤーユニットに範囲ダメージ
-    for (TActorIterator<AUnit> It(GetWorld()); It; ++It)
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.Instigator = GetInstigator();
+
+    const FVector SpawnLoc = GetActorLocation() + MissileSpawnOffset;
+    const FRotator SpawnRot = (Center - SpawnLoc).Rotation();
+
+    AAMissileProjectileBase* M = GetWorld()->SpawnActor<AAMissileProjectileBase>(MissileClass, SpawnLoc, SpawnRot, Params);
+    if (M)
     {
-        AUnit* Other = *It;
-        if (!Other) continue;
-        if (Other->Team == Team) continue;         // 敵チーム（プレイヤー）だけ
-        if (Other->bIsDead || Other->HP <= 0.f) continue;
-
-        float Dist = FVector::Dist(Center, Other->GetActorLocation());
-        if (Dist > MissileRadius) continue;
-
-        float Damage = Attack * MissileDamageMultiplier;
-        Other->TakePhysicalDamage(Damage);
+        M->OwnerTeam = Team; // Enemy
+        M->TargetLocation = Center;
+        M->ExplosionRadius = MissileRadius;
+        M->DamageAmount = Attack * MissileDamageMultiplier;
     }
-
-    UE_LOG(LogTemp, Warning,
-        TEXT("[BossEnemy] Missile Barrage used at %s"),
-        *Center.ToString());
 
     // クールタイムリセット
     SkillTimer = 0.f;

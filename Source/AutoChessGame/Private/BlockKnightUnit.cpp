@@ -30,18 +30,6 @@ ABlockKnightUnit::ABlockKnightUnit()
 void ABlockKnightUnit::BeginPlay()
 {
     Super::BeginPlay();
-
-    // š“G‚ª‚¢‚È‚­‚Ä‚àŽx‰‡‚Å‚«‚é‚æ‚¤‚ÉAƒ^ƒCƒ}[‚Å‰ñ‚·
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().SetTimer(
-            SupportLoopHandle,
-            this,
-            &ABlockKnightUnit::TrySupport,
-            SupportTick,
-            true
-        );
-    }
 }
 
 // š ˆê”ÔHP‚ª’á‚¢–¡•û‚ð’T‚·
@@ -170,4 +158,43 @@ void ABlockKnightUnit::RemoveDefenseBuff(AUnit* Target)
     }
 
     UE_LOG(LogTemp, Warning, TEXT("BlockKnight Buff End -> %s"), *Target->GetName());
+
+    Target->ShowBuffPopup(TEXT("DEF UP"));
+
+}
+
+AUnit* ABlockKnightUnit::ChooseTarget() const
+{
+    return FindLowestHpAlly();
+}
+
+void ABlockKnightUnit::AttackTarget(AUnit* Target)
+{
+    if (bIsDead) return;
+
+    bIsAttacking = true;
+
+    PendingSupportTarget = Target;
+
+    // ”O‚Ì‚½‚ß•ÛŒ¯
+    if (!PendingSupportTarget || PendingSupportTarget->Team != Team ||
+        PendingSupportTarget->bIsDead || PendingSupportTarget->HP <= 0.f)
+    {
+        PendingSupportTarget = FindLowestHpAlly();
+    }
+    if (!PendingSupportTarget) return;
+
+    const float Dist = FVector::Dist(GetActorLocation(), PendingSupportTarget->GetActorLocation());
+    if (Dist > SupportRange) return;
+
+    if (UnitMesh)
+    {
+        if (UAnimInstance* Anim = UnitMesh->GetAnimInstance())
+        {
+            if (SupportMontage && !Anim->Montage_IsPlaying(SupportMontage))
+            {
+                Anim->Montage_Play(SupportMontage);
+            }
+        }
+    }
 }

@@ -84,7 +84,9 @@ void AUnit::BeginPlay()
     BaseRange = Range;
     BaseMoveSpeed = MoveSpeed;
     BaseAttackInterval = AttackInterval;
-    
+    BaseCritChance = CritChance;
+    BaseCritMultiplier = CritMultiplier;
+
     LastLocation = GetActorLocation();
 
     // ★ HPバーの OwnerUnit をここでセット（今までやってた処理を少し強化）

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Unit.h"
+#include "AMissileProjectileBase.h"
 #include "BossEnemy.generated.h"
 
 /**
@@ -34,4 +35,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Skill")
     float MissileDamageMultiplier = 0.7f; // í èÌçUåÇÇÃ 0.7 î{ÇîÕàÕÇ…í«â¡
+
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Boss|Skill")
+    TSubclassOf<AAMissileProjectileBase>MissileClass;
+
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Boss|Skill")
+    FVector MissileSpawnOffset = FVector(0.f, 0.f, 120.f);
 };
