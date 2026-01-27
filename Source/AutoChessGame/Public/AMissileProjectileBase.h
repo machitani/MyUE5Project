@@ -55,6 +55,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UProjectileMovementComponent* ProjectileMovement = nullptr;
 
+    UPROPERTY(BlueprintReadWrite,Category="Missile")
+    AUnit* TargetUnit = nullptr;
+
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Missile")
+    float HomingAccel = 8000.f;
+
 private:
     bool bExploded = false;
 };

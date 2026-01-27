@@ -39,6 +39,16 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Boss|Skill")
     TSubclassOf<AAMissileProjectileBase>MissileClass;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Skill")
+    UAnimMontage* MissileMontage = nullptr;
+
+    UPROPERTY()
+    AUnit* PendingMissileTarget = nullptr;
+
     UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Boss|Skill")
     FVector MissileSpawnOffset = FVector(0.f, 0.f, 120.f);
+
+    UFUNCTION(BlueprintCallable)
+    void HandleMissileHitNotify();
+
 };
