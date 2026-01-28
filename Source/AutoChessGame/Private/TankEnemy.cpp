@@ -6,12 +6,12 @@
 
 ATankEnemy::ATankEnemy()
 {
-    MaxHP = 260.f;
+    MaxHP = 220.f;
     HP = MaxHP;
 
-    Attack = 14.f;   // ナイトより少し低め
-    Defense = 12.f;   // 物理めっちゃ硬い
-    MagicDefense = 6.f;    // 魔法もそこそこ
+    Attack = 10.f;   // ナイトより少し低め
+    Defense = 6.f;   // 物理めっちゃ硬い
+    MagicDefense = 4.f;    // 魔法もそこそこ
     MagicPower = 0.f;
 
     Range = 220.f;  // ほぼ近接

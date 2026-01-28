@@ -32,21 +32,21 @@ void UStageSelectWidget::NativeConstruct()
 void UStageSelectWidget::ApplyStage1()
 {
     if (Text_StageName) Text_StageName->SetText(FText::FromString(TEXT("STAGE:1")));
-    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:12")));
+    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:10")));
     if (Text_Difficulty)Text_Difficulty->SetText(FText::FromString(TEXT("EASY")));
 }
 
 void UStageSelectWidget::ApplyStage2()
 {
     if (Text_StageName) Text_StageName->SetText(FText::FromString(TEXT("STAGE:2")));
-    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:13")));
+    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:12")));
     if (Text_Difficulty)Text_Difficulty->SetText(FText::FromString(TEXT("NORMAL")));
 }
 
 void UStageSelectWidget::ApplyStage3()
 {
     if (Text_StageName) Text_StageName->SetText(FText::FromString(TEXT("STAGE:3")));
-    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:15")));
+    if (Text_Waves)     Text_Waves->SetText(FText::FromString(TEXT("Wave:12")));
     if (Text_Difficulty)Text_Difficulty->SetText(FText::FromString(TEXT("HARD")));
 }
 

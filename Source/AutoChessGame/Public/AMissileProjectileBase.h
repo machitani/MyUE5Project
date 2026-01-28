@@ -1,66 +1,45 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Unit.h"
 #include "GameFramework/Actor.h"
+#include "Unit.h"
 #include "AMissileProjectileBase.generated.h"
 
 class USphereComponent;
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
 
 UCLASS()
 class AUTOCHESSGAME_API AAMissileProjectileBase : public AActor
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     AAMissileProjectileBase();
+    virtual void Tick(float DeltaTime) override;
 
-    // Boss Ç™ Spawnå„Ç…ê›íËÇ∑ÇÈ
+    // BossÇ©ÇÁê›íËÇ≥ÇÍÇÈ
     UPROPERTY(BlueprintReadWrite, Category = "Missile")
-    FVector TargetLocation = FVector::ZeroVector;
+    AUnit* TargetUnit = nullptr;
 
     UPROPERTY(BlueprintReadWrite, Category = "Missile")
     float DamageAmount = 0.f;
 
     UPROPERTY(BlueprintReadWrite, Category = "Missile")
-    float ExplosionRadius = 600.f;
-
-    UPROPERTY(BlueprintReadWrite, Category = "Missile")
-    EUnitTeam OwnerTeam; // èâä˙âªÇÕcppÇ≈
+    EUnitTeam OwnerTeam = EUnitTeam::Enemy;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Missile")
-    float Speed = 1200.f;
+    float Speed = 800.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Missile")
+    float HitRadius = 60.f; // É~ÉTÉCÉãÇÕè≠ÇµëÂÇ´ÇﬂÇ≈Ç‡OK
 
 protected:
     virtual void BeginPlay() override;
-    virtual void Tick(float DeltaTime) override;
-
-    UFUNCTION()
-    void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-    void Explode(const FVector& Center);
 
 public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    USphereComponent* Collision = nullptr;
+    USphereComponent* Collision;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    UStaticMeshComponent* Mesh = nullptr;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    UProjectileMovementComponent* ProjectileMovement = nullptr;
-
-    UPROPERTY(BlueprintReadWrite,Category="Missile")
-    AUnit* TargetUnit = nullptr;
-
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Missile")
-    float HomingAccel = 8000.f;
-
-private:
-    bool bExploded = false;
+    UStaticMeshComponent* Mesh;
 };

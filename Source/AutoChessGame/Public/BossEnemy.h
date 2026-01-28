@@ -51,4 +51,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void HandleMissileHitNotify();
 
+    UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Missile")
+    FName MissileMuzzleSocketName = "Muzzle";
+
 };

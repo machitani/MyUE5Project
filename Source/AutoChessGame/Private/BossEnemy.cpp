@@ -6,17 +6,20 @@
 
 ABossEnemy::ABossEnemy()
 {
-    MaxHP = 600.f;
+    MaxHP = 520.f;
     HP = MaxHP;
 
-    Attack = 40.f;
-    Defense = 10.f;
-    MagicDefense = 8.f;
+    Attack = 30.f;
+    Defense = 6.f;
+    MagicDefense = 4.f;
     MagicPower = 0.f;
 
     Range = 550.f;   // 長めの射程
     MoveSpeed = 120.f;   // ちょっと遅め
     AttackInterval = 1.5f;
+
+    CritChance = 0.08f;
+    CritMultiplier = 1.6f;
 
     Team = EUnitTeam::Enemy;
     UnitID = FName("BossEnemy");
@@ -85,7 +88,9 @@ void ABossEnemy::AttackTarget(AUnit* Target)
 
 void ABossEnemy::HandleMissileHitNotify()
 {
+    UE_LOG(LogTemp, Warning, TEXT("[Boss] HandleMissileHitNotify fired"));
     if (bIsDead) return;
+
     UWorld* World = GetWorld();
     if (!World || !MissileClass) return;
 
@@ -99,70 +104,65 @@ void ABossEnemy::HandleMissileHitNotify()
 
     const FVector Center = PendingMissileTarget->GetActorLocation();
 
-    // 範囲内対象を集める
+    // ① 範囲内の「相手チーム」を集める（Boss=Enemy なら Player側）
     TArray<AUnit*> Targets;
+    Targets.Reserve(16);
+
     for (TActorIterator<AUnit> It(World); It; ++It)
     {
         AUnit* U = *It;
         if (!U) continue;
         if (U->bIsDead || U->HP <= 0.f) continue;
-        if (U->Team == Team) continue;
+        if (U->Team == Team) continue; // 同チーム除外
 
-        if (FVector::Dist(Center, U->GetActorLocation()) <= MissileRadius)
-        {
-            Targets.Add(U);
-        }
+        const float Dist = FVector::Dist(Center, U->GetActorLocation());
+        if (Dist > MissileRadius) continue;
+
+        Targets.Add(U);
     }
+
     if (Targets.Num() == 0) return;
 
+    // ② 総量を人数で割る（総ダメージは同じ）
     const float TotalDamage = Attack * MissileDamageMultiplier;
     const float PerDamage = TotalDamage / Targets.Num();
+
+    // ③ Spawn位置（まずは確実に見える位置）
+    FVector SpawnLoc = GetActorLocation() + GetActorForwardVector() * 200.f + FVector(0.f, 0.f, 120.f);
+    SpawnLoc += MissileSpawnOffset;
 
     FActorSpawnParameters Params;
     Params.Owner = this;
     Params.Instigator = GetInstigator();
-    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // ★確実
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    // ★確実にカメラに映りやすい高さで出す
-    const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 250.f) + MissileSpawnOffset;
-
+    // ④ 1体につき1発（Arrow方式のミサイルがTargetUnitを追う）
     for (AUnit* T : Targets)
     {
-        if (!T || !IsValid(T)) continue;
+        if (!IsValid(T)) continue;
 
         const FVector Aim = T->GetActorLocation();
         const FRotator SpawnRot = (Aim - SpawnLoc).Rotation();
 
-        const FTransform SpawnTM(SpawnRot, SpawnLoc);
-
-        // ★Deferred Spawn（BeginPlay前に値を入れられる）
         AAMissileProjectileBase* M =
-            GetWorld()->SpawnActorDeferred<AAMissileProjectileBase>(
-                MissileClass,
-                SpawnTM,
-                this,
-                GetInstigator(),
-                ESpawnActorCollisionHandlingMethod::AlwaysSpawn
-            );
+            World->SpawnActor<AAMissileProjectileBase>(MissileClass, SpawnLoc, SpawnRot, Params);
 
         if (M)
         {
             M->OwnerTeam = Team;
-            M->TargetUnit = T;          // ★ここが確実に反映される
-            M->TargetLocation = Aim;
+            M->TargetUnit = T;
             M->DamageAmount = PerDamage;
-            M->ExplosionRadius = 0.f;
 
-            M->FinishSpawning(SpawnTM);
+            // 好みで調整
+            // M->Speed = 900.f;
+            // M->HitRadius = 80.f;
         }
-
-        UE_LOG(LogTemp, Warning, TEXT("[Boss] Spawn Missile(Deferred) -> %s Target=%s"),
-            M ? *M->GetName() : TEXT("NULL"),
-            T ? *T->GetName() : TEXT("NULL"));
     }
 
+    // CT開始
     SkillTimer = 0.f;
+
+    // 状態リセット（止まり対策）
     bIsAttacking = false;
     PendingMissileTarget = nullptr;
 }
-

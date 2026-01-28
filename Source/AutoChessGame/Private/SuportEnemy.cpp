@@ -4,12 +4,12 @@
 
 ASuportEnemy::ASuportEnemy()
 {
-    MaxHP = 160.f;
+    MaxHP = 120.f;
     HP = MaxHP;
 
     Attack = 0.f;          // ★ サポ専なら殴らない（殴るなら値入れてOK）
-    Defense = 5.f;
-    MagicDefense = 5.f;
+    Defense = 3.f;
+    MagicDefense = 3.f;
     MagicPower = 10.f;
 
     Range = HealRadius;    // ★ 射程 = 回復射程（好みで）

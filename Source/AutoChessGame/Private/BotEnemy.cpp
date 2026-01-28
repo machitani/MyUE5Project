@@ -46,7 +46,7 @@ void ABotEnemy::AttackTarget(AUnit* Target)
     PendingTarget = Target;
 
     // ★ まずは「攻撃タイミングで即ビーム発射」にしておく
-    SpawnBusterShot(Target);
+    //SpawnBusterShot(Target);
 }
 
 bool ABotEnemy::CanUseSkill() const
