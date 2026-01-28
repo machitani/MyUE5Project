@@ -18,25 +18,23 @@ struct FItemData : public FTableRowBase
     GENERATED_BODY()
 
 public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FText Name = FText::GetEmpty();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FText Name;
+    int32 Price = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Price;
+    FName RowName = NAME_None;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FName RowName;
-
-    // ó·: ÉAÉCÉRÉìÇí«â¡ÇµÇΩèÍçá
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UTexture2D* ItemIcon;
+    UTexture2D* ItemIcon = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FString EffectType;
+    FString EffectType = TEXT("");
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float EffectValue;
+    float EffectValue = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EItemRarity Rarity = EItemRarity::Common;

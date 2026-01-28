@@ -111,7 +111,7 @@ void ASniperEnemy::SpawnSniperBullet(AUnit* Target)
 
     // ‚±‚±‚ª‘åŽ–F’e‚Éî•ñ‚ð“ü‚ê‚ÄA‘¬“x‚ð—^‚¦‚é
     P->TargetUnit = Target;
-    P->DamageAmount = Attack * BulletDamageMultiplier;
+    P->DamageAmount = Attack;
     P->OwnerTeam = Team;
 
     if (P->ProjectileMovement)

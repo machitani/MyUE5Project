@@ -27,7 +27,7 @@ protected:
     virtual void AttackTarget(AUnit* Target) override;
 
     // AnimNotify ‚©‚çŒÄ‚Ô
-    UFUNCTION()
+    UFUNCTION(BlueprintCallable)
     void HandleHealNotify();
 
     void ApplyHeal(AUnit* Ally);
@@ -42,7 +42,7 @@ public:
     float HealAmount = 25.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Support")
-    float HealRadius = 600.f;
+    float HealRadius = 10000.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Support")
     UAnimMontage* HealMontage = nullptr;

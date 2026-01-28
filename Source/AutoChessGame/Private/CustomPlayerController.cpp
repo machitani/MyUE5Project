@@ -30,7 +30,7 @@ ACustomPlayerController::ACustomPlayerController()
     PrimaryActorTick.bCanEverTick = true;
 }
 
-FORCEINLINE bool ACustomPlayerController::IsLevelUpLockingInput() const
+bool ACustomPlayerController::IsLevelUpLockingInput() const
 {
     return bIsLevelUpChoosing || bIsLevelUpAnimating;
 }

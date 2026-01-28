@@ -1,7 +1,6 @@
 // DuckUnit.cpp
-
-#include "EngineUtils.h"
 #include "DuckUnit.h"
+#include "EngineUtils.h"
 #include "Animation/AnimInstance.h"
 
 ADuckUnit::ADuckUnit()

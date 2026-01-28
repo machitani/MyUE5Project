@@ -124,8 +124,8 @@ void ABossEnemy::HandleMissileHitNotify()
     if (Targets.Num() == 0) return;
 
     // ② 総量を人数で割る（総ダメージは同じ）
-    const float TotalDamage = Attack * MissileDamageMultiplier;
-    const float PerDamage = TotalDamage / Targets.Num();
+   /* const float TotalDamage = Attack * MissileDamageMultiplier;
+    const float PerDamage = TotalDamage / Targets.Num();*/
 
     // ③ Spawn位置（まずは確実に見える位置）
     FVector SpawnLoc = GetActorLocation() + GetActorForwardVector() * 200.f + FVector(0.f, 0.f, 120.f);
@@ -151,7 +151,7 @@ void ABossEnemy::HandleMissileHitNotify()
         {
             M->OwnerTeam = Team;
             M->TargetUnit = T;
-            M->DamageAmount = PerDamage;
+            M->DamageAmount = Attack;
 
             // 好みで調整
             // M->Speed = 900.f;

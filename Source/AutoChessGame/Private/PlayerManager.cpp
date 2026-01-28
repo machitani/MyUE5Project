@@ -15,7 +15,7 @@ APlayerManager::APlayerManager()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-
+    ExpToNextLevel = 2;
 }
 
 void APlayerManager::AddItem(const FItemData& NewItem)
@@ -38,7 +38,7 @@ void APlayerManager::AddExp(int32 Amount)
         CurrentExp -= ExpToNextLevel;
         PlayerLevel++;
 
-        ExpToNextLevel += 4;
+        ExpToNextLevel += 2;
 
         if (MaxUnitCount < MaxUnitsHardCap)
         {

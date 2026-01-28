@@ -179,20 +179,20 @@ EItemRarity AShopManager::GetRandomRarityForLevel(int32 PlayerLevel) const
     if (PlayerLevel >= 3 && PlayerLevel <= 4)
     {
         CommonRate = 60;
-        RareRate = 30;
-        EpicRate = 10;
+        RareRate = 35;
+        EpicRate = 5;
     }
     else if (PlayerLevel >= 5 && PlayerLevel <= 6)
     {
         CommonRate = 40;
-        RareRate = 40;
-        EpicRate = 20;
+        RareRate = 50;
+        EpicRate = 10;
     }
     else if (PlayerLevel >= 7)
     {
         CommonRate = 20;
-        RareRate = 50;
-        EpicRate = 30;
+        RareRate = 60;
+        EpicRate = 20;
     }
 
     int Roll = FMath::RandRange(1, 100);
