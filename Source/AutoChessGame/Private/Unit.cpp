@@ -118,7 +118,7 @@ void AUnit::Tick(float DeltaTime)
     // ドラッグ中は常にマウス追従だけ
     if (bIsDragging)
     {
-        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+       /* APlayerController* PC = GetWorld()->GetFirstPlayerController();
         if (PC)
         {
             FVector MouseWorld, MouseDir;
@@ -126,7 +126,7 @@ void AUnit::Tick(float DeltaTime)
             {
                 UpdateDrag(MouseWorld);
             }
-        }
+        }*/
         return;
     }
 
@@ -157,7 +157,12 @@ void AUnit::StartDrag(const FVector& MouseWorld)
     if (!bCanDrag || bIsDragging) return;
 
     bIsDragging = true;
-    UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // ドラッグ中はカーソルTraceの邪魔をしないようにする
+    if (UnitMesh)
+    {
+        UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
 
     OriginalLocation = GetActorLocation();
 
@@ -172,7 +177,13 @@ void AUnit::StartDrag(const FVector& MouseWorld)
         CurrentTile = nullptr;
     }
 
-    DragOffset = GetActorLocation() - MouseWorld;
+    // ★ Zを固定（ドラッグ中に高さがブレない）
+    DragFixedZ = OriginalLocation.Z;
+
+    // ★ 掴んだ瞬間の「掴み点」からのオフセット
+    // MouseWorld は PlayerController から Hit.ImpactPoint を渡してくる前提
+    DragOffset = OriginalLocation - MouseWorld;
+    DragOffset.Z = 0.f; // Zは固定するので不要（見た目のズレ防止）
 }
 
 
@@ -181,9 +192,12 @@ void AUnit::UpdateDrag(const FVector& MouseWorld)
     if (!bIsDragging) return;
 
     FVector Target = MouseWorld + DragOffset;
-    Target.Z = GetActorLocation().Z;
 
-    SetActorLocation(Target);
+    // ★ Zは開始時の高さに固定
+    Target.Z = DragFixedZ;
+
+    // ★ 物理/衝突の押し返しでズレないようにテレポート寄りで
+    SetActorLocation(Target, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 void AUnit::EndDrag()

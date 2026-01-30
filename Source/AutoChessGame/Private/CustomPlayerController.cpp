@@ -60,20 +60,12 @@ void ACustomPlayerController::Tick(float DeltaSeconds)
 
     if (bIsDragging && SelectedUnit)
     {
-        float MouseX, MouseY;
-        if (GetMousePosition(MouseX, MouseY))
-        {
-            FVector WorldOrigin, WorldDir;
-            DeprojectScreenPositionToWorld(MouseX, MouseY, WorldOrigin, WorldDir);
-
-            FVector MouseWorldPoint = WorldOrigin + WorldDir * 500.f;
-            SelectedUnit->UpdateDrag(MouseWorldPoint);
-        }
-
-        // タイルハイライト
         FHitResult Hit;
-        if (GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+        if (GetHitResultUnderCursor(ECC_Visibility, false, Hit) && Hit.bBlockingHit)
         {
+            SelectedUnit->UpdateDrag(Hit.ImpactPoint);
+
+            // タイルハイライト（同じHitを流用）
             ATile* HoveredTile = Cast<ATile>(Hit.GetActor());
 
             if (LastHighlightedTile && LastHighlightedTile != HoveredTile)
@@ -92,10 +84,13 @@ void ACustomPlayerController::Tick(float DeltaSeconds)
                 LastHighlightedTile = nullptr;
             }
         }
-        else if (LastHighlightedTile)
+        else
         {
-            LastHighlightedTile->SetTileHighlight(false);
-            LastHighlightedTile = nullptr;
+            if (LastHighlightedTile)
+            {
+                LastHighlightedTile->SetTileHighlight(false);
+                LastHighlightedTile = nullptr;
+            }
         }
     }
 }
@@ -310,6 +305,8 @@ void ACustomPlayerController::OnLeftMouseDown()
         if (AUnit* Unit = Cast<AUnit>(Hit.GetActor()))
         {
             if (!Unit->bCanDrag)return;
+
+            if (Unit->Team != EUnitTeam::Player) return;
 
             SelectedUnit = Unit;
             bIsDragging = true;

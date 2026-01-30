@@ -214,6 +214,30 @@ void ABoardManager::HandleDefeat()
 }
 
 
+void ABoardManager::UpdateBGMForPhase()
+{
+    if (!AudioManagerRef) return;
+
+    USoundBase* Target = nullptr;
+    if (CurrentPhase == EGamePhase::Preparation) Target = BGM_Prepare;
+    else if (CurrentPhase == EGamePhase::Battle) Target = BGM_Battle;
+    else return;
+
+    if (!Target) return;
+
+    static const FName FuncName(TEXT("SwitchBGM")); // BP側の関数名と一致必須
+    UFunction* Func = AudioManagerRef->FindFunction(FuncName);
+    if (!Func)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BP_AudioManager has no function SwitchBGM"));
+        return;
+    }
+
+    struct FParams { USoundBase* NewSound; };
+    FParams Params{ Target };
+    AudioManagerRef->ProcessEvent(Func, &Params);
+}
+
 void ABoardManager::BeginPlay()
 {
     Super::BeginPlay();
@@ -276,6 +300,13 @@ void ABoardManager::BeginPlay()
         {
             ShopManagerRef->PlayerManagerRef = PlayerManagerInstance;
         }
+    }
+
+    if (AudioManagerClass)
+    {
+        TArray<AActor*> FoundAudio;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AudioManagerClass, FoundAudio);
+        AudioManagerRef = (FoundAudio.Num() > 0) ? FoundAudio[0] : nullptr;
     }
 
     // 8) 準備フェーズ
@@ -622,6 +653,7 @@ void ABoardManager::StartPreparationPhase()
     }
 
     UpdateHUD();
+    UpdateBGMForPhase();
 }
 
 void ABoardManager::StartBattlePhase()
@@ -646,6 +678,7 @@ void ABoardManager::StartBattlePhase()
     bBattleRequested = false;
 
     CurrentPhase = EGamePhase::Battle;
+    UpdateBGMForPhase();
     bRoundEnded = false;
 
     UE_LOG(LogTemp, Warning, TEXT("Battle Phase Started! Round %d"), CurrentRound);
@@ -660,6 +693,7 @@ void ABoardManager::StartBattlePhase()
     }
         UpdateHUD();
         StartNextRound();
+
     
 }
 

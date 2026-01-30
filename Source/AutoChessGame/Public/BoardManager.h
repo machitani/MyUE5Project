@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "EnemyWaveData.h"
+#include "Sound/SoundBase.h"
 #include "BoardManager.generated.h"
 
 class ATile;
@@ -11,6 +12,7 @@ class APlayerManager;
 class AShopManager;
 class UUserWidget;
 class UPlayerHUD;
+class AActor;
 
 UENUM(BlueprintType)
 enum class EGamePhase : uint8
@@ -266,6 +268,20 @@ public:
     void StartStage(int32 Stage);
 
     void LoadEnemyWavesFromTable(UDataTable* Table);
+
+    UPROPERTY(EditAnywhere,Category="Audio")
+    USoundBase* BGM_Prepare = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* BGM_Battle = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    TSubclassOf<AActor> AudioManagerClass;
+
+    UPROPERTY()
+    AActor* AudioManagerRef = nullptr;
+
+    void UpdateBGMForPhase();
 
     protected:
         virtual void BeginPlay() override;

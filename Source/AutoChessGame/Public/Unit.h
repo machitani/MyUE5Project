@@ -225,6 +225,8 @@ public:
     UFUNCTION()
     void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
+    float DragFixedZ = 0.f;
+
     // ==== ターゲット =====
     UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="Combat")
     AUnit* CurrentTarget = nullptr;
