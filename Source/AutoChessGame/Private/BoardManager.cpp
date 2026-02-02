@@ -13,6 +13,7 @@
 #include "Components/Image.h"
 #include "TMAGameInstance.h"
 #include "EnemyWaveData.h"
+#include "AudioManagerBase.h"
 #include "CustomPlayerController.h"
 
 
@@ -225,18 +226,10 @@ void ABoardManager::UpdateBGMForPhase()
 
     if (!Target) return;
 
-    static const FName FuncName(TEXT("SwitchBGM")); // BP側の関数名と一致必須
-    UFunction* Func = AudioManagerRef->FindFunction(FuncName);
-    if (!Func)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("BP_AudioManager has no function SwitchBGM"));
-        return;
-    }
-
-    struct FParams { USoundBase* NewSound; };
-    FParams Params{ Target };
-    AudioManagerRef->ProcessEvent(Func, &Params);
+    AudioManagerRef->SwitchBGM(Target);
 }
+
+
 
 void ABoardManager::BeginPlay()
 {
@@ -305,8 +298,21 @@ void ABoardManager::BeginPlay()
     if (AudioManagerClass)
     {
         TArray<AActor*> FoundAudio;
-        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AudioManagerClass, FoundAudio);
-        AudioManagerRef = (FoundAudio.Num() > 0) ? FoundAudio[0] : nullptr;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAudioManagerBase::StaticClass(), FoundAudio);
+        AudioManagerRef = FoundAudio.Num() > 0 ? Cast<AAudioManagerBase>(FoundAudio[0]) : nullptr;
+
+    }
+
+    // 2) Tag で探す（保険）
+    if (!AudioManagerRef)
+    {
+        TArray<AActor*> FoundByTag;
+        UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("AudioManager"), FoundByTag);
+
+        if (FoundByTag.Num() > 0)
+        {
+            AudioManagerRef = Cast<AAudioManagerBase>(FoundByTag[0]); // ★Cast必須
+        }
     }
 
     // 8) 準備フェーズ
@@ -678,7 +684,7 @@ void ABoardManager::StartBattlePhase()
     bBattleRequested = false;
 
     CurrentPhase = EGamePhase::Battle;
-    UpdateBGMForPhase();
+    
     bRoundEnded = false;
 
     UE_LOG(LogTemp, Warning, TEXT("Battle Phase Started! Round %d"), CurrentRound);
@@ -691,6 +697,7 @@ void ABoardManager::StartBattlePhase()
             Unit->ReapplayAllItemEffects();
         }
     }
+        UpdateBGMForPhase();
         UpdateHUD();
         StartNextRound();
 

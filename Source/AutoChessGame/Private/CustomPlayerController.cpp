@@ -14,6 +14,7 @@
 #include "Components/TextBlock.h"
 #include "Engine/GameViewportClient.h"
 #include "PlayerManager.h"
+#include "EndMenuWidget.h"
 #include "LevelUpRewardWidget.h"
 
 
@@ -521,10 +522,12 @@ void ACustomPlayerController::ShowEndMenu(bool bGameClear)
 {
     if (!EndMenuClass) return;
 
+    // š UEndMenuWidget ‚Æ‚µ‚Ä¶¬E•Û‚·‚é
     if (!EndMenuInstance)
     {
-        EndMenuInstance = CreateWidget<UUserWidget>(this, EndMenuClass);
+        EndMenuInstance = CreateWidget<UEndMenuWidget>(this, EndMenuClass);
     }
+
     if (EndMenuInstance && !EndMenuInstance->IsInViewport())
     {
         EndMenuInstance->AddToViewport(300);
@@ -539,21 +542,13 @@ void ACustomPlayerController::ShowEndMenu(bool bGameClear)
     Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
     SetInputMode(Mode);
 
-    // ƒQ[ƒ€~‚ß‚éiEnd‚ÍPause‚ÅOKj
+    // ƒQ[ƒ€~‚ß‚é
     SetPause(true);
 
-    if (EndMenuInstance)
+    if (UEndMenuWidget* W = Cast<UEndMenuWidget>(EndMenuInstance))
     {
-        if (UTextBlock* Title = Cast<UTextBlock>(EndMenuInstance->GetWidgetFromName(TEXT("TitleText"))))
-        {
-            Title->SetText(FText::FromString(bGameClear ? TEXT("GAME CLEAR") : TEXT("GAME OVER")));
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("[EndMenu] TitleText not found. Check widget name in WBP_EndMenu."));
-        }
+        W->SetEndTitle(bGameClear);
     }
-    // bGameClear ‚ğWBP‚É“n‚µ‚½‚¢‚È‚çAWBP‘¤‚Å GetOwningPlayer¨Cast¨‰½‚©QÆ‚Å‚àOK
 }
 
 void ACustomPlayerController::HideEndMenu()

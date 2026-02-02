@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "EnemyWaveData.h"
 #include "Sound/SoundBase.h"
+#include "AudioManagerBase.h" 
 #include "BoardManager.generated.h"
 
 class ATile;
@@ -275,11 +276,11 @@ public:
     UPROPERTY(EditAnywhere, Category = "Audio")
     USoundBase* BGM_Battle = nullptr;
 
-    UPROPERTY(EditAnywhere, Category = "Audio")
-    TSubclassOf<AActor> AudioManagerClass;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+    TSubclassOf<AAudioManagerBase> AudioManagerClass;
 
-    UPROPERTY()
-    AActor* AudioManagerRef = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+    AAudioManagerBase* AudioManagerRef = nullptr;
 
     void UpdateBGMForPhase();
 
