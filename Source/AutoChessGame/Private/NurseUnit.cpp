@@ -1,25 +1,27 @@
-#include "NurseUnit.h"
+ï»¿#include "NurseUnit.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Animation/AnimInstance.h"
 
 ANurseUnit::ANurseUnit()
 {
-    // ƒXƒe[ƒ^ƒXF‚»‚±‚»‚±d‚¢ƒq[ƒ‰[
+    // ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ï¼šãã“ãã“ç¡¬ã„ãƒ’ãƒ¼ãƒ©ãƒ¼
     MaxHP = 90.f;
     HP = MaxHP;
 
-    Attack = 6.f;      // UŒ‚‚Íã‚ß
+    Attack = 6.f;      // æ”»æ’ƒã¯å¼±ã‚
     Defense = 2.f;
     MagicDefense = 4.f;
-    MagicPower = 18.f;     // ‰ñ•œ—Êƒx[ƒX
+    MagicPower = 18.f;     // å›å¾©é‡ãƒ™ãƒ¼ã‚¹
 
-    Range = 300.f;    // ‰ñ•œ‘ÎÛ‚ğ’T‚·Ë’ö
+    Range = 300.f;    // å›å¾©å¯¾è±¡ã‚’æ¢ã™å°„ç¨‹
     MoveSpeed = 130.f;
     AttackInterval = 1.2f;
 
     Team = EUnitTeam::Player;
     UnitID = FName("Nurse");
+
+    HealMontage = nullptr;
 }
 
 void ANurseUnit::BeginPlay()
@@ -29,13 +31,13 @@ void ANurseUnit::BeginPlay()
 
 bool ANurseUnit::CanUseSkill() const
 {
-    // š e‚©‚ç‚Í‚à‚¤ Skill ‚ğŒÄ‚Î‚¹‚È‚¢
+    // â˜… è¦ªã‹ã‚‰ã¯ã‚‚ã† Skill ã‚’å‘¼ã°ã›ãªã„
     return false;
 }
 
 void ANurseUnit::UseSkill(AUnit* Target)
 {
-    // ¡‚Íg‚í‚È‚¢B«—ˆ•Ê‚ÌƒXƒLƒ‹‚ğì‚è‚½‚­‚È‚Á‚½‚ç‚±‚±‚É
+    // ä»Šã¯ä½¿ã‚ãªã„ã€‚å°†æ¥åˆ¥ã®ã‚¹ã‚­ãƒ«ã‚’ä½œã‚ŠãŸããªã£ãŸã‚‰ã“ã“ã«
 }
 
 void ANurseUnit::AttackTarget(AUnit* Target)
@@ -44,16 +46,16 @@ void ANurseUnit::AttackTarget(AUnit* Target)
 
     bIsAttacking = true;
 
-    // Target ‚Í–¡•û‚Ì‘z’è
+    // Target ã¯å‘³æ–¹ã®æƒ³å®š
     PendingHealTarget = Target;
 
-    // ”O‚Ì‚½‚ß•ÛŒ¯ieAI‚ª•Ï‚È’l“n‚µ‚½ê‡j
+    // å¿µã®ãŸã‚ä¿é™ºï¼ˆè¦ªAIãŒå¤‰ãªå€¤æ¸¡ã—ãŸå ´åˆï¼‰
     if (!PendingHealTarget || PendingHealTarget->Team != Team)
     {
         PendingHealTarget = FindLowestHpAlly();
     }
 
-    // ƒAƒjƒÄ¶
+    // ã‚¢ãƒ‹ãƒ¡å†ç”Ÿ
     if (UnitMesh)
     {
         if (UAnimInstance* Anim = UnitMesh->GetAnimInstance())
@@ -96,12 +98,12 @@ void ANurseUnit::ApplyHeal(AUnit* Ally)
 
     const float HealBase = MagicPower * 1.3f;
 
-    // š ÀÛ‚Éu‚Ç‚ê‚¾‚¯‘‚¦‚½‚©v‚ğ‚¿‚á‚ñ‚ÆŒvZ‚·‚é
+    // â˜… å®Ÿéš›ã«ã€Œã©ã‚Œã ã‘å¢—ãˆãŸã‹ã€ã‚’ã¡ã‚ƒã‚“ã¨è¨ˆç®—ã™ã‚‹
     const float OldHP = Ally->HP;
     const float NewHP = FMath::Clamp(OldHP + HealBase, 0.f, Ally->MaxHP);
     const float ActualHeal = NewHP - OldHP;
 
-    // ãŒÀ‚ÅƒJƒ“ƒXƒg‚µ‚Ä‘‚¦‚È‚©‚Á‚½‚çƒ|ƒbƒvƒAƒbƒv‚ào‚³‚È‚¢
+    // ä¸Šé™ã§ã‚«ãƒ³ã‚¹ãƒˆã—ã¦å¢—ãˆãªã‹ã£ãŸã‚‰ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—ã‚‚å‡ºã•ãªã„
     if (ActualHeal <= 0.f)
     {
         UE_LOG(LogTemp, Warning,
@@ -116,16 +118,24 @@ void ANurseUnit::ApplyHeal(AUnit* Ally)
         TEXT("Nurse %s heals %s (%.1f -> %.1f, +%.1f)"),
         *GetName(), *Ally->GetName(), OldHP, NewHP, ActualHeal);
 
-    // š ‚±‚±‚Åƒq[ƒ‹ƒ|ƒbƒvƒAƒbƒv‚ğo‚·i‰ñ•œ‚³‚ê‚½‘¤‚Ì“ªãj
-    Ally->ShowHealPopup(ActualHeal);
+    // â˜… ã“ã“ã§ãƒ’ãƒ¼ãƒ«ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—ã‚’å‡ºã™ï¼ˆå›å¾©ã•ã‚ŒãŸå´ã®é ­ä¸Šï¼‰
 
-    // HPƒo[‚âƒzƒo[UI‚ğ‘¦XV‚µ‚½‚©‚Á‚½‚çA‚±‚±‚ÅŒÄ‚Ô‚Ì‚àƒAƒŠF
+    UE_LOG(LogTemp, Warning, TEXT("Healed target = %s | class = %s"),
+        *Ally->GetName(),
+        *Ally->GetClass()->GetName());
+
+
+    Ally->BP_OnHealed(ActualHeal);
+    Ally->ShowHealPopup(ActualHeal);
+    
+
+    // HPãƒãƒ¼ã‚„ãƒ›ãƒãƒ¼UIã‚’å³æ™‚æ›´æ–°ã—ãŸã‹ã£ãŸã‚‰ã€ã“ã“ã§å‘¼ã¶ã®ã‚‚ã‚¢ãƒªï¼š
     // Ally->RefreshHoverInfo();
 }
 
 void ANurseUnit::HandleHealNotify()
 {
-    // ‚à‚µ PendingHealTarget ‚ª€‚ñ‚Å‚½‚èÁ‚¦‚Ä‚½‚çA‚à‚¤ˆê‰ñ’T‚·
+    // ã‚‚ã— PendingHealTarget ãŒæ­»ã‚“ã§ãŸã‚Šæ¶ˆãˆã¦ãŸã‚‰ã€ã‚‚ã†ä¸€å›æ¢ã™
     if (!PendingHealTarget || !IsValid(PendingHealTarget) || PendingHealTarget->HP <= 0.f)
     {
         PendingHealTarget = FindLowestHpAlly();
@@ -138,7 +148,7 @@ void ANurseUnit::HandleHealNotify()
 
 AUnit* ANurseUnit::ChooseTarget() const
 {
-    // ‰ñ•œ‚ª•K—v‚È–¡•û‚ğ‘I‚Ôi©•ª‚ÍœŠOj
+    // å›å¾©ãŒå¿…è¦ãªå‘³æ–¹ã‚’é¸ã¶ï¼ˆè‡ªåˆ†ã¯é™¤å¤–ï¼‰
     AUnit* Best = nullptr;
     float LowestRatio = 1.0f;
 
@@ -149,7 +159,7 @@ AUnit* ANurseUnit::ChooseTarget() const
         if (Ally->Team != Team) continue;
         if (Ally->bIsDead || Ally->HP <= 0.f) continue;
 
-        // –ƒ^ƒ“‚Í‰ñ•œ‘ÎÛ‚É‚µ‚È‚¢
+        // æº€ã‚¿ãƒ³ã¯å›å¾©å¯¾è±¡ã«ã—ãªã„
         if (Ally->HP >= Ally->MaxHP) continue;
 
         const float Ratio = Ally->HP / FMath::Max(Ally->MaxHP, 1.0f);
@@ -160,5 +170,5 @@ AUnit* ANurseUnit::ChooseTarget() const
         }
     }
 
-    return Best; // ‚¢‚È‚¢‚È‚ç nullptr
+    return Best; // ã„ãªã„ãªã‚‰ nullptr
 }

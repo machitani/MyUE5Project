@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -32,7 +32,7 @@ public:
     virtual void Tick(float DeltaTime) override;
     virtual void BeginPlay() override;
 
-    // ====== ƒXƒe[ƒ^ƒX ======
+    // ====== ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float HP = 100.f;
 
@@ -84,7 +84,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     EUnitTeam Team = EUnitTeam::Player;
 
-    // ====== –hŒäŒn / –‚–@ŒnƒXƒe[ƒ^ƒX ======
+    // ====== é˜²å¾¡ç³» / é­”æ³•ç³»ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Defense")
     float Defense = 0.f;
 
@@ -94,7 +94,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Magic")
     float MagicDefense = 0.f;
 
-    // ====== UŒ‚ŠÔŠu ======
+    // ====== æ”»æ’ƒé–“éš” ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float AttackInterval = 1.0f;
 
@@ -103,7 +103,7 @@ public:
     TWeakObjectPtr<AUnit> PendingTarget;
 
 
-    // ƒ^[ƒQƒbƒgØ‚è‘Ö‚¦—}§
+    // ã‚¿ãƒ¼ã‚²ãƒƒãƒˆåˆ‡ã‚Šæ›¿ãˆæŠ‘åˆ¶
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
     float TargetSwitchCooldown = 1.0f;
 
@@ -114,11 +114,11 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Stats")
     float BaseAttackInterval = 1.0f;
 
-    // ====== ƒƒbƒVƒ… ======
+    // ====== ãƒ¡ãƒƒã‚·ãƒ¥ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USkeletalMeshComponent* UnitMesh;
 
-    // ====== ƒ^ƒCƒ‹ŠÖ˜A ======
+    // ====== ã‚¿ã‚¤ãƒ«é–¢é€£ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     ATile* CurrentTile;
 
@@ -130,11 +130,11 @@ public:
     UPROPERTY()
     ATile* DragStartTile = nullptr;
 
-    // ====== ƒ{[ƒhManager ======
+    // ====== ãƒœãƒ¼ãƒ‰Manager ======
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     ABoardManager* OwningBoardManager;
 
-    // ====== ƒAƒCƒeƒ€ ======
+    // ====== ã‚¢ã‚¤ãƒ†ãƒ  ======
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     TArray<FItemData> EquipedItems;
 
@@ -158,7 +158,7 @@ public:
     void ShowUnitInfo();
     void HideUnitInfo();
 
-    // ====== ó‘Ô ======
+    // ====== çŠ¶æ…‹ ======
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 
     bool bIsMoving = false;
@@ -181,16 +181,16 @@ public:
     void UpdateDrag(const FVector& MouseWorld);
     void EndDrag();
 
-    // ====== ˆÚ“®EUŒ‚ ======
+    // ====== ç§»å‹•ãƒ»æ”»æ’ƒ ======
     virtual void CheckForTarget(float DeltaTime);
     virtual void AttackTarget(AUnit* Target);
 
-    // ====== ƒ_ƒ[ƒWˆ— ======
+    // ====== ãƒ€ãƒ¡ãƒ¼ã‚¸å‡¦ç† ======
     virtual void TakePhysicalDamage(float DamageAmount);
     virtual void TakeMagicDamage(float DamageAmount);
     void ApplyPoison(float Duration, float DamagePerTick, float TickInterval);
 
-    // ====== ƒXƒLƒ‹ƒVƒXƒeƒ€ ======
+    // ====== ã‚¹ã‚­ãƒ«ã‚·ã‚¹ãƒ†ãƒ  ======
     virtual bool CanUseSkill() const { return false; }
     virtual void UseSkill(AUnit* Target) {}
 
@@ -204,30 +204,30 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
     float SkillTimer = 0.0f;
 
-    // ====== €–S ======
+    // ====== æ­»äº¡ ======
     virtual void OnDeath();
 
     UFUNCTION(BlueprintCallable,Category="Death")
     void OnDeathFinished();
 
-    // ====== ƒAƒjƒ ======
+    // ====== ã‚¢ãƒ‹ãƒ¡ ======
     void UpdateAnimationState();
     FVector LastLocation;
 
-    // ====== ƒZ[ƒu ======
+    // ====== ã‚»ãƒ¼ãƒ– ======
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
     FName UnitID;
 
     FUnitSaveData MakeSaveData();
     void ApplySaveData(const FUnitSaveData& Data);
 
-    // ====== ƒ}ƒEƒX ======
+    // ====== ãƒã‚¦ã‚¹ ======
     UFUNCTION()
     void OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
     float DragFixedZ = 0.f;
 
-    // ==== ƒ^[ƒQƒbƒg =====
+    // ==== ã‚¿ãƒ¼ã‚²ãƒƒãƒˆ =====
     UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="Combat")
     AUnit* CurrentTarget = nullptr;
 
@@ -244,7 +244,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
     float RotationInterpSpeed = 10.f;       
 
-    // ¦Œ©‚½–Ú—p‚Ì”÷’²®‚ª•K—v‚É‚È‚Á‚½‚ç‚±‚ê‚ğg‚¤i¡‚Í 0 ‚ÅOKj
+    // â€»è¦‹ãŸç›®ç”¨ã®å¾®èª¿æ•´ãŒå¿…è¦ã«ãªã£ãŸã‚‰ã“ã‚Œã‚’ä½¿ã†ï¼ˆä»Šã¯ 0 ã§OKï¼‰
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
     float FacingYawOffset = 0.f;
 
@@ -253,7 +253,7 @@ public:
     UFUNCTION()
     void RefreshHoverInfo();
 
-    //HPƒo[
+    //HPãƒãƒ¼
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="UI")
     UWidgetComponent* HPBarWidget;
 
@@ -263,7 +263,7 @@ public:
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Component")
     USceneComponent* RootScene;
 
-    // ====== ƒ_ƒ[ƒWƒ|ƒbƒvƒAƒbƒv ======
+    // ====== ãƒ€ãƒ¡ãƒ¼ã‚¸ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ— ======
     UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="UI")
     TSubclassOf<UDamagePopupWidget> DamagePopupWidgetClass;
 
@@ -277,9 +277,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Combat")
     float CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical);
 
-    // ƒ|ƒbƒvƒAƒbƒv—p‚É’¼‘O‚Ìƒqƒbƒgó‘Ô‚ğŠo‚¦‚Ä‚¨‚­
+    // ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—ç”¨ã«ç›´å‰ã®ãƒ’ãƒƒãƒˆçŠ¶æ…‹ã‚’è¦šãˆã¦ãŠã
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
     bool bLastHitWasCritical = false;
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Heal")
+    void BP_OnHealed(float Amount);
 
     protected:
         //bool bIsPoisoned = false;

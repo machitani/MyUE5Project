@@ -1,4 +1,4 @@
-#include "Unit.h"
+ï»¿#include "Unit.h"
 #include "Tile.h"
 #include "DamagePopupWidget.h"
 #include "BoardManager.h"
@@ -20,18 +20,18 @@ AUnit::AUnit()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    TargetSwitchCooldown = 1.0f;   // ‚Ü‚¸‚Í1•b
+    TargetSwitchCooldown = 1.0f;   // ã¾ãšã¯1ç§’
     TargetLockUntilTime = 0.0f;
-    TimeSinceLastAttack = 0.0f;   // ‚±‚ê‚à–Y‚ê‚¸i–¢‰Šú‰»‚¾‚ÆUŒ‚ŠÔŠu‚ª‰ó‚ê‚éj
+    TimeSinceLastAttack = 0.0f;   // ã“ã‚Œã‚‚å¿˜ã‚Œãšï¼ˆæœªåˆæœŸåŒ–ã ã¨æ”»æ’ƒé–“éš”ãŒå£Šã‚Œã‚‹ï¼‰
 
     CurrentTarget = nullptr;
     bIsAttacking = false;
 
-    // š ‚Ü‚¸‹ó‚Ìƒ‹[ƒg‚ğì‚Á‚ÄA‚»‚ê‚ğRootComponent‚É‚·‚é
+    // â˜… ã¾ãšç©ºã®ãƒ«ãƒ¼ãƒˆã‚’ä½œã£ã¦ã€ãã‚Œã‚’RootComponentã«ã™ã‚‹
     RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
     RootComponent = RootScene;
 
-    // ™ ƒƒbƒVƒ…‚Í RootScene ‚Ìq
+    // â˜† ãƒ¡ãƒƒã‚·ãƒ¥ã¯ RootScene ã®å­
     UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
     UnitMesh->SetupAttachment(RootComponent);
 
@@ -40,7 +40,7 @@ AUnit::AUnit()
     UnitMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
     UnitMesh->OnClicked.AddDynamic(this, &AUnit::OnUnitClicked);
 
-    // ™ HPƒo[‚à RootScene ‚ÌqiƒƒbƒVƒ…‚Ìq‚¶‚á‚È‚¢j
+    // â˜† HPãƒãƒ¼ã‚‚ RootScene ã®å­ï¼ˆãƒ¡ãƒƒã‚·ãƒ¥ã®å­ã˜ã‚ƒãªã„ï¼‰
     HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarWidget"));
     HPBarWidget->SetupAttachment(RootComponent);
 
@@ -52,7 +52,7 @@ AUnit::AUnit()
     HPBarWidget->SetCastShadow(false);
     HPBarWidget->bCastInsetShadow = false;
 
-    HPBarWidget->SetUsingAbsoluteRotation(true); // ‚¨D‚İ‚Å
+    HPBarWidget->SetUsingAbsoluteRotation(true); // ãŠå¥½ã¿ã§
 
     bIsDragging = false;
     bCanDrag = true;
@@ -62,20 +62,20 @@ void AUnit::BeginPlay()
 {
     Super::BeginPlay();
 
-    // --- HP / MaxHP / BaseHP ‚ğ‚«‚Á‚¿‚è‘µ‚¦‚é ---
+    // --- HP / MaxHP / BaseHP ã‚’ãã£ã¡ã‚Šæƒãˆã‚‹ ---
     if (MaxHP <= 0.f)
     {
-        // ”h¶ƒNƒ‰ƒX‚Å MaxHP ‚ğİ’è‚µ‚Ä‚È‚¢ê‡‚Ì•ÛŒ¯
+        // æ´¾ç”Ÿã‚¯ãƒ©ã‚¹ã§ MaxHP ã‚’è¨­å®šã—ã¦ãªã„å ´åˆã®ä¿é™º
         MaxHP = FMath::Max(HP, 1.f);
     }
     else
     {
-        // ”h¶ƒNƒ‰ƒXiKnight / Archer ‚È‚Çj‚Å MaxHP ‚ğŒˆ‚ß‚Ä‚¢‚é‚È‚ç
-        // ‚»‚ê‚ğ³‚Æ‚·‚é
+        // æ´¾ç”Ÿã‚¯ãƒ©ã‚¹ï¼ˆKnight / Archer ãªã©ï¼‰ã§ MaxHP ã‚’æ±ºã‚ã¦ã„ã‚‹ãªã‚‰
+        // ãã‚Œã‚’æ­£ã¨ã™ã‚‹
         HP = MaxHP;
     }
 
-    // u‘f‚ÌƒXƒe[ƒ^ƒXv‚Í‘S•” Base` ‚É‘Ş”ğ
+    // ã€Œç´ ã®ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã€ã¯å…¨éƒ¨ Baseï½ ã«é€€é¿
     BaseHP = MaxHP;
     BaseAttack = Attack;
     BaseDefense = Defense;
@@ -89,10 +89,10 @@ void AUnit::BeginPlay()
 
     LastLocation = GetActorLocation();
 
-    // š HPƒo[‚Ì OwnerUnit ‚ğ‚±‚±‚ÅƒZƒbƒgi¡‚Ü‚Å‚â‚Á‚Ä‚½ˆ—‚ğ­‚µ‹­‰»j
+    // â˜… HPãƒãƒ¼ã® OwnerUnit ã‚’ã“ã“ã§ã‚»ãƒƒãƒˆï¼ˆä»Šã¾ã§ã‚„ã£ã¦ãŸå‡¦ç†ã‚’å°‘ã—å¼·åŒ–ï¼‰
     if (HPBarWidget)
     {
-        HPBarWidget->InitWidget();  // Widget ‚ğŠmÀ‚É¶¬
+        HPBarWidget->InitWidget();  // Widget ã‚’ç¢ºå®Ÿã«ç”Ÿæˆ
 
         if (UUserWidget* UW = HPBarWidget->GetUserWidgetObject())
         {
@@ -109,13 +109,13 @@ void AUnit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    // €–S’†‚ÍAI‚àƒhƒ‰ƒbƒO‚à~‚ß‚é
+    // æ­»äº¡ä¸­ã¯AIã‚‚ãƒ‰ãƒ©ãƒƒã‚°ã‚‚æ­¢ã‚ã‚‹
     if (bIsDead)
     {
         return;
     }
 
-    // ƒhƒ‰ƒbƒO’†‚Íí‚Éƒ}ƒEƒX’Ç]‚¾‚¯
+    // ãƒ‰ãƒ©ãƒƒã‚°ä¸­ã¯å¸¸ã«ãƒã‚¦ã‚¹è¿½å¾“ã ã‘
     if (bIsDragging)
     {
        /* APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -130,13 +130,13 @@ void AUnit::Tick(float DeltaTime)
         return;
     }
 
-    // ƒXƒLƒ‹ƒ^ƒCƒ}[isi¡‚Íg‚Á‚Ä‚È‚­‚Ä‚àOKj
+    // ã‚¹ã‚­ãƒ«ã‚¿ã‚¤ãƒãƒ¼é€²è¡Œï¼ˆä»Šã¯ä½¿ã£ã¦ãªãã¦ã‚‚OKï¼‰
     if (bHasSkill)
     {
         SkillTimer = FMath::Min(SkillTimer + DeltaTime, SkillCooldown);
     }
 
-    // ƒoƒgƒ‹’†‚¾‚¯AI‚ğ“®‚©‚·
+    // ãƒãƒˆãƒ«ä¸­ã ã‘AIã‚’å‹•ã‹ã™
     if (OwningBoardManager && OwningBoardManager->CurrentPhase == EGamePhase::Battle)
     {
         CheckForTarget(DeltaTime);
@@ -144,7 +144,7 @@ void AUnit::Tick(float DeltaTime)
     }
     else
     {
-        // í“¬ŠO‚Íƒ^[ƒQƒbƒg‚ğ–Y‚ê‚é
+        // æˆ¦é—˜å¤–ã¯ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’å¿˜ã‚Œã‚‹
         CurrentTarget = nullptr;
     }
 
@@ -158,7 +158,7 @@ void AUnit::StartDrag(const FVector& MouseWorld)
 
     bIsDragging = true;
 
-    // ƒhƒ‰ƒbƒO’†‚ÍƒJ[ƒ\ƒ‹Trace‚Ì×–‚‚ğ‚µ‚È‚¢‚æ‚¤‚É‚·‚é
+    // ãƒ‰ãƒ©ãƒƒã‚°ä¸­ã¯ã‚«ãƒ¼ã‚½ãƒ«Traceã®é‚ªé­”ã‚’ã—ãªã„ã‚ˆã†ã«ã™ã‚‹
     if (UnitMesh)
     {
         UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -166,10 +166,10 @@ void AUnit::StartDrag(const FVector& MouseWorld)
 
     OriginalLocation = GetActorLocation();
 
-    // š ƒhƒ‰ƒbƒOŠJn‚É‚¢‚½ƒ^ƒCƒ‹‚ğŠo‚¦‚é
+    // â˜… ãƒ‰ãƒ©ãƒƒã‚°é–‹å§‹æ™‚ã«ã„ãŸã‚¿ã‚¤ãƒ«ã‚’è¦šãˆã‚‹
     DragStartTile = CurrentTile;
 
-    // ˆê’Uƒ^ƒCƒ‹‚ğ‹ó‚¯‚é
+    // ä¸€æ—¦ã‚¿ã‚¤ãƒ«ã‚’ç©ºã‘ã‚‹
     if (CurrentTile)
     {
         CurrentTile->bIsOccupied = false;
@@ -177,13 +177,13 @@ void AUnit::StartDrag(const FVector& MouseWorld)
         CurrentTile = nullptr;
     }
 
-    // š Z‚ğŒÅ’èiƒhƒ‰ƒbƒO’†‚É‚‚³‚ªƒuƒŒ‚È‚¢j
+    // â˜… Zã‚’å›ºå®šï¼ˆãƒ‰ãƒ©ãƒƒã‚°ä¸­ã«é«˜ã•ãŒãƒ–ãƒ¬ãªã„ï¼‰
     DragFixedZ = OriginalLocation.Z;
 
-    // š ’Í‚ñ‚¾uŠÔ‚Ìu’Í‚İ“_v‚©‚ç‚ÌƒIƒtƒZƒbƒg
-    // MouseWorld ‚Í PlayerController ‚©‚ç Hit.ImpactPoint ‚ğ“n‚µ‚Ä‚­‚é‘O’ñ
+    // â˜… æ´ã‚“ã ç¬é–“ã®ã€Œæ´ã¿ç‚¹ã€ã‹ã‚‰ã®ã‚ªãƒ•ã‚»ãƒƒãƒˆ
+    // MouseWorld ã¯ PlayerController ã‹ã‚‰ Hit.ImpactPoint ã‚’æ¸¡ã—ã¦ãã‚‹å‰æ
     DragOffset = OriginalLocation - MouseWorld;
-    DragOffset.Z = 0.f; // Z‚ÍŒÅ’è‚·‚é‚Ì‚Å•s—viŒ©‚½–Ú‚ÌƒYƒŒ–h~j
+    DragOffset.Z = 0.f; // Zã¯å›ºå®šã™ã‚‹ã®ã§ä¸è¦ï¼ˆè¦‹ãŸç›®ã®ã‚ºãƒ¬é˜²æ­¢ï¼‰
 }
 
 
@@ -193,10 +193,10 @@ void AUnit::UpdateDrag(const FVector& MouseWorld)
 
     FVector Target = MouseWorld + DragOffset;
 
-    // š Z‚ÍŠJn‚Ì‚‚³‚ÉŒÅ’è
+    // â˜… Zã¯é–‹å§‹æ™‚ã®é«˜ã•ã«å›ºå®š
     Target.Z = DragFixedZ;
 
-    // š •¨—/Õ“Ë‚Ì‰Ÿ‚µ•Ô‚µ‚ÅƒYƒŒ‚È‚¢‚æ‚¤‚ÉƒeƒŒƒ|[ƒgŠñ‚è‚Å
+    // â˜… ç‰©ç†/è¡çªã®æŠ¼ã—è¿”ã—ã§ã‚ºãƒ¬ãªã„ã‚ˆã†ã«ãƒ†ãƒ¬ãƒãƒ¼ãƒˆå¯„ã‚Šã§
     SetActorLocation(Target, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
@@ -216,12 +216,12 @@ void AUnit::EndDrag()
 
     if (Tile)
     {
-        // ³í‚Éƒ^ƒCƒ‹‚É—‚Æ‚¹‚½‚Æ‚«
+        // æ­£å¸¸ã«ã‚¿ã‚¤ãƒ«ã«è½ã¨ã›ãŸã¨ã
         OwningBoardManager->MoveUnitToTile(this, Tile);
     }
     else
     {
-        // š ƒ^ƒCƒ‹‚ÌŠO ¨ ˆÊ’u‚àƒ^ƒCƒ‹î•ñ‚àŒ³‚É–ß‚·
+        // â˜… ã‚¿ã‚¤ãƒ«ã®å¤– â†’ ä½ç½®ã‚‚ã‚¿ã‚¤ãƒ«æƒ…å ±ã‚‚å…ƒã«æˆ»ã™
         SetActorLocation(OriginalLocation);
 
         if (DragStartTile)
@@ -242,7 +242,7 @@ void AUnit::CheckForTarget(float DeltaTime)
 
     const float Now = GetWorld()->GetTimeSeconds();
 
-    // 1) Šù‘¶ƒ^[ƒQƒbƒg‚Ì‘Ã“–«ƒ`ƒFƒbƒN
+    // 1) æ—¢å­˜ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã®å¦¥å½“æ€§ãƒã‚§ãƒƒã‚¯
     bool bNeedNewTarget = false;
 
     if (CurrentTarget)
@@ -253,7 +253,7 @@ void AUnit::CheckForTarget(float DeltaTime)
         }
         else
         {
-            // ‰“‚·‚¬‚é/’Ç‚¦‚È‚¢‚È‚çØ‘Öi”’l‚ÍD‚İ‚Åj
+            // é ã™ãã‚‹/è¿½ãˆãªã„ãªã‚‰åˆ‡æ›¿ï¼ˆæ•°å€¤ã¯å¥½ã¿ã§ï¼‰
             const float Dist = FVector::Dist2D(GetActorLocation(), CurrentTarget->GetActorLocation());
             if (Dist > 3500.f) bNeedNewTarget = true;
         }
@@ -263,22 +263,22 @@ void AUnit::CheckForTarget(float DeltaTime)
         bNeedNewTarget = true;
     }
 
-    // š ƒXƒCƒbƒ`CD’†‚ÍØ‚è‘Ö‚¦‚È‚¢i€‚ñ‚¾‚¾‚¯—áŠO‚É‚µ‚Ä‚àOKj
+    // â˜… ã‚¹ã‚¤ãƒƒãƒCDä¸­ã¯åˆ‡ã‚Šæ›¿ãˆãªã„ï¼ˆæ­»ã‚“ã æ™‚ã ã‘ä¾‹å¤–ã«ã—ã¦ã‚‚OKï¼‰
     if (!bNeedNewTarget && Now < TargetLockUntilTime)
     {
-        // ‰½‚à‚µ‚È‚¢i¡‚Ìƒ^[ƒQƒbƒgˆÛj
+        // ä½•ã‚‚ã—ãªã„ï¼ˆä»Šã®ã‚¿ãƒ¼ã‚²ãƒƒãƒˆç¶­æŒï¼‰
     }
     else if (bNeedNewTarget)
     {
-        // 2) Vƒ^[ƒQƒbƒg‚ğ‘I‚Ôi‚±‚±‚ğÅŠñ‚èˆÈŠO‚É‚Å‚«‚éj
-        CurrentTarget = ChooseTarget();  // ©Œãq
+        // 2) æ–°ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’é¸ã¶ï¼ˆã“ã“ã‚’æœ€å¯„ã‚Šä»¥å¤–ã«ã§ãã‚‹ï¼‰
+        CurrentTarget = ChooseTarget();  // â†å¾Œè¿°
         TargetLockUntilTime = Now + TargetSwitchCooldown;
         bIsAttacking = false;
     }
 
     if (!CurrentTarget) return;
 
-    // 3) Ë’ö“à‚È‚çUŒ‚AŠO‚È‚çˆÚ“®i‚ ‚È‚½‚ÌŠù‘¶‚Ì‚Ü‚Üj
+    // 3) å°„ç¨‹å†…ãªã‚‰æ”»æ’ƒã€å¤–ãªã‚‰ç§»å‹•ï¼ˆã‚ãªãŸã®æ—¢å­˜ã®ã¾ã¾ï¼‰
     const float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
 
     if (DistToTarget <= Range)
@@ -315,10 +315,10 @@ void AUnit::AttackTarget(AUnit* Target)
     bIsAttacking = true;
 
     PendingTarget = Target;
-    // •¨—UŒ‚iŠî–{UŒ‚j
+    // ç‰©ç†æ”»æ’ƒï¼ˆåŸºæœ¬æ”»æ’ƒï¼‰
     //Target->TakePhysicalDamage(Attack);
 
-    // ƒXƒLƒ‹‚ªg‚¦‚é‚È‚ç”­“®
+    // ã‚¹ã‚­ãƒ«ãŒä½¿ãˆã‚‹ãªã‚‰ç™ºå‹•
     if (CanUseSkill())
     {
         UseSkill(Target);
@@ -337,7 +337,7 @@ void AUnit::TakePhysicalDamage(float DamageAmount)
         *GetName(), HP, MaxHP, GetHPPercent());
 
     ShowDamagePopup(FinalDamage, /*bIsMagicDamage=*/false);
-    bLastHitWasCritical = false; // g‚¢I‚í‚Á‚½‚çƒŠƒZƒbƒg
+    bLastHitWasCritical = false; // ä½¿ã„çµ‚ã‚ã£ãŸã‚‰ãƒªã‚»ãƒƒãƒˆ
 
     if (HP <= 0.f && !bIsDead)
     {
@@ -352,7 +352,7 @@ void AUnit::TakeMagicDamage(float DamageAmount)
     float FinalDamage = FMath::Max(1.f, DamageAmount - MagicDefense);
     HP -= FinalDamage;
 
-    // š APƒ_ƒ[ƒW ¨ Âƒ|ƒbƒvƒAƒbƒv
+    // â˜… APãƒ€ãƒ¡ãƒ¼ã‚¸ â†’ é’ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—
     ShowDamagePopup(FinalDamage, /*bIsMagicDamage=*/true);
 
 
@@ -375,7 +375,7 @@ void AUnit::ApplyPoison(float Duration, float DamagePerTick, float TickInterval)
     PoisonDamagePerTick = DamagePerTick;
     PoisonTickInterval = TickInterval;
 
-    // Tickƒ^ƒCƒ}[iã‘‚«EXVj
+    // Tickã‚¿ã‚¤ãƒãƒ¼ï¼ˆä¸Šæ›¸ããƒ»æ›´æ–°ï¼‰
     GetWorld()->GetTimerManager().ClearTimer(PoisonTickHandle);
     GetWorld()->GetTimerManager().SetTimer(
         PoisonTickHandle,
@@ -385,7 +385,7 @@ void AUnit::ApplyPoison(float Duration, float DamagePerTick, float TickInterval)
         true
     );
 
-    // I—¹ƒ^ƒCƒ}[i‰„’·j
+    // çµ‚äº†ã‚¿ã‚¤ãƒãƒ¼ï¼ˆå»¶é•·ï¼‰
     GetWorld()->GetTimerManager().ClearTimer(PoisonEndHandle);
     GetWorld()->GetTimerManager().SetTimer(
         PoisonEndHandle,
@@ -400,7 +400,7 @@ void AUnit::ApplyPoison(float Duration, float DamagePerTick, float TickInterval)
 
 void AUnit::OnDeath()
 {
-    if (bIsDead) return; // “ñdŒÄ‚Ño‚µ–h~
+    if (bIsDead) return; // äºŒé‡å‘¼ã³å‡ºã—é˜²æ­¢
 
     bIsDead = true;
     bIsAttacking = false;
@@ -408,24 +408,24 @@ void AUnit::OnDeath()
     bIsDragging = false;
     bCanDrag = false;
 
-    // š ƒ^ƒCƒ‹ˆ—‚ğƒ`[ƒ€‚Å•ª‚¯‚é
+    // â˜… ã‚¿ã‚¤ãƒ«å‡¦ç†ã‚’ãƒãƒ¼ãƒ ã§åˆ†ã‘ã‚‹
     if (CurrentTile)
     {
         if (Team == EUnitTeam::Enemy)
         {
-            // “G‚Í€‚ñ‚¾‚ç‚»‚Ìê‚Ìƒ}ƒX‚ğ‚·‚®‹ó‚¯‚ÄOK
+            // æ•µã¯æ­»ã‚“ã ã‚‰ãã®å ´ã®ãƒã‚¹ã‚’ã™ãç©ºã‘ã¦OK
             CurrentTile->bIsOccupied = false;
             CurrentTile->OccupiedUnit = nullptr;
         }
 
-        // ƒvƒŒƒCƒ„[ƒ†ƒjƒbƒg‚Í CurrentTile ‚ğc‚·
-        // ¨ MakeSaveData ‚Å³‚µ‚¢ TileIndex ‚ğ•Û‘¶‚Å‚«‚é‚æ‚¤‚É‚·‚é
+        // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãƒ¦ãƒ‹ãƒƒãƒˆã¯ CurrentTile ã‚’æ®‹ã™
+        // â†’ MakeSaveData ã§æ­£ã—ã„ TileIndex ã‚’ä¿å­˜ã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹
     }
 
-    // ƒ^[ƒQƒbƒg‰ğœ
+    // ã‚¿ãƒ¼ã‚²ãƒƒãƒˆè§£é™¤
     CurrentTarget = nullptr;
 
-    // ‚±‚êˆÈãUŒ‚‘ÎÛ‚É‚È‚ç‚È‚¢‚æ‚¤‚ÉƒRƒŠƒWƒ‡ƒ“‚ğØ‚é
+    // ã“ã‚Œä»¥ä¸Šæ”»æ’ƒå¯¾è±¡ã«ãªã‚‰ãªã„ã‚ˆã†ã«ã‚³ãƒªã‚¸ãƒ§ãƒ³ã‚’åˆ‡ã‚‹
     if (UnitMesh)
     {
         UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -437,7 +437,7 @@ void AUnit::OnDeath()
     }
 
 
-    // š Destroy ‚Í‚±‚±‚Å‚Í‚µ‚È‚¢i“G‚Í OnDeathFinished ‚Å DestroyAƒvƒŒƒCƒ„[‚Íc‚·j
+    // â˜… Destroy ã¯ã“ã“ã§ã¯ã—ãªã„ï¼ˆæ•µã¯ OnDeathFinished ã§ Destroyã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯æ®‹ã™ï¼‰
 }
 
 
@@ -473,7 +473,7 @@ void AUnit::EquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
     if (EquipedItems.Num() >= 3)
     {
         UE_LOG(LogTemp, Warning, TEXT("[Unit] EquipItem blocked: already 3 items on %s"), *GetName());
-        //ShowBuffPopup(TEXT("‘•”õ‚ÍÅ‘å3‚Â‚Ü‚Å"));
+        //ShowBuffPopup(TEXT("è£…å‚™ã¯æœ€å¤§3ã¤ã¾ã§"));
         return;
     }
 
@@ -489,7 +489,7 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
     else if (Item.EffectType == "HP")
     {
         MaxHP += Item.EffectValue;
-        HP += Item.EffectValue;   // or HP = MaxHP; D‚İ‚Å
+        HP += Item.EffectValue;   // or HP = MaxHP; å¥½ã¿ã§
     }
     else if (Item.EffectType == "Defense")      Defense += Item.EffectValue;
     else if (Item.EffectType == "MagicPower")   MagicPower += Item.EffectValue;
@@ -507,7 +507,7 @@ void AUnit::ApplyItemEffect(const FItemData& Item)
 
 void AUnit::ReapplayAllItemEffects()
 {
-    // 1) ‚Ü‚¸‘f‚Ìó‘Ô‚ÉƒŠƒZƒbƒg
+    // 1) ã¾ãšç´ ã®çŠ¶æ…‹ã«ãƒªã‚»ãƒƒãƒˆ
     MaxHP = BaseHP;
     Attack = BaseAttack;
     Defense = BaseDefense;
@@ -519,25 +519,25 @@ void AUnit::ReapplayAllItemEffects()
     CritMultiplier = BaseCritMultiplier;
     AttackInterval = BaseAttackInterval;
 
-    // HP ‚Í‚Æ‚è‚ ‚¦‚¸Å‘å‚Ü‚Å‰ñ•œ
+    // HP ã¯ã¨ã‚Šã‚ãˆãšæœ€å¤§ã¾ã§å›å¾©
     HP = MaxHP;
 
-    // 2) ‚»‚±‚É‘•”õƒAƒCƒeƒ€‚ÌŒø‰Ê‚ğ‘S•”‚Ì‚¹‚é
+    // 2) ãã“ã«è£…å‚™ã‚¢ã‚¤ãƒ†ãƒ ã®åŠ¹æœã‚’å…¨éƒ¨ã®ã›ã‚‹
     for (const FItemData& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
     }
 
-    // ”O‚Ì‚½‚ß 0`MaxHP ‚Éû‚ß‚Ä‚¨‚­
+    // å¿µã®ãŸã‚ 0ï½MaxHP ã«åã‚ã¦ãŠã
     HP = FMath::Clamp(HP, 0.f, MaxHP);
 }
 
 void AUnit::RemoveItems()
 {
-    // ‘•”õƒAƒCƒeƒ€”z—ñ‚ğ‹ó‚Á‚Û‚É
+    // è£…å‚™ã‚¢ã‚¤ãƒ†ãƒ é…åˆ—ã‚’ç©ºã£ã½ã«
     EquipedItems.Empty();
 
-    // ƒXƒe[ƒ^ƒX‚ğŠî‘b’l{ƒAƒCƒeƒ€–³‚µ‚Ìó‘Ô‚É–ß‚·
+    // ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’åŸºç¤å€¤ï¼‹ã‚¢ã‚¤ãƒ†ãƒ ç„¡ã—ã®çŠ¶æ…‹ã«æˆ»ã™
     ReapplayAllItemEffects();
 
     UE_LOG(LogTemp, Warning,
@@ -548,7 +548,7 @@ bool AUnit::TryEquipItem(E_EquiqSlotType SlotType, const FItemData& Item)
 {
     if (EquipedItems.Num() >= 3)
     {
-        //ShowBuffPopup(TEXT("‘•”õ‚ÍÅ‘å3‚Â‚Ü‚Å"));
+        //ShowBuffPopup(TEXT("è£…å‚™ã¯æœ€å¤§3ã¤ã¾ã§"));
         return false;
     }
 
@@ -603,7 +603,7 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
 
     EquipedItems = Data.EquippedItems;
 
-    // ‘fƒXƒe‚É–ß‚·
+    // ç´ ã‚¹ãƒ†ã«æˆ»ã™
     MaxHP = BaseHP;
     Attack = BaseAttack;
     Defense = BaseDefense;
@@ -617,7 +617,7 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
 
     HP = MaxHP;
 
-    // ƒAƒCƒeƒ€Ä“K—pi1‰ñ‚¾‚¯j
+    // ã‚¢ã‚¤ãƒ†ãƒ å†é©ç”¨ï¼ˆ1å›ã ã‘ï¼‰
     for (const FItemData& Item : EquipedItems)
     {
         ApplyItemEffect(Item);
@@ -625,7 +625,7 @@ void AUnit::ApplySaveData(const FUnitSaveData& Data)
 
     HP = FMath::Clamp(HP, 0.f, MaxHP);
 
-    // ó‘ÔŒn
+    // çŠ¶æ…‹ç³»
     bIsDead = false;
     bIsAttacking = false;
     bIsMoving = false;
@@ -649,7 +649,7 @@ void AUnit::ShowUnitInfo()
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC || !HoverWidgetClass) return;
 
-    // ‡@ ‚·‚Å‚Éo‚Ä‚¢‚éƒzƒo[UI‚ğ‘S•”Á‚·
+    // â‘  ã™ã§ã«å‡ºã¦ã„ã‚‹ãƒ›ãƒãƒ¼UIã‚’å…¨éƒ¨æ¶ˆã™
     {
         TArray<UUserWidget*> Existing;
         UWidgetBlueprintLibrary::GetAllWidgetsOfClass(
@@ -668,7 +668,7 @@ void AUnit::ShowUnitInfo()
         }
     }
 
-    // ‡A ‚±‚Ìƒ†ƒjƒbƒg—p‚Ìƒzƒo[UI‚ğ1–‡‚¾‚¯ì‚é
+    // â‘¡ ã“ã®ãƒ¦ãƒ‹ãƒƒãƒˆç”¨ã®ãƒ›ãƒãƒ¼UIã‚’1æšã ã‘ä½œã‚‹
     HoverWidget = CreateWidget<UUnitHoverInfoWidget>(PC, HoverWidgetClass);
     if (HoverWidget)
     {
@@ -690,10 +690,10 @@ void AUnit::ShowUnitInfo()
 
         HoverWidget->AddToViewport();
 
-        // š ‚±‚±‚ªƒ|ƒCƒ“ƒgFŒã‚ë‚ÌƒNƒŠƒbƒN‚ğƒuƒƒbƒN‚µ‚È‚¢
+        // â˜… ã“ã“ãŒãƒã‚¤ãƒ³ãƒˆï¼šå¾Œã‚ã®ã‚¯ãƒªãƒƒã‚¯ã‚’ãƒ–ãƒ­ãƒƒã‚¯ã—ãªã„
         HoverWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-        // ¦ qƒEƒBƒWƒFƒbƒg‚ÍƒqƒbƒgƒeƒXƒg‚³‚ê‚é‚¯‚ÇA
-        //   ƒzƒo[‘S‘Ì‚Æ‚µ‚Ä‚ÍŒã‚ë‚Ìƒ{[ƒh / ƒxƒ“ƒ`‚ÉƒNƒŠƒbƒN‚ª’Ê‚é
+        // â€» å­ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¯ãƒ’ãƒƒãƒˆãƒ†ã‚¹ãƒˆã•ã‚Œã‚‹ã‘ã©ã€
+        //   ãƒ›ãƒãƒ¼å…¨ä½“ã¨ã—ã¦ã¯å¾Œã‚ã®ãƒœãƒ¼ãƒ‰ / ãƒ™ãƒ³ãƒã«ã‚¯ãƒªãƒƒã‚¯ãŒé€šã‚‹
     }
 }
 
@@ -726,7 +726,7 @@ void AUnit::OnUnitClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPres
         TEXT("[Unit] OnUnitClicked %s Button=%s"),
         *GetName(), *ButtonPressed.ToString());
 
-    // ‰EƒNƒŠƒbƒNF‚±‚Ìƒ†ƒjƒbƒg‚ğƒAƒCƒeƒ€‘•”õ‘ÎÛ‚É‚·‚é { î•ñƒzƒo[•\¦
+    // å³ã‚¯ãƒªãƒƒã‚¯ï¼šã“ã®ãƒ¦ãƒ‹ãƒƒãƒˆã‚’ã‚¢ã‚¤ãƒ†ãƒ è£…å‚™å¯¾è±¡ã«ã™ã‚‹ ï¼‹ æƒ…å ±ãƒ›ãƒãƒ¼è¡¨ç¤º
     if (ButtonPressed == EKeys::LeftMouseButton)
     {
         if (OwningBoardManager)
@@ -754,7 +754,7 @@ void AUnit::UpdateFacing(float DeltaTime)
     TargetRot.Pitch = 0.f;
     TargetRot.Roll = 0.f;
 
-    // ™ ‚±‚±‚ªƒ|ƒCƒ“ƒgFActor ‚¶‚á‚È‚­‚Ä Mesh ‚ğ‰ñ‚·
+    // â˜† ã“ã“ãŒãƒã‚¤ãƒ³ãƒˆï¼šActor ã˜ã‚ƒãªãã¦ Mesh ã‚’å›ã™
     FRotator NewRot = FMath::RInterpTo(
         UnitMesh->GetComponentRotation(),
         TargetRot,
@@ -767,7 +767,7 @@ void AUnit::UpdateFacing(float DeltaTime)
 
 void AUnit::RefreshHoverInfo()
 {
-    // ¡ƒzƒo[‚ªo‚Ä‚¢‚é‚È‚çA’†g‚¾‚¯XV
+    // ä»Šãƒ›ãƒãƒ¼ãŒå‡ºã¦ã„ã‚‹ãªã‚‰ã€ä¸­èº«ã ã‘æ›´æ–°
     if (HoverWidget)
     {
         HoverWidget->SetUnitInfo(
@@ -793,7 +793,7 @@ float AUnit::GetHPPercent() const
         return 0.f;
     }
 
-    // ”O‚Ì‚½‚ß 0`1 ‚ÉƒNƒ‰ƒ“ƒv‚µ‚Ä‚¨‚­
+    // å¿µã®ãŸã‚ 0ï½1 ã«ã‚¯ãƒ©ãƒ³ãƒ—ã—ã¦ãŠã
     const float Raw = HP / MaxHP;
     return FMath::Clamp(Raw, 0.f, 1.f);
 }
@@ -811,7 +811,7 @@ void AUnit::ShowDamagePopup(float DamageAmount, bool bIsMagicDamage)
 
     Popup->AddToViewport();
 
-    // š ‚±‚±‚Åƒ[ƒJƒ‹•Ï”‚ğì‚é
+    // â˜… ã“ã“ã§ãƒ­ãƒ¼ã‚«ãƒ«å¤‰æ•°ã‚’ä½œã‚‹
     bool bIsCritical = bLastHitWasCritical;
 
     Popup->SetupDamage(DamageAmount, bIsMagicDamage, bIsCritical);
@@ -826,7 +826,7 @@ void AUnit::ShowDamagePopup(float DamageAmount, bool bIsMagicDamage)
         Popup->SetPositionInViewport(JitteredPos, true);
     }
 
-    // g‚¢I‚í‚Á‚½‚çƒŠƒZƒbƒg‚µ‚Ä‚¨‚­
+    // ä½¿ã„çµ‚ã‚ã£ãŸã‚‰ãƒªã‚»ãƒƒãƒˆã—ã¦ãŠã
     bLastHitWasCritical = false;
 }
 
@@ -842,7 +842,7 @@ void AUnit::ShowHealPopup(float HealAmount)
     if (!Popup) return;
 
     Popup->AddToViewport();
-    Popup->SetupHeal(HealAmount);   // © ‚³‚Á‚«’Ç‰Á‚µ‚½‚â‚Â
+    Popup->SetupHeal(HealAmount);   // â† ã•ã£ãè¿½åŠ ã—ãŸã‚„ã¤
 
     FVector WorldLoc = GetActorLocation() + FVector(0.f, 0.f, 120.f);
     FVector2D ScreenPos;
@@ -884,7 +884,7 @@ float AUnit::CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical)
 
     if (CritChance > 0.f && CritMultiplier > 1.f)
     {
-        float Roll = FMath::FRand(); // 0.0`1.0
+        float Roll = FMath::FRand(); // 0.0ï½1.0
         if (Roll < CritChance)
         {
             bOutIsCritical = true;
@@ -895,13 +895,20 @@ float AUnit::CalcPhysicalDamageWithCrit(float BaseDamage, bool& bOutIsCritical)
     return BaseDamage;
 }
 
+//void AUnit::BP_OnHealed(float Amount)
+//{
+//}
+
+
+
+
 void AUnit::HandlePoisonTick()
 {
     if (!bIsPoisoned) return;
     if (bIsDead) { HandlePoisonEnd(); return; }
     
-    // š “Å‚Í–‚–@ƒ_ƒˆµ‚¢‚É‚·‚é‚Ì‚ª©‘R
-    // TakeMagicDamage ‚ª–³‚¢ƒvƒƒWƒFƒNƒg‚È‚ç TakePhysicalDamage ‚É’u‚«Š·‚¦‚ÄOK
+    // â˜… æ¯’ã¯é­”æ³•ãƒ€ãƒ¡æ‰±ã„ã«ã™ã‚‹ã®ãŒè‡ªç„¶
+    // TakeMagicDamage ãŒç„¡ã„ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ãƒˆãªã‚‰ TakePhysicalDamage ã«ç½®ãæ›ãˆã¦OK
     TakeMagicDamage(PoisonDamagePerTick);
 }
 

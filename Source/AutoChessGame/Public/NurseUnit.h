@@ -1,10 +1,12 @@
-// NurseUnit.h
+ï»¿// NurseUnit.h
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Unit.h"
 #include "NurseUnit.generated.h"
+
+//class UNiagaraSystem;
 
 UCLASS()
 class AUTOCHESSGAME_API ANurseUnit : public AUnit
@@ -16,32 +18,42 @@ public:
 
     virtual void BeginPlay() override;
 
-    // ’ÊíUŒ‚ = ƒq[ƒ‹”­“®ƒgƒŠƒK[
+    // é€šå¸¸æ”»æ’ƒ = ãƒ’ãƒ¼ãƒ«ç™ºå‹•ãƒˆãƒªã‚¬ãƒ¼
     virtual void AttackTarget(AUnit* Target) override;
 
-    // Skill ƒVƒXƒeƒ€Œo—R‚Å‚Í‚à‚¤g‚í‚È‚¢
+    // Skill ã‚·ã‚¹ãƒ†ãƒ çµŒç”±ã§ã¯ã‚‚ã†ä½¿ã‚ãªã„
     virtual bool CanUseSkill() const override;
     virtual void UseSkill(AUnit* Target) override;
 
 protected:
-    // š ƒq[ƒ‹ƒ‚[ƒVƒ‡ƒ“—pƒ‚ƒ“ƒ^[ƒWƒ…
+    // â˜… ãƒ’ãƒ¼ãƒ«ãƒ¢ãƒ¼ã‚·ãƒ§ãƒ³ç”¨ãƒ¢ãƒ³ã‚¿ãƒ¼ã‚¸ãƒ¥
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     UAnimMontage* HealMontage;
 
-    // š ‚±‚Ìƒq[ƒ‹‚Å‰ñ•œ‚·‚é—\’è‚Ì–¡•û
+    // â˜… ã“ã®ãƒ’ãƒ¼ãƒ«ã§å›å¾©ã™ã‚‹äºˆå®šã®å‘³æ–¹
     UPROPERTY()
     AUnit* PendingHealTarget = nullptr;
 
-    // ‰ñ•œ‘ÎÛ‚ğ’T‚·iHPŠ„‡‚ªˆê”Ô’á‚¢–¡•ûj
+    // å›å¾©å¯¾è±¡ã‚’æ¢ã™ï¼ˆHPå‰²åˆãŒä¸€ç•ªä½ã„å‘³æ–¹ï¼‰
     AUnit* FindLowestHpAlly() const;
 
-    // ÀÛ‚Ì‰ñ•œˆ—
+    // å®Ÿéš›ã®å›å¾©å‡¦ç†
     void ApplyHeal(AUnit* Ally);
 
     virtual AUnit* ChooseTarget()const override;
 
+    /*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX")
+    UNiagaraSystem* HealTargetEffect = nullptr;*/
+
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX")
+    FName HealTargetAttackSocket = NAME_None;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX")
+    FVector HealTargetEffectOffset = FVector(0.f, 0.f, 40.f);
+
 public:
-    // š AnimNotify ‚©‚çŒÄ‚Ô
+    // â˜… AnimNotify ã‹ã‚‰å‘¼ã¶
     UFUNCTION(BlueprintCallable, Category = "Heal")
     void HandleHealNotify();
 };
