@@ -28,7 +28,7 @@ protected:
     void TrySupport();
 
     // モンタージュNotifyから呼ぶ用（Rabbitと同じ思想）
-    UFUNCTION()
+    UFUNCTION(BlueprintCallable)
     void HandleSupportNotify();
 
     void ApplyDefenseBuff(AUnit* Target);

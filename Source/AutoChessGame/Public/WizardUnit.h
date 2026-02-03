@@ -50,5 +50,11 @@ protected:
     UPROPERTY()
     AUnit* PendingTarget = nullptr;
 
+    UPROPERTY()
+    bool bFiredThisAttack = false;
+
+    UFUNCTION(BlueprintCallable)
+    void HandleAttackEndNotify();
+
     
 };

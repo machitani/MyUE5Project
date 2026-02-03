@@ -62,11 +62,13 @@ void AWizardUnit::AttackTarget(AUnit* Target)
 
                 if (!AnimInstance->Montage_IsPlaying(AttackMontage))
                 {
+                    bFiredThisAttack = false;
                     AnimInstance->Montage_Play(AttackMontage, PlayRate);
                 }
             }
         }
     }
+    bFiredThisAttack = false;
 }
 
 void AWizardUnit::SpawnFireball(AUnit* Target)
@@ -106,9 +108,17 @@ void AWizardUnit::SpawnFireball(AUnit* Target)
     }
 }
 
+void AWizardUnit::HandleAttackEndNotify()
+{
+    bIsAttacking = false;
+    bFiredThisAttack = false;
+}
+
 // ★ AnimNotify から呼ぶ用
 void AWizardUnit::HandleFireballShootNotify()
 {
+    if (bFiredThisAttack)return;
+    bFiredThisAttack = true;
     // 攻撃中にターゲットが死んでたら何もしない
     if (!PendingTarget || !IsValid(PendingTarget) || PendingTarget->bIsDead)
     {
